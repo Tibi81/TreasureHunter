@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars */
 // App.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import PlayerJoin from './components/PlayerJoin';
 import GameMap from './components/GameMap';
 import ChallengePanel from './components/ChallengePanel';
@@ -22,7 +22,7 @@ function App() {
   const [error, setError] = useState('');
 
   // Játék állapot frissítése
-  const updateGameStatus = async () => {
+  const updateGameStatus = useCallback(async () => {
     if (!gameState.gameId) return;
     
     try {
@@ -36,10 +36,10 @@ function App() {
     } catch (err) {
       setError('Hiba a játék állapot frissítésében');
     }
-  };
+  }, [gameState.gameId]);
 
   // Aktuális feladat betöltése
-  const loadCurrentChallenge = async () => {
+  const loadCurrentChallenge = useCallback(async () => {
     if (!gameState.gameId || !gameState.currentPlayer) return;
     
     try {
@@ -51,7 +51,7 @@ function App() {
     } catch (err) {
       setError('Hiba a feladat betöltésében');
     }
-  };
+  }, [gameState.gameId, gameState.currentPlayer]);
 
   // Automatikus frissítés
   useEffect(() => {
@@ -63,7 +63,7 @@ function App() {
 
       return () => clearInterval(interval);
     }
-  }, [gameState.gameId, gameState.status, gameState.currentPlayer]);
+  }, [gameState.gameId, gameState.status, gameState.currentPlayer, updateGameStatus, loadCurrentChallenge]);
 
   // Játékos csatlakozás kezelése
   const handlePlayerJoin = async (playerName, teamName) => {
