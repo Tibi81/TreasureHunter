@@ -1,12 +1,42 @@
-# React + Vite
+# 🎃 Halloween Kincskereső - Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React alkalmazás a Halloween kincskereső játékhoz.
 
-Currently, two official plugins are available:
+## 🚀 Gyors indítás
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+```bash
+# Függőségek telepítése
+npm install
 
-## Expanding the ESLint configuration
+# Fejlesztői szerver indítása
+npm run dev
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+# Production build
+npm run build
+```
+
+## 🎮 Használat
+
+1. Nyisd meg a böngészőt: http://localhost:5173/
+2. Add meg a neved
+3. Válassz csapatot (🎃 Tök Csapat vagy 👻 Szellem Csapat)
+4. Várj a másik játékosra
+5. Játssz és nyerj! 🏆
+
+## 🔧 Fejlesztés
+
+- **React 19** - Modern React funkciók
+- **Tailwind CSS** - Stílusozás
+- **Vite** - Gyors build eszköz
+
+## 📁 Komponensek
+
+- `App.jsx` - Fő alkalmazás
+- `PlayerJoin.jsx` - Játékos csatlakozás
+- `GameMap.jsx` - Játék térkép
+- `ChallengePanel.jsx` - Feladat panel
+- `GameResults.jsx` - Eredmények
+
+## 🌐 API
+
+A frontend a `http://localhost:8000` backend API-t használja.
