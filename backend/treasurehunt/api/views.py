@@ -6,7 +6,7 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from ..models import Game, Team, Player, Station, Challenge, GameProgress
 from ..serializers import GameSerializer, TeamSerializer, PlayerSerializer, ChallengeSerializer
-from backend.treasurehunt import models
+from treasurehunt import models
 
 @api_view(['POST'])
 def create_game(request):
