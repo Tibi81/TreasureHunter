@@ -33,6 +33,14 @@ class Command(BaseCommand):
             (2, 'pumpkin', 'TV Rejtvény', 'Keress egy tökös matricát a nappali valahol!', 'LIVING_PUMPKIN_002', 'A kanapé körül vagy a TV-nél!'),
             (2, 'ghost', 'Könyv Misztérium', 'Találj egy fehér könyvjelzőt!', 'LIVING_GHOST_002', 'A könyvespolcon nézz!'),
             
+            # Fürdőszoba - Külön feladatok
+            (3, 'pumpkin', 'Pókháló Labirintus', 'Keress egy pókháló mintájú tárgyat a fürdőszobában!', 'BATHROOM_PUMPKIN_003', 'A tükör mögött vagy a szekrényben!'),
+            (3, 'ghost', 'Szellem Tükör', 'Találj egy tükröt a fürdőszobában!', 'BATHROOM_GHOST_003', 'A falon vagy a szekrényben!'),
+            
+            # Hálószoba - Külön feladatok
+            (4, 'pumpkin', 'Denevér Kolónia', 'Keress egy denevér mintájú tárgyat a hálószobában!', 'BEDROOM_PUMPKIN_004', 'Az ágy alatt vagy a szekrényben!'),
+            (4, 'ghost', 'Szellem Ágy', 'Találj egy párnát a hálószobában!', 'BEDROOM_GHOST_004', 'Az ágyon vagy a szekrényben!'),
+            
             # Közös feladatok
             (5, None, 'Találkozás', 'Várjatok egymásra! Együtt tovább!', 'MEETING_POINT_005', 'Itt várjatok a másik csapatra!'),
             (6, None, 'Végső Kincs', 'Keressétek meg a Halloween kincsesládát!', 'FINAL_TREASURE_006', 'A legsötétebb sarokban van elrejtve!'),

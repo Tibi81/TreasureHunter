@@ -1,5 +1,5 @@
 // services/api.js
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = 'http://127.0.0.1:8000';
 
 class APIError extends Error {
   constructor(message, status) {
@@ -44,11 +44,31 @@ const apiRequest = async (endpoint, options = {}) => {
 };
 
 export const gameAPI = {
-  // Új játék létrehozása
-  createGame: async (gameName = 'Halloween Kincskereső') => {
+  // Játék keresése kód alapján
+  findGameByCode: async (gameCode) => {
+    return apiRequest(`/api/game/code/${gameCode.toUpperCase()}/`);
+  },
+
+
+  // Új játék létrehozása (Admin)
+  createGame: async (gameName = 'Halloween Kincskereső', adminName = 'Admin') => {
     return apiRequest('/api/game/create/', {
       method: 'POST',
-      body: { name: gameName }
+      body: { name: gameName, admin_name: adminName }
+    });
+  },
+
+  // Játék indítása (Admin)
+  startGame: async (gameId) => {
+    return apiRequest(`/api/game/${gameId}/start/`, {
+      method: 'POST'
+    });
+  },
+
+  // Játék visszaállítása
+  resetGame: async (gameId) => {
+    return apiRequest(`/api/game/${gameId}/reset/`, {
+      method: 'DELETE'
     });
   },
 
@@ -85,6 +105,77 @@ export const gameAPI = {
   getHelp: async (gameId, teamName) => {
     return apiRequest(`/api/game/${gameId}/team/${teamName}/help/`, {
       method: 'POST'
+    });
+  },
+
+  // Játékos pozíció lekérdezése
+  getPlayerStatus: async () => {
+    return apiRequest('/api/player/status/');
+  },
+
+  // Játékos session ellenőrzése
+  checkPlayerSession: async () => {
+    return apiRequest('/api/player/check-session/', {
+      method: 'POST'
+    });
+  },
+
+  // Játékos kilépése a játékból
+  exitGame: async () => {
+    return apiRequest('/api/player/exit/', {
+      method: 'POST'
+    });
+  },
+
+  // Admin funkciók
+  // Összes játék listázása
+  listGames: async () => {
+    return apiRequest('/api/admin/games/');
+  },
+
+  // Játék szerkesztése
+  updateGame: async (gameId, gameData) => {
+    return apiRequest(`/api/game/${gameId}/update/`, {
+      method: 'PUT',
+      body: gameData
+    });
+  },
+
+  // Játék törlése
+  deleteGame: async (gameId) => {
+    return apiRequest(`/api/game/${gameId}/delete/`, {
+      method: 'DELETE'
+    });
+  },
+
+  // Játék leállítása
+  stopGame: async (gameId) => {
+    return apiRequest(`/api/game/${gameId}/stop/`, {
+      method: 'POST'
+    });
+  },
+
+  // Játékos kezelés
+  // Játékos eltávolítása
+  removePlayer: async (gameId, playerId) => {
+    return apiRequest(`/api/game/${gameId}/player/${playerId}/remove/`, {
+      method: 'DELETE'
+    });
+  },
+
+  // Játékos áthelyezése
+  movePlayer: async (gameId, playerId, newTeam) => {
+    return apiRequest(`/api/game/${gameId}/player/${playerId}/move/`, {
+      method: 'POST',
+      body: { new_team: newTeam }
+    });
+  },
+
+  // Játékos hozzáadása
+  addPlayer: async (gameId, playerName, teamName) => {
+    return apiRequest(`/api/game/${gameId}/player/add/`, {
+      method: 'POST',
+      body: { name: playerName, team: teamName }
     });
   }
 };

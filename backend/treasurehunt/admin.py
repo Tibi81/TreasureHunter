@@ -29,10 +29,11 @@ class GameAdmin(admin.ModelAdmin):
         completed_teams = obj.teams.filter(completed_at__isnull=False).count()
         if total_teams > 0:
             percentage = (completed_teams / total_teams) * 100
+            percentage_str = "{:.1f}".format(percentage)
             return format_html(
-                '<span style="color: {};">{}/{} ({:.1f}%)</span>',
+                '<span style="color: {};">{}/{} ({}%)</span>',
                 'green' if percentage == 100 else 'orange' if percentage > 0 else 'red',
-                completed_teams, total_teams, percentage
+                completed_teams, total_teams, percentage_str
             )
         return 'Nincs csapat'
     progress_summary.short_description = 'Haladás'

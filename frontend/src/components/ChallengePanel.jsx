@@ -39,8 +39,27 @@ const ChallengePanel = ({ challenge, onQRScan, onGetHelp, loading, gameStatus })
           Várakozás...
         </h3>
         <p className="text-gray-300">
-          {gameStatus === 'setup' ? 'Várakozás a játék indítására...' : 'Feladat betöltése...'}
+          {gameStatus === 'setup' ? 'Várakozás a játék indítására... (Admin indítsa el)' : 
+           gameStatus === 'waiting' ? 'Várakozás játékosokra... (Legalább 1 játékos szükséges)' :
+           'Várakozás a feladatra...'}
         </p>
+        {gameStatus === 'setup' && (
+          <div className="mt-4 p-4 bg-orange-900 bg-opacity-30 rounded-lg">
+            <p className="text-sm text-orange-200">
+              💡 Tipp: Oszd meg a játék azonosítóját a többi játékossal!
+            </p>
+          </div>
+        )}
+        {gameStatus === 'waiting' && (
+          <div className="mt-4 p-4 bg-blue-900 bg-opacity-30 rounded-lg">
+            <p className="text-sm text-blue-200">
+              🎮 Várjuk a többi játékos csatlakozását...
+            </p>
+            <p className="text-xs text-blue-300 mt-2">
+              A játék automatikusan setup állapotba kerül, amikor legalább 1 játékos csatlakozik!
+            </p>
+          </div>
+        )}
       </div>
     );
   }
@@ -49,14 +68,17 @@ const ChallengePanel = ({ challenge, onQRScan, onGetHelp, loading, gameStatus })
     <div className="bg-black bg-opacity-60 rounded-lg p-6">
       {/* Feladat fejléc */}
       <div className="text-center mb-6">
-        <div className="text-4xl mb-2">{challenge.station?.icon || '🎯'}</div>
-        <h2 className="text-2xl font-bold text-orange-400 mb-2">
-          {challenge.title}
+        <div className="text-6xl mb-4">{challenge.station?.icon || '🎯'}</div>
+        <h2 className="text-3xl font-bold text-orange-400 mb-3">
+          {challenge.challenge?.title || challenge.title}
         </h2>
-        <div className="text-sm text-gray-300">
-          {challenge.station?.name} • {challenge.team_type ? 
-            (challenge.team_type === 'pumpkin' ? '🎃 Tök Csapat' : '👻 Szellem Csapat') : 
-            'Közös feladat'
+        <div className="text-lg text-gray-300 mb-2">
+          {challenge.station?.name}
+        </div>
+        <div className="text-sm text-purple-300 bg-purple-900 bg-opacity-30 rounded-full px-4 py-2 inline-block">
+          {challenge.team_type ? 
+            (challenge.team_type === 'pumpkin' ? '🎃 Tök Csapat feladata' : '👻 Szellem Csapat feladata') : 
+            '🤝 Közös feladat'
           }
         </div>
       </div>
@@ -68,7 +90,7 @@ const ChallengePanel = ({ challenge, onQRScan, onGetHelp, loading, gameStatus })
         </h3>
         <div className="bg-gray-900 bg-opacity-50 rounded-lg p-4">
           <p className="text-gray-200 leading-relaxed">
-            {challenge.description}
+            {challenge.challenge?.description || challenge.description}
           </p>
         </div>
       </div>

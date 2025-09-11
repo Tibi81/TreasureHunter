@@ -4,85 +4,111 @@ import uuid
 import json
 
 class Game(models.Model):
+    # Egy adott kincskereső játékot reprezentál.
     GAME_STATUS_CHOICES = [
+        ('waiting', 'Várakozás játékosokra'),
         ('setup', 'Beállítás'),
         ('separate', 'Külön Fázis'),
         ('together', 'Közös Fázis'),
         ('finished', 'Befejezve'),
     ]
     
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=100, default="Halloween Kincskereső")
-    status = models.CharField(max_length=20, choices=GAME_STATUS_CHOICES, default='setup')
-    meeting_station = models.IntegerField(default=5)  # Találkozási pont (5. állomás)
-    created_at = models.DateTimeField(auto_now_add=True)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)  # Egyedi azonosító minden játékhoz
+    game_code = models.CharField(max_length=8, unique=True, db_index=True, help_text="Rövid azonosító a játékhoz csatlakozáshoz")  # Játék kód, amivel csatlakozni lehet
+    name = models.CharField(max_length=100, default="Halloween Kincskereső")  # Játék neve
+    status = models.CharField(max_length=20, choices=GAME_STATUS_CHOICES, default='waiting', db_index=True)  # Játék aktuális állapota
+    meeting_station = models.IntegerField(default=5)  # Találkozási pont (állomás sorszáma)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)  # Létrehozás ideje
+    created_by = models.CharField(max_length=100, null=True, blank=True, help_text="Admin neve aki létrehozta")  # Admin neve, aki létrehozta a játékot
     
     def __str__(self):
-        return f"Játék - {self.name} ({self.status})"
+        return "Játék - {} ({})".format(self.name, self.status)
+    
+    def save(self, *args, **kwargs):
+        if not self.game_code:
+            self.game_code = self.generate_game_code()
+        super().save(*args, **kwargs)
+    
+    @staticmethod
+    def generate_game_code():
+        """Egyedi játék kód generálása"""
+        import random
+        import string
+        
+        while True:
+            # 6 karakteres kód generálása (betűk és számok)
+            code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+            if not Game.objects.filter(game_code=code).exists():
+                return code
 
 class Team(models.Model):
+    # Egy csapatot reprezentál egy adott játékban (pl. Tök vagy Szellem csapat).
     TEAM_CHOICES = [
         ('pumpkin', '🎃 Tök Csapat'),
         ('ghost', '👻 Szellem Csapat'),
     ]
     
-    game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name='teams')
-    name = models.CharField(max_length=20, choices=TEAM_CHOICES)
-    current_station = models.IntegerField(default=1)
-    attempts = models.IntegerField(default=0)  # Hibás próbálkozások száma
-    help_used = models.BooleanField(default=False)  # Segítség használva-e
-    completed_at = models.DateTimeField(null=True, blank=True)  # Mikor érte el a találkozót
+    game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name='teams', db_index=True)  # Melyik játékhoz tartozik a csapat
+    name = models.CharField(max_length=20, choices=TEAM_CHOICES, db_index=True)  # Csapat típusa/neve
+    current_station = models.IntegerField(default=1, db_index=True)  # Jelenlegi állomás sorszáma
+    attempts = models.IntegerField(default=0)  # Hibás próbálkozások száma az aktuális állomáson
+    help_used = models.BooleanField(default=False)  # Használtak-e segítséget az aktuális állomáson
+    completed_at = models.DateTimeField(null=True, blank=True, db_index=True)  # Mikor ért célba a csapat (találkozási pont)
     
     def __str__(self):
-        return f"{self.get_name_display()} - Állomás {self.current_station}"
+        return "{} - Állomás {}".format(self.get_name_display(), self.current_station)
 
 class Player(models.Model):
-    team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name='players')
-    name = models.CharField(max_length=50)
-    joined_at = models.DateTimeField(auto_now_add=True)
+    # Egy játékost reprezentál, aki egy csapat tagja.
+    team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name='players', db_index=True)  # Melyik csapatban van a játékos
+    name = models.CharField(max_length=50, db_index=True)  # Játékos neve
+    joined_at = models.DateTimeField(auto_now_add=True, db_index=True)  # Belépés ideje
     
     def __str__(self):
-        return f"{self.name} ({self.team.get_name_display()})"
+        return "{} ({})".format(self.name, self.team.get_name_display())
 
 class Station(models.Model):
+    # Egy állomást (helyszínt) reprezentál a játékban.
     PHASE_CHOICES = [
         ('separate', 'Külön Fázis'),
         ('together', 'Közös Fázis'),
     ]
     
-    number = models.IntegerField(unique=True)
-    name = models.CharField(max_length=50)
-    icon = models.CharField(max_length=10)  # Emoji
-    phase = models.CharField(max_length=20, choices=PHASE_CHOICES)
+    number = models.IntegerField(unique=True, db_index=True)  # Állomás sorszáma
+    name = models.CharField(max_length=50)  # Állomás neve
+    icon = models.CharField(max_length=10)  # Állomás ikonja (emoji)
+    phase = models.CharField(max_length=20, choices=PHASE_CHOICES, db_index=True)  # Melyik fázisban van az állomás (külön/közös)
     
     class Meta:
         ordering = ['number']
     
     def __str__(self):
-        return f"{self.number}. {self.name} {self.icon}"
+        return "{}. {} {}".format(self.number, self.name, self.icon)
 
 class Challenge(models.Model):
-    station = models.ForeignKey(Station, on_delete=models.CASCADE, related_name='challenges')
-    team_type = models.CharField(max_length=20, choices=Team.TEAM_CHOICES, null=True, blank=True)  # null = közös feladat
-    title = models.CharField(max_length=200)
-    description = models.TextField()
-    qr_code = models.CharField(max_length=100, unique=True)
-    help_text = models.TextField()
+    # Egy feladatot (kihívást) reprezentál egy adott állomáson.
+    station = models.ForeignKey(Station, on_delete=models.CASCADE, related_name='challenges', db_index=True)  # Melyik állomáshoz tartozik a feladat
+    team_type = models.CharField(max_length=20, choices=Team.TEAM_CHOICES, null=True, blank=True, db_index=True)  # Melyik csapatnak szól (ha None, akkor közös)
+    title = models.CharField(max_length=200)  # Feladat címe
+    description = models.TextField()  # Feladat leírása
+    qr_code = models.CharField(max_length=100, unique=True, db_index=True)  # Feladathoz tartozó QR kód
+    help_text = models.TextField()  # Segítség szövege a feladathoz
     
     def __str__(self):
-        team_str = f" ({self.get_team_type_display()})" if self.team_type else " (Közös)"
-        return f"{self.station.name}{team_str}: {self.title}"
+        team_str = " ({})".format(self.get_team_type_display()) if self.team_type else " (Közös)"
+        return "{}{}: {}".format(self.station.name, team_str, self.title)
 
 class GameProgress(models.Model):
-    game = models.ForeignKey(Game, on_delete=models.CASCADE)
-    team = models.ForeignKey(Team, on_delete=models.CASCADE)
-    station = models.ForeignKey(Station, on_delete=models.CASCADE)
-    completed_at = models.DateTimeField(auto_now_add=True)
-    attempts_made = models.IntegerField(default=1)
-    help_used = models.BooleanField(default=False)
+    # Egy csapat előrehaladását rögzíti egy adott állomáson, egy adott játékban.
+    game = models.ForeignKey(Game, on_delete=models.CASCADE, db_index=True)  # Melyik játékban történt az előrehaladás
+    team = models.ForeignKey(Team, on_delete=models.CASCADE, db_index=True)  # Melyik csapatról van szó
+    station = models.ForeignKey(Station, on_delete=models.CASCADE, db_index=True)  # Melyik állomásról van szó
+    completed_at = models.DateTimeField(auto_now_add=True, db_index=True)  # Mikor teljesítették az állomást
+    attempts_made = models.IntegerField(default=1)  # Hány próbálkozásból sikerült
+    help_used = models.BooleanField(default=False)  # Használtak-e segítséget
     
     class Meta:
-        unique_together = ['game', 'team', 'station']
+        unique_together = ['game', 'team', 'station']  # Egy csapat egy állomást egy játékban csak egyszer teljesíthet
     
     def __str__(self):
-        return f"{self.team} - {self.station} (Befejezve: {self.completed_at})"
+        return "{} - {} (Befejezve: {})".format(self.team, self.station, self.completed_at)

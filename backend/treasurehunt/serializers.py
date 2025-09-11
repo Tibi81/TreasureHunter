@@ -4,7 +4,7 @@ from .models import Game, Team, Player, Station, Challenge
 class GameSerializer(serializers.ModelSerializer):
     class Meta:
         model = Game
-        fields = ['id', 'name', 'status', 'created_at']
+        fields = ['id', 'game_code', 'name', 'status', 'created_at', 'created_by']
 
 class PlayerSerializer(serializers.ModelSerializer):
     team_name = serializers.CharField(source='team.get_name_display', read_only=True)
