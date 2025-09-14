@@ -2,7 +2,6 @@
 from django.db import models
 import uuid
 import json
-
 class Game(models.Model):
     # Egy adott kincskereső játékot reprezentál.
     GAME_STATUS_CHOICES = [
@@ -54,6 +53,8 @@ class Team(models.Model):
     attempts = models.IntegerField(default=0)  # Hibás próbálkozások száma az aktuális állomáson
     help_used = models.BooleanField(default=False)  # Használtak-e segítséget az aktuális állomáson
     completed_at = models.DateTimeField(null=True, blank=True, db_index=True)  # Mikor ért célba a csapat (találkozási pont)
+    separate_phase_save_used = models.BooleanField(default=False)  # Használták-e a mentesítő feladatot a külön fázisban
+    together_phase_save_used = models.BooleanField(default=False)  # Használták-e a mentesítő feladatot a közös fázisban
     
     def __str__(self):
         return "{} - Állomás {}".format(self.get_name_display(), self.current_station)
@@ -63,6 +64,8 @@ class Player(models.Model):
     team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name='players', db_index=True)  # Melyik csapatban van a játékos
     name = models.CharField(max_length=50, db_index=True)  # Játékos neve
     joined_at = models.DateTimeField(auto_now_add=True, db_index=True)  # Belépés ideje
+    session_token = models.CharField(max_length=64, null=True, blank=True, unique=True, db_index=True)  # Session token a játékos azonosításához
+    token_created_at = models.DateTimeField(null=True, blank=True, db_index=True)  # Mikor lett a token létrehozva
     
     def __str__(self):
         return "{} ({})".format(self.name, self.team.get_name_display())
@@ -72,6 +75,8 @@ class Station(models.Model):
     PHASE_CHOICES = [
         ('separate', 'Külön Fázis'),
         ('together', 'Közös Fázis'),
+        ('meeting', 'Találkozási Pont'),
+        ('save', 'Mentesítő Fázis'),
     ]
     
     number = models.IntegerField(unique=True, db_index=True)  # Állomás sorszáma
@@ -87,8 +92,15 @@ class Station(models.Model):
 
 class Challenge(models.Model):
     # Egy feladatot (kihívást) reprezentál egy adott állomáson.
+    TEAM_TYPE_CHOICES = [
+        ('pumpkin', '🎃 Tök Csapat'),
+        ('ghost', '👻 Szellem Csapat'),
+        ('both', '🤝 Mindkét Csapat'),
+        (None, 'Közös Feladat'),
+    ]
+    
     station = models.ForeignKey(Station, on_delete=models.CASCADE, related_name='challenges', db_index=True)  # Melyik állomáshoz tartozik a feladat
-    team_type = models.CharField(max_length=20, choices=Team.TEAM_CHOICES, null=True, blank=True, db_index=True)  # Melyik csapatnak szól (ha None, akkor közös)
+    team_type = models.CharField(max_length=20, choices=TEAM_TYPE_CHOICES, null=True, blank=True, db_index=True)  # Melyik csapatnak szól (ha None, akkor közös)
     title = models.CharField(max_length=200)  # Feladat címe
     description = models.TextField()  # Feladat leírása
     qr_code = models.CharField(max_length=100, unique=True, db_index=True)  # Feladathoz tartozó QR kód

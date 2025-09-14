@@ -1,58 +1,32 @@
-# services.py
+# services.py - Teljes verzió külön egyéni és közös büntetés kezeléssel
+import logging
 from django.db.models import Count
+from django.db import transaction
 from .models import Game, Team, Player, Station, Challenge, GameProgress
 from django.utils import timezone
+from .game_state_manager import GameStateManager, GameConstants
+from .session_token_services import SessionTokenService
+
+logger = logging.getLogger(__name__)
 
 class GameLogicService:
-    """Játék logika szolgáltatások"""
-    
-    @staticmethod
-    def calculate_team_progress(team, game_status):
-        """Csapat haladásának kiszámítása"""
-        if game_status == 'finished':
-            return 6  # Összes állomás befejezve
-        elif game_status == 'separate':
-            return max(0, team.current_station - 1)
-        elif game_status == 'together':
-            # 4 külön fázis + közös fázis állomások
-            return 4 + max(0, team.current_station - 5)
-        return 0
-    
-    @staticmethod
-    def get_remaining_stations(team, game_status):
-        """Hátralévő állomások száma"""
-        total_stations = 6
-        completed = GameLogicService.calculate_team_progress(team, game_status)
-        return max(0, total_stations - completed)
-    
-    @staticmethod
-    def get_progress_percentage(team, game_status):
-        """Haladás százaléka"""
-        total_stations = 6
-        completed = GameLogicService.calculate_team_progress(team, game_status)
-        return round((completed / total_stations) * 100)
-    
-    @staticmethod
-    def can_team_use_help(team):
-        """Döntés arról, hogy a csapat használhatja-e a segítséget"""
-        return not team.help_used and team.attempts > 0
-    
-    @staticmethod
-    def is_team_full(team):
-        """Döntés arról, hogy a csapat tele van-e"""
-        return team.players.count() >= 2
+    """Játék logika szolgáltatások - egyszerűsített verzió"""
     
     @staticmethod
     def get_team_status_info(team):
-        """Csapat állapot információk összegyűjtése"""
+        game_manager = GameStateManager(team.game)
+        progress_info = game_manager.get_team_progress_info(team)
+        
         return {
             'current_station': team.current_station,
             'attempts': team.attempts,
             'help_used': team.help_used,
             'completed_at': team.completed_at,
-            'is_full': GameLogicService.is_team_full(team),
+            'is_full': team.players.count() >= GameConstants.MAX_PLAYERS_PER_TEAM,
             'player_count': team.players.count(),
-            'can_use_help': GameLogicService.can_team_use_help(team)
+            'can_use_help': progress_info['can_use_help'],
+            'can_use_save': progress_info['can_use_save'],
+            **progress_info
         }
 
 class GameStateService:
@@ -60,260 +34,349 @@ class GameStateService:
     
     @staticmethod
     def get_game_summary(game):
-        """Játék összefoglaló információk - optimalizált verzió"""
-        # Prefetch related objects to avoid N+1 queries
-        teams = game.teams.prefetch_related('players').all()
-        all_players = []
-        
-        for team in teams:
-            for player in team.players.all():
-                all_players.append({
-                    'name': player.name,
-                    'team': team.name,
-                    'team_display': team.get_name_display()
-                })
-        
-        # Csapat információk
-        teams_info = []
-        for team in teams:
-            team_players = [p for p in all_players if p['team'] == team.name]
-            team_status = GameLogicService.get_team_status_info(team)
-            
-            teams_info.append({
-                'name': team.name,
-                'display_name': team.get_name_display(),
-                'players': team_players,
-                'player_count': team_status['player_count'],
-                'max_players': 2,
-                'available_slots': 2 - team_status['player_count'],
-                'is_full': team_status['is_full'],
-                'current_station': team_status['current_station'],
-                'attempts': team_status['attempts'],
-                'help_used': team_status['help_used'],
-                'completed_at': team_status['completed_at']
-            })
-        
-        # Összesített információk
-        total_players = len(all_players)
-        max_players = 4
-        available_slots = max_players - total_players
-        
-        return {
-            'game': {
-                'id': str(game.id),
-                'game_code': game.game_code,
-                'name': game.name,
-                'status': game.status,
-                'created_by': game.created_by,
-                'created_at': game.created_at
-            },
-            'teams': teams_info,
-            'players': all_players,
-            'game_info': {
-                'total_players': total_players,
-                'max_players': max_players,
-                'available_slots': available_slots,
-                'is_full': total_players >= max_players,
-                'can_start': GameStateService.can_game_start(game)
-            }
-        }
+        game_manager = GameStateManager(game)
+        return game_manager.get_game_summary()
     
     @staticmethod
     def can_game_start(game):
-        """Döntés arról, hogy a játék elindítható-e - optimalizált verzió"""
-        if game.status not in ['waiting', 'setup']:
-            return False
-        
-        # Prefetch players to avoid N+1 queries
-        teams = game.teams.prefetch_related('players').all()
-        
-        # Legalább 2 játékos szükséges
-        total_players = sum(team.players.count() for team in teams)
-        if total_players < 2:
-            return False
-        
-        # Minden csapatban kell lennie legalább egy játékosnak
-        for team in teams:
-            if team.players.count() == 0:
-                return False
-        
-        return True
+        game_manager = GameStateManager(game)
+        return game_manager.can_game_start()
     
     @staticmethod
     def should_auto_transition_to_setup(game):
-        """Döntés arról, hogy a játék automatikusan át kell-e állítani setup állapotba - optimalizált verzió"""
-        if game.status != 'waiting':
-            return False
-        
-        # Prefetch players to avoid N+1 queries
-        teams = game.teams.prefetch_related('players').all()
-        total_players = sum(team.players.count() for team in teams)
-        return total_players >= 1  # Már 1 játékos is elég
+        game_manager = GameStateManager(game)
+        return game_manager.should_auto_transition_to_setup()
+    
+    @staticmethod
+    def start_game(game):
+        game_manager = GameStateManager(game)
+        game_manager.start_separate_phase()
 
 class ChallengeService:
     """Feladat kezelési szolgáltatások"""
-    
+
     @staticmethod
     def get_current_challenge_data(game, team):
-        """Aktuális feladat adatainak lekérdezése"""
-        current_station = Station.objects.get(number=team.current_station)
+        try:
+            if team.attempts >= GameConstants.MAX_ATTEMPTS:
+                if ChallengeService.can_use_save(game, team):
+                    return ChallengeService.get_save_challenge_data(game, team)
+                else:
+                    return {
+                        'error': 'Túl sok hiba! Újra kell kezdenetek! 😱',
+                        'reset_required': True
+                    }
+            return ChallengeService._get_normal_challenge(game, team)
+        except Exception as e:
+            logger.error(f"Hiba a feladat adatok lekérdezésében: {e}")
+            return {
+                'error': 'Váratlan hiba történt a feladat betöltésekor!',
+                'technical_error': True
+            }
+
+    @staticmethod
+    def _get_challenge_for_team_and_station(station, team, game_status):
+        challenge_filters = []
+        if game_status == 'separate':
+            challenge_filters = [
+                {'team_type': team.name},
+                {'team_type': 'both'},
+                {'team_type__isnull': True}
+            ]
+        elif game_status == 'together':
+            challenge_filters = [
+                {'team_type__isnull': True},
+                {'team_type': 'both'}
+            ]
         
-        # Feladat típus meghatározása
-        if game.status == 'separate':
-            # Külön fázis: csapat-specifikus feladat
-            challenge = Challenge.objects.filter(
-                station=current_station, 
-                team_type=team.name
-            ).first()
-            
-            # Ha nincs csapat-specifikus feladat, próbáljuk a közös feladatot (5. feladat)
-            if not challenge and current_station.phase == 'together':
+        logger.info(f"Feladat keresés: station={station.number}, team={team.name}, game_status={game_status}")
+        
+        for filter_dict in challenge_filters:
+            if filter_dict is not None:
                 challenge = Challenge.objects.filter(
-                    station=current_station, 
-                    team_type__isnull=True
+                    station=station,
+                    **filter_dict
                 ).first()
-        elif game.status == 'together':
-            # Közös fázis: közös feladatok
-            challenge = Challenge.objects.filter(
-                station=current_station, 
-                team_type__isnull=True
-            ).first()
+                if challenge:
+                    logger.info(f"Feladat találva: {challenge.title}, team_type={challenge.team_type}")
+                    return challenge
+                else:
+                    logger.info(f"Nincs feladat: {filter_dict}")
+        
+        logger.warning(f"Nincs feladat találva: station={station.number}, team={team.name}, game_status={game_status}")
+        return None
+
+    @staticmethod
+    def _get_normal_challenge(game, team):
+        try:
+            current_station = Station.objects.get(number=team.current_station)
+        except Station.DoesNotExist:
+            logger.error(f"Állomás nem található: {team.current_station}")
+            return None
+        station_to_show = current_station
+        challenge = None
+
+        if (game.status == 'together' and team.current_station == GameConstants.MEETING_STATION):
+            try:
+                station_to_show = Station.objects.get(number=GameConstants.TOGETHER_PHASE_START)
+                challenge = ChallengeService._get_challenge_for_team_and_station(
+                    station_to_show, team, game.status
+                )
+            except Station.DoesNotExist:
+                logger.error(f"Közös fázis kezdő állomás nem található: {GameConstants.TOGETHER_PHASE_START}")
+                return None
         else:
-            return None
-        
+            challenge = ChallengeService._get_challenge_for_team_and_station(
+                current_station, team, game.status
+            )
+
         if not challenge:
+            logger.warning(f"Feladat nem található: station={current_station.number}, team={team.name}, game_status={game.status}")
             return None
-        
         team_status = GameLogicService.get_team_status_info(team)
-        
         return {
             'station': {
-                'number': current_station.number,
-                'name': current_station.name,
-                'icon': current_station.icon
+                'number': station_to_show.number,
+                'name': station_to_show.name,
+                'icon': station_to_show.icon
             },
             'challenge': {
                 'title': challenge.title,
                 'description': challenge.description
             },
             'team_type': challenge.team_type,
-            'team_status': team_status
+            'team_status': team_status,
+            'is_penalty': False
         }
-    
+
     @staticmethod
     def validate_qr_code(game, team, qr_code):
-        """QR kód validálása és feldolgozása"""
-        current_station = Station.objects.get(number=team.current_station)
-        
-        # Helyes QR kód ellenőrzése
-        if game.status == 'separate':
-            # Külön fázis: csapat-specifikus feladat
-            correct_challenge = Challenge.objects.filter(
-                station=current_station, 
-                team_type=team.name,
-                qr_code=qr_code
-            ).first()
-            
-            # Ha nincs csapat-specifikus feladat, próbáljuk a közös feladatot (5. feladat)
-            if not correct_challenge and current_station.phase == 'together':
-                correct_challenge = Challenge.objects.filter(
-                    station=current_station, 
-                    team_type__isnull=True,
-                    qr_code=qr_code
-                ).first()
-        else:
-            # Közös fázis: közös feladatok
-            correct_challenge = Challenge.objects.filter(
-                station=current_station, 
-                team_type__isnull=True,
-                qr_code=qr_code
-            ).first()
-        
-        if correct_challenge:
-            return ChallengeService._handle_correct_qr(game, team, current_station)
-        else:
-            return ChallengeService._handle_incorrect_qr(team)
-    
+        if not qr_code or not qr_code.strip():
+            return {
+                'success': False,
+                'message': 'Érvénytelen QR kód!',
+                'error': True
+            }
+        try:
+            logger.info(f"QR kód validálás: game={game.id}, team={team.id}, qr={qr_code}")
+            game_manager = GameStateManager(game)
+            needs_save = team.attempts >= GameConstants.MAX_ATTEMPTS
+            if needs_save:
+                if ChallengeService.can_use_save(game, team):
+                    return ChallengeService._validate_save_qr(game_manager, team, qr_code)
+                else:
+                    game_manager.reset_team_to_start(team)
+                    return {
+                        'success': False,
+                        'message': 'Túl sok hiba! Újra kell kezdenetek! 😱',
+                        'reset': True
+                    }
+            return ChallengeService._validate_normal_qr(game_manager, team, qr_code)
+        except Exception as e:
+            logger.error(f"Hiba a QR kód validálásában: {e}")
+            return {
+                'success': False,
+                'message': 'Váratlan hiba történt!',
+                'error': True
+            }
+
     @staticmethod
-    def _handle_correct_qr(game, team, current_station):
-        """Helyes QR kód feldolgozása"""
-        # Játék haladás rögzítése
-        GameProgress.objects.create(
-            game=game,
-            team=team,
-            station=current_station,
-            attempts_made=team.attempts + 1,
-            help_used=team.help_used
+    @transaction.atomic
+    def _validate_save_qr(game_manager, team, qr_code):
+        try:
+            save_station = Station.objects.get(number=GameConstants.SAVE_STATION)
+            correct_challenge = ChallengeService._get_challenge_for_team_and_station(
+                save_station, team, game_manager.game.status
+            )
+            if correct_challenge and correct_challenge.qr_code == qr_code:
+                GameProgress.objects.create(
+                    game=game_manager.game,
+                    team=team,
+                    station=save_station,
+                    attempts_made=team.attempts,
+                    help_used=team.help_used
+                )
+                ChallengeService.use_save(game_manager.game, team)
+                team.attempts = 0
+                team.help_used = False
+                team.save()
+                logger.info(f"Mentesítő feladat sikeresen megoldva: team={team.id}")
+                result = game_manager.advance_team(team)
+                if isinstance(result, dict):
+                    result['save_completed'] = True
+                    if not result.get('message'):
+                        result['message'] = 'Gratulálok! Sikeresen megoldottátok a mentesítő feladatot! 🎉'
+                return result
+            else:
+                logger.info(f"Hibás QR kód mentesítő feladatnál: team={team.id}")
+                game_manager.reset_team_to_start(team)
+                return {
+                    'success': False,
+                    'message': 'Hibás QR kód a mentesítő feladatnál! Újra kell kezdenetek! 😱',
+                    'reset': True
+                }
+        except Station.DoesNotExist:
+            logger.error(f"Mentesítő állomás nem található: {GameConstants.SAVE_STATION}")
+            return {
+                'success': False,
+                'message': 'Hiba történt a mentesítő feladat feldolgozása során!',
+                'error': True
+            }
+
+    @staticmethod
+    @transaction.atomic
+    def _validate_normal_qr(game_manager, team, qr_code):
+        try:
+            current_station = Station.objects.get(number=team.current_station)
+        except Station.DoesNotExist:
+            logger.error(f"Állomás nem található QR validáláskor: {team.current_station}")
+            return {
+                'success': False,
+                'message': 'Hiba történt az állomás megtalálása során!',
+                'error': True
+            }
+        
+        logger.info(f"QR validálás: team={team.name}, station={current_station.number}, qr={qr_code}")
+        
+        correct_challenge = ChallengeService._get_challenge_for_team_and_station(
+            current_station, team, game_manager.game.status
         )
         
-        # Következő állomás
-        team.current_station += 1
-        team.attempts = 0
-        team.help_used = False
+        if correct_challenge:
+            logger.info(f"Megfelelő feladat: {correct_challenge.title}, qr={correct_challenge.qr_code}")
+        else:
+            logger.warning(f"Nincs megfelelő feladat: station={current_station.number}, team={team.name}")
         
-        # Ellenőrizzük, hogy elérte-e a találkozási pontot
-        if team.current_station == game.meeting_station and game.status == 'separate':
-            team.completed_at = timezone.now()
-            
-            # Ha ez az első csapat, aki elérte
-            if not game.teams.filter(completed_at__isnull=False).exclude(id=team.id).exists():
-                response_data = {
-                    'success': True,
-                    'message': 'Gratulálok! Első csapat vagy, aki elérte a találkozási pontot! 🎁',
-                    'bonus': True
+        if correct_challenge and correct_challenge.qr_code == qr_code:
+            # Ellenőrizzük, hogy már létezik-e GameProgress rekord
+            game_progress, created = GameProgress.objects.get_or_create(
+                game=game_manager.game,
+                team=team,
+                station=current_station,
+                defaults={
+                    'attempts_made': team.attempts + 1,
+                    'help_used': team.help_used
                 }
+            )
+            
+            # Ha már létezett, frissítjük az adatokat
+            if not created:
+                game_progress.attempts_made = team.attempts + 1
+                game_progress.help_used = team.help_used
+                game_progress.save()
+            result = game_manager.advance_team(team)
+            if result.get('game_finished'):
+                return {
+                    'success': True,
+                    'message': 'Gratulálok! Befejezettétek a játékot! 🎃👻',
+                    'game_finished': True
+                }
+            return { **result, 'success': True }
+        else:
+            team.attempts += 1
+            team.save()
+            logger.info(f"Hibás QR kód: team={team.id}, attempts={team.attempts}")
+            if team.attempts >= GameConstants.MAX_ATTEMPTS:
+                if ChallengeService.can_use_save(game_manager.game, team):
+                    return {
+                        'success': False,
+                        'message': f'{GameConstants.MAX_ATTEMPTS} hibás próbálkozás! Most egy mentesítő feladatot kell megoldanotok! 🆘',
+                        'save_required': True
+                    }
+                else:
+                    game_manager.reset_team_to_start(team)
+                    return {
+                        'success': False,
+                        'message': f'{GameConstants.MAX_ATTEMPTS} hibás próbálkozás! Újra kell kezdenetek! 😱',
+                        'reset': True
+                    }
             else:
-                response_data = {
-                    'success': True,
-                    'message': 'Elértétek a találkozási pontot!',
-                    'bonus': False
+                return {
+                    'success': False,
+                    'message': f'Hibás QR kód! ({team.attempts}/{GameConstants.MAX_ATTEMPTS} próbálkozás)',
+                    'attempts': team.attempts
                 }
-            
-            # Ha mindkét csapat elérte, váltás közös fázisra
-            if game.teams.filter(completed_at__isnull=False).count() == 2:
-                game.status = 'together'
-                game.save()
-                response_data['phase_change'] = 'together'
-        
-        elif team.current_station > Station.objects.count():
-            # Játék vége
-            game.status = 'finished'
-            game.save()
-            response_data = {
-                'success': True,
-                'message': 'Gratulálok! Befejezettétek a játékot! 🎃👻',
-                'game_finished': True
-            }
-        else:
-            response_data = {
-                'success': True,
-                'message': 'Helyes! Menjetek a következő állomásra!'
-            }
-        
-        team.save()
-        return response_data
-    
+
+
     @staticmethod
-    def _handle_incorrect_qr(team):
-        """Hibás QR kód feldolgozása"""
-        team.attempts += 1
-        
-        if team.attempts >= 3:
-            # 3 hibás próbálkozás - visszaállítás
-            team.current_station = 1
-            team.attempts = 0
-            team.help_used = False
-            team.save()
+    def get_help_text(game, team):
+        try:
+            challenge_data = ChallengeService.get_current_challenge_data(game, team)
+            if not challenge_data or challenge_data.get('error') or challenge_data.get('reset_required'):
+                return None
             
+            challenge = None
+            if challenge_data.get('is_save'):
+                try:
+                    save_station = Station.objects.get(number=GameConstants.SAVE_STATION)
+                    challenge = ChallengeService._get_challenge_for_team_and_station(
+                        save_station, team, game.status
+                    )
+                except Station.DoesNotExist:
+                    return None
+            else:
+                try:
+                    station_number = challenge_data['station']['number']
+                    current_station = Station.objects.get(number=station_number)
+                    challenge = ChallengeService._get_challenge_for_team_and_station(
+                        current_station, team, game.status
+                    )
+                except Station.DoesNotExist:
+                    return None
+            
+            return challenge.help_text if challenge else None
+        except Exception as e:
+            logger.error(f"Hiba a help text lekérdezésében: {e}")
+            return None
+
+    @staticmethod
+    @transaction.atomic
+    def use_help(team):
+        if team.help_used:
+            return False
+        logger.info(f"Segítség használat: team={team.id}")
+        team.help_used = True
+        team.save()
+        return True
+
+    @staticmethod
+    def can_use_save(game, team):
+        game_manager = GameStateManager(game)
+        return game_manager.can_use_save(team)
+
+    @staticmethod
+    def use_save(game, team):
+        game_manager = GameStateManager(game)
+        return game_manager.use_save(team)
+
+    @staticmethod
+    def get_save_challenge_data(game, team):
+        try:
+            save_station = Station.objects.get(number=GameConstants.SAVE_STATION)
+            challenge = ChallengeService._get_challenge_for_team_and_station(
+                save_station, team, game.status
+            )
+            if not challenge:
+                logger.warning(f"Mentesítő feladat nem található: team={team.name}, game_status={game.status}")
+                return None
+            team_status = GameLogicService.get_team_status_info(team)
             return {
-                'success': False,
-                'message': '3 hibás próbálkozás után újra kell kezdenetek! 😱',
-                'reset': True
+                'station': {
+                    'number': save_station.number,
+                    'name': save_station.name,
+                    'icon': save_station.icon
+                },
+                'challenge': {
+                    'title': challenge.title,
+                    'description': challenge.description
+                },
+                'team_type': challenge.team_type,
+                'team_status': team_status,
+                'is_save': True
             }
-        else:
-            team.save()
-            return {
-                'success': False,
-                'message': f'Hibás QR kód! ({team.attempts}/3 próbálkozás)',
-                'attempts': team.attempts
-            }
+        except Station.DoesNotExist:
+            logger.error(f"Mentesítő állomás nem található: {GameConstants.SAVE_STATION}")
+            return None
+        except Exception as e:
+            logger.error(f"Hiba a mentesítő feladat lekérdezésében: {e}")
+            return None

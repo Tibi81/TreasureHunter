@@ -33,6 +33,7 @@ function App() {
   useEffect(() => {
     const checkSession = async () => {
       try {
+        // Először próbáljuk a régi session ellenőrzést
         const response = await gameAPI.checkPlayerSession();
         if (response.has_session) {
           // Ha van aktív session, állítsuk vissza a játékot
@@ -49,8 +50,34 @@ function App() {
           setAppState('game');
         }
       } catch (err) {
-        // Ha nincs session, ne csináljunk semmit
-        console.log('Nincs aktív session');
+        console.log('Nincs aktív session:', err.message);
+        
+        // Ha nincs session, próbáljuk a session token alapú visszacsatlakozást
+        const sessionToken = localStorage.getItem('session_token');
+        if (sessionToken) {
+          try {
+            const restoreResponse = await gameAPI.restoreSession(sessionToken);
+            if (restoreResponse.player) {
+              // Ha sikerült a visszacsatlakozás, állítsuk vissza a játékot
+              setGameState(prev => ({
+                ...prev,
+                gameId: restoreResponse.game.id,
+                gameName: restoreResponse.game.name,
+                status: restoreResponse.game.status,
+                teams: restoreResponse.teams,
+                players: restoreResponse.players,
+                gameInfo: restoreResponse.game_info,
+                currentPlayer: restoreResponse.player
+              }));
+              setAppState('game');
+              setPlayerName(restoreResponse.player.name);
+            }
+          } catch (restoreError) {
+            console.log('Session token érvénytelen:', restoreError.message);
+            // Ha a token érvénytelen, töröljük a localStorage-ból
+            localStorage.removeItem('session_token');
+          }
+        }
       }
     };
 
@@ -90,9 +117,21 @@ function App() {
     try {
       const response = await gameAPI.getCurrentChallenge(
         gameState.gameId, 
-        gameState.currentPlayer.team
+        gameState.currentPlayer.team_name || gameState.currentPlayer.team
       );
-      setCurrentChallenge(response);
+      
+      // Ha reset szükséges, frissítsük a játék állapotát
+      if (response.reset_required) {
+        await updateGameStatus();
+        // Próbáljuk újra betölteni a feladatot
+        const newResponse = await gameAPI.getCurrentChallenge(
+          gameState.gameId, 
+          gameState.currentPlayer.team_name || gameState.currentPlayer.team
+        );
+        setCurrentChallenge(newResponse);
+      } else {
+        setCurrentChallenge(response);
+      }
     } catch (err) {
       // Ha a játék még nem indult el, ne jelezzük hibaként
       if (err.status === 400) {
@@ -102,7 +141,7 @@ function App() {
         setCurrentChallenge(null);
       }
     }
-  }, [gameState.gameId, gameState.currentPlayer, gameState.status]);
+  }, [gameState.gameId, gameState.currentPlayer, gameState.status, updateGameStatus]);
 
   // Feladat betöltés próbálása amikor a játék állapot változik
   useEffect(() => {
@@ -148,6 +187,8 @@ function App() {
 
   // Játék kód megadása kezelése
   const handleGameCodeSubmit = async (gameCode) => {
+    console.log('handleGameCodeSubmit called with:', gameCode);
+    
     if (gameCode === 'ADMIN') {
       setAppState('admin');
       return;
@@ -157,7 +198,45 @@ function App() {
     setError('');
 
     try {
+      console.log('Calling findGameByCode with:', gameCode);
       const response = await gameAPI.findGameByCode(gameCode);
+      console.log('Game response:', response);
+      
+      // Ellenőrizzük, hogy van-e session token ehhez a játékhoz
+      const sessionToken = localStorage.getItem('session_token');
+      console.log('Session token from localStorage:', sessionToken);
+      if (sessionToken) {
+        try {
+          const restoreResponse = await gameAPI.restoreSession(sessionToken);
+          console.log('Restore response:', restoreResponse);
+          if (restoreResponse.player && restoreResponse.game && restoreResponse.game.id === response.game.id) {
+            // Ha van érvényes session token ehhez a játékhoz, visszacsatlakozunk
+            setGameState(prev => ({
+              ...prev,
+              gameId: restoreResponse.game.id,
+              gameName: restoreResponse.game.name,
+              status: restoreResponse.game.status,
+              teams: restoreResponse.teams,
+              players: restoreResponse.players,
+              gameInfo: restoreResponse.game_info,
+              currentPlayer: restoreResponse.player
+            }));
+            setAppState('game');
+            setPlayerName(restoreResponse.player.name);
+            setLoading(false);
+            return;
+          } else {
+            console.log('Session token nem ehhez a játékhoz tartozik');
+            localStorage.removeItem('session_token');
+          }
+        } catch (restoreError) {
+          console.log('Session token érvénytelen:', restoreError.message);
+          // Ha a token érvénytelen, töröljük a localStorage-ból
+          localStorage.removeItem('session_token');
+        }
+      }
+      
+      // Ha nincs érvényes session token, folytatjuk a regisztrációval
       setGameData(response);
       setAppState('registration');
     } catch (err) {
@@ -175,6 +254,11 @@ function App() {
     try {
       // Játékos csatlakoztatása
       const response = await gameAPI.joinGame(gameId, playerName, teamName);
+      
+      // Session token mentése localStorage-ba
+      if (response.session_token) {
+        localStorage.setItem('session_token', response.session_token);
+      }
       
       // Csak a szükséges állapotot frissítjük
       setGameState(prev => ({
@@ -229,7 +313,7 @@ function App() {
     try {
       const response = await gameAPI.validateQR(
         gameState.gameId,
-        gameState.currentPlayer.team,
+        gameState.currentPlayer.team_name || gameState.currentPlayer.team,
         qrCode
       );
 
@@ -248,6 +332,12 @@ function App() {
           gameFinished: response.game_finished || false
         };
       } else {
+        // Ha újrakezdés szükséges, frissítsük a játék állapotát
+        if (response.reset) {
+          await updateGameStatus();
+          await loadCurrentChallenge();
+        }
+        
         return {
           success: false,
           message: response.message,
@@ -271,11 +361,16 @@ function App() {
     try {
       const response = await gameAPI.getHelp(
         gameState.gameId,
-        gameState.currentPlayer.team
+        gameState.currentPlayer.team_name || gameState.currentPlayer.team
       );
       return response;
     } catch (err) {
-      throw new Error('Hiba a segítség kérésekor');
+      console.error('Segítség kérés hiba:', err);
+      return {
+        success: false,
+        message: 'Hiba a segítség kérésekor',
+        error: true
+      };
     }
   };
 
@@ -320,6 +415,39 @@ function App() {
       console.error('Hiba a kilépéskor:', err.message);
       // Még ha a backend hívás sikertelen is, töröljük a frontend állapotot
     } finally {
+      // Frontend állapot törlése (session token megtartása)
+      setAppState('welcome');
+      setPlayerName('');
+      setGameState({
+        gameId: null,
+        status: 'setup',
+        currentPlayer: null,
+        teams: [],
+        players: []
+      });
+      setCurrentChallenge(null);
+      setError('');
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    setLoading(true);
+    setError('');
+    
+    try {
+      // Backend API hívás a session token érvénytelenítéséhez
+      if (gameState.currentPlayer && gameState.currentPlayer.id) {
+        await gameAPI.logoutPlayer(gameState.currentPlayer.id);
+      }
+      console.log('Sikeresen kijelentkeztél!');
+    } catch (err) {
+      console.error('Hiba a kijelentkezéskor:', err.message);
+      // Még ha a backend hívás sikertelen is, töröljük a frontend állapotot
+    } finally {
+      // Session token törlése
+      localStorage.removeItem('session_token');
+      
       // Frontend állapot törlése
       setAppState('welcome');
       setPlayerName('');
@@ -375,6 +503,7 @@ function App() {
               gameStatus={gameState.status}
               gameInfo={gameState.gameInfo}
               gameName={gameState.gameName}
+              onLogout={handleLogout}
             />
             
             <ChallengePanel

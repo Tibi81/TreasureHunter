@@ -1,4 +1,5 @@
 # api/views.py
+import logging
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
@@ -8,7 +9,10 @@ from django.db.models import Count
 from ..models import Game, Team, Player, Station, Challenge, GameProgress
 from ..serializers import GameSerializer, TeamSerializer, PlayerSerializer, ChallengeSerializer
 from ..validators import GameCodeValidator, PlayerRegistrationValidator, AdminGameCreationValidator, QRCodeValidator
-from ..services import GameStateService, ChallengeService, GameLogicService
+from ..services import GameStateService, ChallengeService, GameLogicService, SessionTokenService
+from ..game_state_manager import GameStateManager, GameConstants
+
+logger = logging.getLogger(__name__)
 
 @api_view(['GET'])
 def find_game_by_code(request, game_code):
@@ -118,17 +122,17 @@ def start_game(request, game_id):
         return Response({'error': 'A játék nem indítható el. Legalább 2 játékos szükséges és minden csapatban kell lennie legalább egy játékosnak'}, 
                        status=status.HTTP_400_BAD_REQUEST)
     
-    # Játék indítása
-    game.status = 'separate'
-    game.save()
-    
-    # Visszaadjuk a frissített játék adatokat
-    data = {
-        'game': GameSerializer(game).data,
-        'message': 'Játék sikeresen elindítva!'
-    }
-    
-    return Response(data)
+    try:
+        # Játék indítása a GameStateService-en keresztül
+        GameStateService.start_game(game)
+        
+        # Visszaadjuk a frissített játék adatokat
+        data = GameStateService.get_game_summary(game)
+        data['message'] = 'Játék sikeresen elindítva!'
+        
+        return Response(data)
+    except ValueError as e:
+        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['DELETE'])
 def reset_game(request, game_id):
@@ -138,24 +142,29 @@ def reset_game(request, game_id):
     # Töröljük az összes játékost
     Player.objects.filter(team__game=game).delete()
     
+    # GameStateManager használata a csapatok visszaállításához
+    game_manager = GameStateManager(game)
+    
     # Visszaállítjuk a csapatokat
     for team in game.teams.all():
         team.current_station = 1
         team.attempts = 0
         team.help_used = False
         team.completed_at = None
+        team.separate_phase_save_used = False
+        team.together_phase_save_used = False
         team.save()
     
     # Visszaállítjuk a játékot waiting állapotba
     game.status = 'waiting'
     game.save()
     
-    # Visszaadjuk a frissített játék adatokat
-    data = {
-        'game': GameSerializer(game).data,
-        'teams': TeamSerializer(game.teams.all(), many=True).data,
-        'players': []
-    }
+    # Cache invalidálása
+    game_manager.invalidate_cache()
+    
+    # Visszaadjuk a frissített játék adatokat a GameStateService-en keresztül
+    data = GameStateService.get_game_summary(game)
+    data['message'] = 'Játék sikeresen visszaállítva!'
     
     return Response(data)
 
@@ -176,17 +185,21 @@ def join_game(request, game_id):
     
     team = get_object_or_404(Team, game=game, name=team_name)
     
-    # Csapat telítettség ellenőrzése a szolgáltatáson keresztül
-    if GameLogicService.is_team_full(team):
+    # Csapat telítettség ellenőrzése
+    if team.players.count() >= GameConstants.MAX_PLAYERS_PER_TEAM:
         return Response({'error': 'Ez a csapat már tele van'}, 
                        status=status.HTTP_400_BAD_REQUEST)
     
     player = Player.objects.create(team=team, name=player_name)
     
+    # Session token generálása
+    session_token = SessionTokenService.generate_token(player)
+    
     # Session frissítése
     request.session['game_id'] = str(game.id)
     request.session['player_name'] = player_name
     request.session['team_name'] = team_name
+    request.session['session_token'] = session_token
     
     # Automatikus állapotváltás ellenőrzése a szolgáltatáson keresztül
     if GameStateService.should_auto_transition_to_setup(game):
@@ -199,6 +212,7 @@ def join_game(request, game_id):
         'name': player.name,
         'team_name': team.get_name_display(),
         'joined_at': player.joined_at,
+        'session_token': session_token,
         'message': 'Sikeresen csatlakoztál a játékhoz!'
     }, status=status.HTTP_201_CREATED)
 
@@ -271,29 +285,56 @@ def validate_qr(request, game_id, team_name):
 
 @api_view(['POST'])
 def get_help(request, game_id, team_name):
-    """Segítség kérése"""
+    """Segítség kérése - egyszerűsített verzió"""
     game = get_object_or_404(Game, id=game_id)
     team = get_object_or_404(Team, game=game, name=team_name)
     
-    # Segítség használhatóság ellenőrzése a szolgáltatáson keresztül
-    if not GameLogicService.can_team_use_help(team):
-        return Response({'error': 'Már használtátok a segítséget ennél az állomásnál'}, 
-                       status=status.HTTP_400_BAD_REQUEST)
-    
-    current_station = Station.objects.get(number=team.current_station)
-    
-    if game.status == 'separate':
-        challenge = Challenge.objects.get(station=current_station, team_type=team_name)
-    else:
-        challenge = Challenge.objects.get(station=current_station, team_type__isnull=True)
-    
-    team.help_used = True
-    team.save()
-    
-    return Response({
-        'help_text': challenge.help_text,
-        'message': 'Segítség aktiválva! Ezt már nem tudjátok újra használni ennél az állomásnál.'
-    })
+    # Egyszerű segítség lekérdezés (nincs korlátozás)
+    try:
+        current_station = Station.objects.get(number=team.current_station)
+        
+        # Feladat keresése
+        challenge = None
+        if game.status == 'separate':
+            # Külön fázis: csapat-specifikus feladat
+            challenge = Challenge.objects.filter(
+                station=current_station,
+                team_type=team.name
+            ).first()
+            if not challenge:
+                # Ha nincs csapat-specifikus, próbáljuk a közös feladatot
+                challenge = Challenge.objects.filter(
+                    station=current_station,
+                    team_type='both'
+                ).first()
+        else:
+            # Közös fázis: közös feladat
+            challenge = Challenge.objects.filter(
+                station=current_station,
+                team_type__isnull=True
+            ).first()
+            if not challenge:
+                challenge = Challenge.objects.filter(
+                    station=current_station,
+                    team_type='both'
+                ).first()
+        
+        if not challenge or not challenge.help_text:
+            return Response({'error': 'Nincs segítség elérhető ehhez az állomáshoz'}, 
+                           status=status.HTTP_404_NOT_FOUND)
+        
+        return Response({
+            'success': True,
+            'help_text': challenge.help_text,
+            'message': 'Segítség megjelenítve!'
+        })
+        
+    except Station.DoesNotExist:
+        return Response({'error': 'Állomás nem található'}, 
+                       status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({'error': 'Hiba történt a segítség lekérdezésekor'}, 
+                       status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET'])
 def get_player_status(request):
@@ -640,3 +681,72 @@ def add_player(request, game_id):
     except Team.DoesNotExist:
         return Response({'error': 'Csapat nem található'}, 
                        status=status.HTTP_404_NOT_FOUND)
+
+@api_view(['POST'])
+def restore_session(request):
+    """Session token alapú visszatérés a játékba"""
+    session_token = request.data.get('session_token')
+    
+    if not session_token:
+        return Response({'error': 'Session token szükséges'}, 
+                       status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        # Játékos keresése token alapján
+        player = Player.objects.select_related('team__game').get(session_token=session_token)
+        
+        # Token érvényesség ellenőrzése
+        if not SessionTokenService.is_valid(player):
+            return Response({'error': 'Session token lejárt vagy érvénytelen'}, 
+                           status=status.HTTP_401_UNAUTHORIZED)
+        
+        # Session frissítése
+        request.session['game_id'] = str(player.team.game.id)
+        request.session['player_name'] = player.name
+        request.session['team_name'] = player.team.name
+        request.session['session_token'] = session_token
+        
+        # Játék adatok lekérdezése
+        data = GameStateService.get_game_summary(player.team.game)
+        data['player'] = PlayerSerializer(player).data
+        data['message'] = f'Üdvözöllek vissza, {player.name}!'
+        
+        return Response(data)
+        
+    except Player.DoesNotExist:
+        return Response({'error': 'Érvénytelen session token'}, 
+                       status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.error(f"Hiba a session visszaállításakor: {e}")
+        return Response({'error': 'Hiba történt a session visszaállítása során'}, 
+                       status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+def logout_player(request):
+    """Játékos kijelentkezése - session token érvénytelenítése"""
+    session_token = request.session.get('session_token')
+    
+    if not session_token:
+        return Response({'error': 'Nincs aktív session'}, 
+                       status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        # Játékos keresése és token érvénytelenítése
+        player = Player.objects.get(session_token=session_token)
+        SessionTokenService.invalidate(player)
+        
+        # Session törlése
+        request.session.flush()
+        
+        return Response({'message': 'Sikeresen kijelentkeztél'})
+        
+    except Player.DoesNotExist:
+        # Ha a játékos nem található, akkor is töröljük a sessiont
+        request.session.flush()
+        return Response({'message': 'Session törölve'})
+    except Exception as e:
+        logger.error(f"Hiba a kijelentkezéskor: {e}")
+        return Response({'error': 'Hiba történt a kijelentkezés során'}, 
+                       status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+

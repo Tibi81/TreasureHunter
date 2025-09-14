@@ -11,8 +11,9 @@ class Command(BaseCommand):
             (2, 'Nappali', '👻', 'separate'),
             (3, 'Fürdőszoba', '🕷️', 'separate'),
             (4, 'Hálószoba', '🦇', 'separate'),
-            (5, 'Találkozási Pont', '💀', 'together'),
+            (5, 'Találkozási Pont', '💀', 'separate'),
             (6, 'Titkos Kamra', '🧙‍♀️', 'together'),
+            (98, 'Mentesítő Feladat', '🆘', 'save'),  # Speciális állomás mentesítő feladatokhoz
         ]
         
         for number, name, icon, phase in stations_data:
@@ -41,9 +42,14 @@ class Command(BaseCommand):
             (4, 'pumpkin', 'Denevér Kolónia', 'Keress egy denevér mintájú tárgyat a hálószobában!', 'BEDROOM_PUMPKIN_004', 'Az ágy alatt vagy a szekrényben!'),
             (4, 'ghost', 'Szellem Ágy', 'Találj egy párnát a hálószobában!', 'BEDROOM_GHOST_004', 'Az ágyon vagy a szekrényben!'),
             
-            # Közös feladatok
-            (5, None, 'Találkozás', 'Várjatok egymásra! Együtt tovább!', 'MEETING_POINT_005', 'Itt várjatok a másik csapatra!'),
+            # Találkozási pont - Mindkét csapatnak el kell érnie
+            (5, 'both', 'Találkozás', 'Várjatok egymásra! Mindkét csapatnak el kell érnie!', 'MEETING_POINT_005', 'Itt várjatok a másik csapatra!'),
             (6, None, 'Végső Kincs', 'Keressétek meg a Halloween kincsesládát!', 'FINAL_TREASURE_006', 'A legsötétebb sarokban van elrejtve!'),
+            
+            # Mentesítő feladatok - Egy játékosonként egy külön fázisban és egy közös fázisban
+            (98, 'pumpkin', 'Tök Mentesítő', 'Mentesítő feladat! Oldjátok meg ezt a rejtvényt a folytatáshoz!', 'SAVE_PUMPKIN_98', 'Ez a mentesítő feladat!'),
+            (98, 'ghost', 'Szellem Mentesítő', 'Mentesítő feladat! Oldjátok meg ezt a rejtvényt a folytatáshoz!', 'SAVE_GHOST_98', 'Ez a mentesítő feladat!'),
+            (98, 'both', 'Közös Mentesítő', 'Mentesítő feladat! Oldjátok meg ezt a rejtvényt a folytatáshoz!', 'SAVE_BOTH_98', 'Ez a mentesítő feladat!'),
         ]
         
         for station_num, team_type, title, desc, qr, help_text in challenges_data:

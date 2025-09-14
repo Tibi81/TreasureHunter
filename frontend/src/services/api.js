@@ -127,6 +127,21 @@ export const gameAPI = {
     });
   },
 
+  // Session token alapú visszacsatlakozás
+  restoreSession: async (sessionToken) => {
+    return apiRequest('/api/player/restore-session/', {
+      method: 'POST',
+      body: { session_token: sessionToken }
+    });
+  },
+
+  // Játékos kijelentkezése (session token érvénytelenítése)
+  logoutPlayer: async () => {
+    return apiRequest('/api/player/logout/', {
+      method: 'POST'
+    });
+  },
+
   // Admin funkciók
   // Összes játék listázása
   listGames: async () => {

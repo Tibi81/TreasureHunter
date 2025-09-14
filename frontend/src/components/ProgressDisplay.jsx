@@ -1,18 +1,20 @@
 // components/ProgressDisplay.jsx
 import React from 'react';
 
-const ProgressDisplay = ({ currentPlayer, teams, gameStatus, gameInfo, gameName }) => {
+const ProgressDisplay = ({ currentPlayer, teams, gameStatus, gameInfo, gameName, onLogout }) => {
   // Jelenlegi csapat állapotának lekérdezése
   const getCurrentTeamStatus = () => {
     if (!currentPlayer) return null;
-    const team = teams.find(t => t.name === currentPlayer.team);
+    const team = teams.find(t => t.name === (currentPlayer.team_name || currentPlayer.team));
     if (!team) return null;
     
     return {
       currentStation: team.current_station,
       completed: team.completed_at !== null,
       attempts: team.attempts,
-      helpUsed: team.help_used
+      helpUsed: team.help_used,
+      separatePhaseSaveUsed: team.separate_phase_save_used,
+      togetherPhaseSaveUsed: team.together_phase_save_used
     };
   };
 
@@ -163,8 +165,8 @@ const ProgressDisplay = ({ currentPlayer, teams, gameStatus, gameInfo, gameName 
           </div>
         )}
 
-        {/* Próbálkozások és segítség */}
-        <div className="grid grid-cols-2 gap-4 mt-4">
+        {/* Próbálkozások, segítség és mentesítő feladat */}
+        <div className="grid grid-cols-3 gap-4 mt-4">
           <div className="bg-orange-900 bg-opacity-30 rounded-lg p-2">
             <div className="text-sm text-orange-300 font-semibold">Próbálkozások</div>
             <div className="text-lg">
@@ -180,7 +182,28 @@ const ProgressDisplay = ({ currentPlayer, teams, gameStatus, gameInfo, gameName 
               {teamStatus.helpUsed ? '❌ Használva' : '✅ Elérhető'}
             </div>
           </div>
+          <div className="bg-green-900 bg-opacity-30 rounded-lg p-2">
+            <div className="text-sm text-green-300 font-semibold">Mentesítő</div>
+            <div className="text-lg">
+              {gameStatus === 'separate' ? 
+                (teamStatus.separatePhaseSaveUsed ? '❌ Használva' : '✅ Elérhető') :
+                (teamStatus.togetherPhaseSaveUsed ? '❌ Használva' : '✅ Elérhető')
+              }
+            </div>
+          </div>
         </div>
+
+        {/* Kijelentkezés gomb */}
+        {onLogout && (
+          <div className="mt-4 text-center">
+            <button
+              onClick={onLogout}
+              className="bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200"
+            >
+              🚪 Kijelentkezés
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

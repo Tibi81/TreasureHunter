@@ -7,11 +7,11 @@ class GameSerializer(serializers.ModelSerializer):
         fields = ['id', 'game_code', 'name', 'status', 'created_at', 'created_by']
 
 class PlayerSerializer(serializers.ModelSerializer):
-    team_name = serializers.CharField(source='team.get_name_display', read_only=True)
+    team_name = serializers.CharField(source='team.name', read_only=True)
     
     class Meta:
         model = Player
-        fields = ['id', 'name', 'team_name', 'joined_at']
+        fields = ['id', 'name', 'team', 'team_name', 'joined_at']
 
 class TeamSerializer(serializers.ModelSerializer):
     players = PlayerSerializer(many=True, read_only=True)

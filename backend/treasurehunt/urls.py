@@ -29,4 +29,9 @@ urlpatterns = [
     path('api/player/status/', views.get_player_status, name='get_player_status'),
     path('api/player/check-session/', views.check_player_session, name='check_player_session'),
     path('api/player/exit/', views.exit_game, name='exit_game'),
+    
+    # Session token funkciók
+    path('api/player/restore-session/', views.restore_session, name='restore_session'),
+    path('api/player/logout/', views.logout_player, name='logout_player'),
+
 ]

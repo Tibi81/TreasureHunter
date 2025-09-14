@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 const ChallengePanel = ({ challenge, onQRScan, onGetHelp, loading, gameStatus }) => {
   const [qrCode, setQrCode] = useState('');
   const [showHelp, setShowHelp] = useState(false);
+  const [helpText, setHelpText] = useState('');
   const [scanResult, setScanResult] = useState(null);
 
   // QR kód beküldése
@@ -15,7 +16,8 @@ const ChallengePanel = ({ challenge, onQRScan, onGetHelp, loading, gameStatus })
     const result = await onQRScan(qrCode.trim());
     setScanResult(result);
     
-    if (result.success) {
+    // QR kód mező törlése sikeres validálás vagy reset esetén
+    if (result.success || result.reset) {
       setQrCode('');
     }
   };
@@ -24,7 +26,12 @@ const ChallengePanel = ({ challenge, onQRScan, onGetHelp, loading, gameStatus })
   const handleGetHelpClick = async () => {
     try {
       const helpData = await onGetHelp();
-      setShowHelp(true);
+      if (helpData && helpData.success !== false) {
+        setHelpText(helpData.help_text || '');
+        setShowHelp(true);
+      } else {
+        console.error('Segítség kérés sikertelen:', helpData);
+      }
     } catch (error) {
       console.error('Hiba a segítség kérésekor:', error);
     }
@@ -76,7 +83,8 @@ const ChallengePanel = ({ challenge, onQRScan, onGetHelp, loading, gameStatus })
           {challenge.station?.name}
         </div>
         <div className="text-sm text-purple-300 bg-purple-900 bg-opacity-30 rounded-full px-4 py-2 inline-block">
-          {challenge.team_type ? 
+          {challenge.is_save ? '🆘 Mentesítő feladat' :
+           challenge.team_type ? 
             (challenge.team_type === 'pumpkin' ? '🎃 Tök Csapat feladata' : '👻 Szellem Csapat feladata') : 
             '🤝 Közös feladat'
           }
@@ -175,19 +183,19 @@ const ChallengePanel = ({ challenge, onQRScan, onGetHelp, loading, gameStatus })
           </h3>
           <button
             onClick={handleGetHelpClick}
-            disabled={loading || showHelp}
+            disabled={loading}
             className="bg-purple-600 hover:bg-purple-500 disabled:bg-gray-600
                      text-white px-4 py-2 rounded-lg text-sm font-semibold
                      transition-all duration-200 disabled:cursor-not-allowed"
           >
-            {showHelp ? 'Segítség megjelenítve' : 'Segítség kérése'}
+            Segítség kérése
           </button>
         </div>
         
-        {showHelp && challenge.help_text && (
+        {showHelp && helpText && (
           <div className="bg-purple-900 bg-opacity-50 rounded-lg p-4 border border-purple-500">
             <p className="text-purple-200 leading-relaxed">
-              {challenge.help_text}
+              {helpText}
             </p>
           </div>
         )}

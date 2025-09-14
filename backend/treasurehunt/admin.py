@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.utils.html import format_html
 from django.urls import reverse
 from django.utils.safestring import mark_safe
+from django.contrib import messages
 
 from .models import Game, Team, Player, Station, Challenge, GameProgress
 
@@ -39,6 +40,8 @@ class GameAdmin(admin.ModelAdmin):
     progress_summary.short_description = 'Haladás'
 
 
+
+
 @admin.register(Team)
 class TeamAdmin(admin.ModelAdmin):
     list_display = ['name', 'game_link', 'current_station', 'attempts', 'help_used', 'completed_at', 'players_count']
@@ -46,6 +49,7 @@ class TeamAdmin(admin.ModelAdmin):
     search_fields = ['name', 'game__name']
     readonly_fields = ['completed_at']
     ordering = ['game', 'name']
+    actions = []
     
     fieldsets = (
         ('Csapat információk', {
