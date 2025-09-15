@@ -65,7 +65,7 @@ npm run build
 1. **Játékos csatlakozás**: Nyisd meg a frontend alkalmazást
 2. **Név megadása**: Add meg a játékosneved
 3. **Csapat választás**: Válassz a 🎃 Tök Csapat vagy 👻 Szellem Csapat között
-4. **Játék indítása**: Amikor mindkét csapatban van 2 játékos, a játék automatikusan elindul
+4. **Játék indítása**: Amikor mindkét csapatban van 2 játékos, az admin indítja a játékot.
 5. **QR kód beolvasás**: Minden állomáson be kell olvasni a QR kódot
 6. **Segítség kérése**: Ha elakadsz, kérhetsz segítséget (1x állomásonként)
 
