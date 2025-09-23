@@ -1,15 +1,19 @@
+/* index.css - Frissített verzió */
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* GLOBÁLIS ALAPBEÁLLÍTÁSOK */
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
+  /* Halloween témához igazítva */
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  background-color: #1a0f00; /* Sötétebb alapszín */
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -17,26 +21,47 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* LINKEK */
 a {
   font-weight: 500;
-  color: #646cff;
+  color: #fb923c; /* Halloween orange */
   text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
+  transition: color 0.2s ease;
 }
 
+a:hover {
+  color: #fdba74; /* Lighter orange on hover */
+}
+
+/* BODY ALAPBEÁLLÍTÁSOK */
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  /* A hátteret az App.css-ben kezeljük */
 }
 
+/* CÍMEK */
 h1 {
   font-size: 3.2em;
   line-height: 1.1;
+  margin: 0;
 }
 
+h2 {
+  font-size: 2.4em;
+  line-height: 1.2;
+  margin: 0 0 1rem 0;
+}
+
+h3 {
+  font-size: 1.8em;
+  line-height: 1.3;
+  margin: 0 0 0.5rem 0;
+}
+
+/* GOMBOK ALAPÉRTELMEZETT FELÜLÍRÁSA */
+/* Ezeket az App.css-ben definiált osztályok fogják felülírni */
 button {
   border-radius: 8px;
   border: 1px solid transparent;
@@ -45,26 +70,98 @@ button {
   font-weight: 500;
   font-family: inherit;
   background-color: #1a1a1a;
+  color: white;
   cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  transition: all 0.25s ease;
 }
 
+button:hover {
+  border-color: #fb923c; /* Halloween orange */
+}
+
+button:focus,
+button:focus-visible {
+  outline: 2px solid #fb923c;
+  outline-offset: 2px;
+}
+
+/* INPUT MEZŐK ALAPÉRTELMEZETT STÍLUSA */
+input, textarea, select {
+  font-family: inherit;
+  font-size: 1em;
+  transition: all 0.2s ease;
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: 2px solid #fb923c;
+  outline-offset: 1px;
+}
+
+/* SCROLLBAR TESTRESZABÁS (Webkit böngészőkben) */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #ea580c, #fb923c);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, #dc2626, #ea580c);
+}
+
+/* LIGHT MODE OVERRIDE (ha valaki light mode-ot preferál) */
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;
     background-color: #ffffff;
   }
+  
   a:hover {
-    color: #747bff;
+    color: #ea580c; /* Halloween orange light mode-ban is */
   }
+  
   button {
     background-color: #f9f9f9;
+    color: #213547;
+  }
+  
+  button:hover {
+    border-color: #ea580c;
   }
 }
+
+/* UTILITY CLASSES - Tailwind kiegészítés */
+.halloween-text-shadow {
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.halloween-glow {
+  box-shadow: 0 0 20px rgba(251, 146, 60, 0.3);
+}
+
+/* ANIMÁCIÓK */
+@keyframes pulse-orange {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(251, 146, 60, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(251, 146, 60, 0);
+  }
+}
+
+.halloween-pulse {
+  animation: pulse-orange 2s infinite;
+}
+
+/* DEBUGGING (fejlesztés alatt) */
+/* 
+.debug * {
+  border: 1px solid red;
+}
+*/

@@ -1,19 +1,209 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+/* App.css - Frissített verzió Halloween támogatással */
+
+/* ALAPVETŐ LAYOUT */
+body {
+  height: 100%;
+  min-height: 100vh;
+  /* Megtartjuk a meglévő gyönyörű gradienst, de sötétebb Halloween-hez */
+  background: linear-gradient(to right top, #1a0f00, #2d1a00, #422801, #533c01, #6e5403, #8b6914, #b8841b, #e7b81b);
+  margin: 0;
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
 }
 
+/* GAME BACKGROUND */
+.game-background {
+  min-height: 100vh;
+  background: linear-gradient(to right top, #1a0f00, #2d1a00, #422801, #533c01, #6e5403, #8b6914, #b8841b, #e7b81b);
+}
+
+#root {  
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 3rem;
+  /* Eltávolítjuk a text-align: center-t, mert komponens-specifikusan kezeljük */
+}
+
+/* HALLOWEEN JÁTÉK SPECIFIKUS STÍLUSOK */
+
+/* Fehér tartalom blokkok (Welcome screen, stb.) */
+.white-content-block {
+  background-color: white !important;
+  color: black !important;
+  border-radius: 1rem !important;
+  padding: 2rem !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4) !important;
+  border: 3px solid #ea580c !important; /* orange-600 border */
+}
+
+/* Fehér blokkon belüli elemek színezése */
+.white-content-block h1 {
+  color: #ea580c !important; /* orange-600 */
+  margin-bottom: 0.5rem !important;
+}
+
+.white-content-block p,
+.white-content-block label {
+  color: #374151 !important; /* gray-700 */
+}
+
+.white-content-block .text-orange {
+  color: #ea580c !important;
+}
+
+.white-content-block .text-gray {
+  color: #6b7280 !important;
+}
+
+/* DARK INPUT (Halloween téma - játék közben) */
+.dark-input {
+  background-color: #1f2937 !important; /* gray-800 */
+  color: white !important;
+  border: 2px solid #fdba74 !important; /* orange-300 */
+  border-radius: 0.75rem !important; /* rounded-xl */
+  padding: 1rem 1.5rem !important;
+  font-family: ui-monospace, SFMono-Regular, "Menlo", monospace !important;
+  letter-spacing: 0.1em !important;
+  text-align: center !important;
+  outline: none !important;
+  transition: all 0.2s ease !important;
+  font-size: 1.25rem !important; /* text-xl */
+}
+
+.dark-input:focus {
+  border-color: #fb923c !important; /* orange-400 */
+  box-shadow: 0 0 0 3px rgba(251, 146, 60, 0.3) !important;
+}
+
+.dark-input::placeholder {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+/* GOMBOK */
+.btn-primary {
+  background: linear-gradient(to right, #ea580c, #9333ea) !important;
+  color: white !important;
+  font-weight: bold !important;
+  padding: 1rem 1.5rem !important;
+  border-radius: 0.5rem !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+  width: 100%;
+  font-size: 1rem !important;
+}
+
+/* Specific width override for Welcome component buttons */
+.welcome-container .btn-primary {
+  width: auto !important;
+}
+
+/* Welcome component spacing fix */
+.welcome-spacing {
+  gap: 3rem !important;
+}
+
+.welcome-button-spacing {
+  margin-top: 2rem !important;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(to right, #dc2626, #7c3aed) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2) !important;
+}
+
+.btn-secondary {
+  background: linear-gradient(to right, #059669, #2563eb) !important;
+  color: white !important;
+  font-weight: bold !important;
+  padding: 0.75rem 1.5rem !important;
+  border-radius: 0.5rem !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  width: 100%;
+}
+
+.btn-secondary:hover {
+  background: linear-gradient(to right, #047857, #1d4ed8) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* ERROR/SUCCESS ÜZENETEK */
+.error-message {
+  background-color: #fee2e2 !important;
+  color: #dc2626 !important;
+  border: 2px solid #f87171 !important;
+  padding: 0.75rem !important;
+  border-radius: 0.5rem !important;
+  text-align: center !important;
+  font-weight: 500 !important;
+}
+
+.success-message {
+  background-color: #dcfce7 !important;
+  color: #166534 !important;
+  border: 2px solid #86efac !important;
+  padding: 0.75rem !important;
+  border-radius: 0.5rem !important;
+  text-align: center !important;
+  font-weight: 500 !important;
+}
+
+/* HALLOWEEN JÁTÉK KOMPONENSEK */
+
+/* Sötét játék kártyák */
+.halloween-card {
+  background-color: rgba(0, 0, 0, 0.85) !important;
+  border: 2px solid #ea580c !important;
+  border-radius: 1rem !important;
+  padding: 2rem !important;
+  color: white !important;
+  backdrop-filter: blur(10px) !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Csapat témák */
+.pumpkin-theme {
+  background: linear-gradient(135deg, #ea580c, #fb923c) !important;
+  color: white !important;
+  border: 2px solid #fdba74 !important;
+}
+
+.ghost-theme {
+  background: linear-gradient(135deg, #7c3aed, #a855f7) !important;
+  color: white !important;
+  border: 2px solid #c4b5fd !important;
+}
+
+/* RESPONSIVE DESIGN */
+@media (max-width: 768px) {
+  #root {
+    padding: 0.5rem;
+  }
+  
+  .white-content-block {
+    padding: 1.5rem !important;
+  }
+  
+  .dark-input {
+    font-size: 1.125rem !important; /* text-lg mobile-on */
+  }
+}
+
+/* MEGLÉVŐ STÍLUSOK MEGTARTÁSA (ha kellenek) */
 .logo {
   height: 6em;
   padding: 1.5em;
   will-change: filter;
   transition: filter 300ms;
 }
+
 .logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
+  filter: drop-shadow(0 0 2em #ea580caa); /* Orange glow Halloween-hez */
 }
+
 .logo.react:hover {
   filter: drop-shadow(0 0 2em #61dafbaa);
 }
