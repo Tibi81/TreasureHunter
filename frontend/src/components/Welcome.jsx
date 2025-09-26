@@ -19,8 +19,7 @@ const Welcome = ({ onGameCodeSubmit }) => {
 
   return (
     
-    <div className="game-background flex items-center justify-center">
-    
+    <div className="min-h-screen bg-gradient-to-b from-purple-900 via-orange-800 to-black flex items-center justify-center">
       <div className="max-w-md mx-auto p-8">
       
         {/* Fehér tartalom blokk */}
@@ -29,7 +28,7 @@ const Welcome = ({ onGameCodeSubmit }) => {
           <div className="mt-6">
             <button
               onClick={() => onGameCodeSubmit('ADMIN')}
-              className="btn-secondary text-xl w-48 sm:w-56 md:w-64 box-border"
+              className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-500 hover:to-blue-500 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 text-xl w-48 sm:w-56 md:w-64"
             >
               🛠️ Játék beállítások
             </button>
@@ -37,10 +36,10 @@ const Welcome = ({ onGameCodeSubmit }) => {
           {/* Cím */}
           <div className="text-center mb-8">
             <div className="text-6xl mb-4">🎃👻</div>
-            <h1 className="text-4xl font-bold mb-2 text-orange">
+            <h1 className="text-4xl font-bold mb-2 text-orange-600">
               Halloween Kincskereső
             </h1>
-            <p className="text-lg text-gray">
+            <p className="text-lg text-gray-600">
               Üdvözöljük a kalandos játékban!
             </p>
           </div>
@@ -60,24 +59,24 @@ const Welcome = ({ onGameCodeSubmit }) => {
                   id="gameCode"
                   value={gameCode}
                   onChange={(e) => setGameCode(e.target.value.toUpperCase())}
-                  className="dark-input text-xl w-48 sm:w-56 md:w-64 box-border"
+                  className="w-48 sm:w-56 md:w-64 px-4 py-3 bg-gray-800 border border-orange-300 rounded-xl text-white text-xl text-center placeholder-gray-400 focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                   placeholder="ABC123"
                   maxLength={6}
                   autoFocus
                 />
                 <button
                   type="submit"
-                  className="btn-primary text-xl w-48 sm:w-56 md:w-64 box-border"
+                  className="bg-gradient-to-r from-orange-600 to-purple-600 hover:from-orange-500 hover:to-purple-500 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 text-xl w-48 sm:w-56 md:w-64"
                 >
                   Csatlakozás a játékhoz! 🎮
                 </button>
                 {error && (
-                <div className="error-message text-xl w-48 sm:w-56 md:w-64 box-border">
+                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded text-xl w-48 sm:w-56 md:w-64 text-center">
                   {error}
                 </div>
                 )}
               </div>
-              <p className="text-sm text-gray text-center mt-2">
+              <p className="text-sm text-gray-600 text-center mt-2">
                 A kódot az admin adta meg
               </p>
               
@@ -90,10 +89,10 @@ const Welcome = ({ onGameCodeSubmit }) => {
 
           {/* Játékszabályok */}
           <div className="mt-8 p-4 bg-gray-100 rounded-lg border-2 border-gray-200">
-            <h4 className="font-semibold text-orange mb-3 text-center">
+            <h4 className="font-semibold text-orange-600 mb-3 text-center">
               📋 Játékszabályok:
             </h4>
-            <ul className="text-sm text-gray space-y-2">
+            <ul className="text-sm text-gray-600 space-y-2">
               <li> 4 játékos, 2 csapat (2-2 fő)</li>
               <li> Először külön versenyeztek</li>
               <li> Majd együtt a közös cél felé</li>

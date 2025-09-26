@@ -12,7 +12,8 @@ const GameList = ({
   handleSelectGame, 
   setEditingGame, 
   handleStopGame, 
-  handleDeleteGame 
+  handleDeleteGame,
+  setView
 }) => {
   return (
     <div className="space-y-6">
@@ -67,31 +68,31 @@ const GameList = ({
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredGames.map((game) => (
-              <div key={game.id} className="bg-gray-800 bg-opacity-60 rounded-lg p-4 border border-gray-600">
+              <div key={game.id} className="bg-white rounded-lg p-4 border border-gray-300 shadow-lg">
                 <div className="mb-4">
-                  <h3 className="text-lg font-bold text-orange-400 mb-2">{game.name}</h3>
+                  <h3 className="text-lg font-bold text-orange-600 mb-2">{game.name}</h3>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-gray-300">Kód:</span>
-                      <span className="font-mono text-green-400">{game.game_code}</span>
+                      <span className="text-gray-600">Kód:</span>
+                      <span className="font-mono text-green-600">{game.game_code}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-300">Állapot:</span>
+                      <span className="text-gray-600">Állapot:</span>
                       <span className={getStatusColor(game.status)}>
                         {getStatusText(game.status)}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-300">Játékosok:</span>
-                      <span className="text-blue-400">{game.total_players}/4</span>
+                      <span className="text-gray-600">Játékosok:</span>
+                      <span className="text-blue-600">{game.total_players}/4</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-300">Létrehozta:</span>
-                      <span className="text-purple-400">{game.created_by}</span>
+                      <span className="text-gray-600">Létrehozta:</span>
+                      <span className="text-purple-600">{game.created_by}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-300">Létrehozva:</span>
-                      <span className="text-gray-400">
+                      <span className="text-gray-600">Létrehozva:</span>
+                      <span className="text-gray-500">
                         {new Date(game.created_at).toLocaleDateString('hu-HU')}
                       </span>
                     </div>

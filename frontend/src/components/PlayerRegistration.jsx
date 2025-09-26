@@ -35,21 +35,21 @@ const PlayerRegistration = ({ gameData, onJoinGame, onBack }) => {
   };
 
   return (
-    <div className="game-background flex items-center justify-center">
+    <div className="min-h-screen bg-gradient-to-b from-purple-900 via-orange-800 to-black flex items-center justify-center">
       <div className="max-w-md mx-auto p-8">
         {/* Fehér tartalom blokk */}
         <div className="white-content-block border-4 border-orange-500">
           {/* Cím */}
           <div className="text-center mb-8">
             <div className="text-6xl mb-4">🎃👻</div>
-            <h1 className="text-4xl font-bold mb-2 text-orange">
+            <h1 className="text-4xl font-bold mb-2 text-orange-600">
               Csatlakozás a játékhoz
             </h1>
-            <p className="text-lg text-gray">
-              Játék: <span className="text-orange font-semibold">{gameData.game.name}</span>
+            <p className="text-lg text-gray-600">
+              Játék: <span className="text-orange-600 font-semibold">{gameData.game.name}</span>
             </p>
-            <p className="text-sm text-gray">
-              Kód: <span className="font-mono text-orange">{gameData.game.game_code}</span>
+            <p className="text-sm text-gray-600">
+              Kód: <span className="font-mono text-orange-600">{gameData.game.game_code}</span>
             </p>
           </div>
 
@@ -66,7 +66,7 @@ const PlayerRegistration = ({ gameData, onJoinGame, onBack }) => {
                   id="playerName"
                   value={playerName}
                   onChange={(e) => setPlayerName(e.target.value)}
-                  className="dark-input text-xl w-48 sm:w-56 md:w-64 box-border"
+                  className="w-48 sm:w-56 md:w-64 px-4 py-3 bg-gray-800 border border-orange-300 rounded-xl text-white text-xl text-center placeholder-gray-400 focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                   placeholder="Írd be a neved..."
                   maxLength={20}
                   autoFocus
@@ -149,7 +149,7 @@ const PlayerRegistration = ({ gameData, onJoinGame, onBack }) => {
 
               {/* Hibaüzenet */}
               {error && (
-                <div className="error-message text-xl w-48 sm:w-56 md:w-64 box-border">
+                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded text-xl w-48 sm:w-56 md:w-64 text-center">
                   {error}
                 </div>
               )}
@@ -158,14 +158,14 @@ const PlayerRegistration = ({ gameData, onJoinGame, onBack }) => {
               <div className="flex flex-col items-center" style={{ gap: '1rem' }}>
                 <button
                   type="submit"
-                  className="btn-primary text-xl w-48 sm:w-56 md:w-64 box-border"
+                  className="bg-gradient-to-r from-orange-600 to-purple-600 hover:from-orange-500 hover:to-purple-500 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 text-xl w-48 sm:w-56 md:w-64"
                 >
                   Csatlakozás! 🎮
                 </button>
                 <button
                   type="button"
                   onClick={onBack}
-                  className="btn-secondary text-xl w-48 sm:w-56 md:w-64 box-border"
+                  className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-500 hover:to-blue-500 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 text-xl w-48 sm:w-56 md:w-64"
                 >
                   Vissza
                 </button>
@@ -175,10 +175,10 @@ const PlayerRegistration = ({ gameData, onJoinGame, onBack }) => {
 
           {/* Játék állapot */}
           <div className="mt-8 p-4 bg-gray-100 rounded-lg border-2 border-gray-200">
-            <h4 className="font-semibold text-orange mb-3 text-center">
+            <h4 className="font-semibold text-orange-600 mb-3 text-center">
               📊 Játék állapot:
             </h4>
-            <div className="text-sm text-gray space-y-2">
+            <div className="text-sm text-gray-600 space-y-2">
               <p>Játékosok: {gameData.game_info.total_players}/4</p>
               <p>Állapot: {gameData.game.status === 'waiting' ? 'Várakozás játékosokra' : 
                          gameData.game.status === 'setup' ? 'Készen áll az indításra' : 
