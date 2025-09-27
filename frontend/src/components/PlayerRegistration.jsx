@@ -151,8 +151,10 @@ const PlayerRegistration = ({ gameData, onJoinGame, onBack }) => {
 
               {/* Hibaüzenet */}
               {error && (
-                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded text-xl w-48 sm:w-56 md:w-64 text-center">
-                  {error}
+                <div className="flex justify-center mb-4">
+                  <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded text-xl w-48 sm:w-56 md:w-64 text-center">
+                    {error}
+                  </div>
                 </div>
               )}
 
