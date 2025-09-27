@@ -66,6 +66,7 @@ class Player(models.Model):
     joined_at = models.DateTimeField(auto_now_add=True, db_index=True)  # Belépés ideje
     session_token = models.CharField(max_length=64, null=True, blank=True, unique=True, db_index=True)  # Session token a játékos azonosításához
     token_created_at = models.DateTimeField(null=True, blank=True, db_index=True)  # Mikor lett a token létrehozva
+    is_active = models.BooleanField(default=True, db_index=True)  # Aktív-e a játékos (kilépés szüneteltetéshez)
     
     def __str__(self):
         return "{} ({})".format(self.name, self.team.get_name_display())

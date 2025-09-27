@@ -52,7 +52,8 @@ class GameStateManager:
         all_players = []
         
         for team in teams:
-            for player in team.players.all():
+            # Csak az aktív játékosokat vesszük figyelembe
+            for player in team.players.filter(is_active=True):
                 all_players.append({
                     'name': player.name,
                     'team': team.name,
@@ -115,10 +116,10 @@ class GameStateManager:
         if len(teams) < GameConstants.MIN_TEAMS:
             return False
         
-        # Minden csapatban kell lennie legalább egy játékosnak
+        # Minden csapatban kell lennie legalább egy aktív játékosnak
         total_players = 0
         for team in teams:
-            player_count = team.players.count()
+            player_count = team.players.filter(is_active=True).count()
             if player_count < GameConstants.MIN_PLAYERS_PER_TEAM:
                 return False
             total_players += player_count
@@ -131,7 +132,7 @@ class GameStateManager:
         if self.game.status != 'waiting':
             return False
         
-        total_players = sum(team.players.count() for team in self.teams)
+        total_players = sum(team.players.filter(is_active=True).count() for team in self.teams)
         return total_players >= 1
     
     @transaction.atomic

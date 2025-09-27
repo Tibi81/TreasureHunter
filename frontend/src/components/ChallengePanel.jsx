@@ -46,7 +46,7 @@ const ChallengePanel = ({ challenge, onQRScan, onGetHelp, loading, gameStatus })
           Várakozás...
         </h3>
         <p className="text-gray-300">
-          {gameStatus === 'setup' ? 'Várakozás a játék indítására... (Admin indítsa el)' : 
+          {gameStatus === 'setup' ? 'Várakozás a játék indítására... (Admin indítja el)' : 
            gameStatus === 'waiting' ? 'Várakozás játékosokra... (Legalább 1 játékos szükséges)' :
            'Várakozás a feladatra...'}
         </p>

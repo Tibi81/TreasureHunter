@@ -333,12 +333,12 @@ const AdminPanel = ({ onBack }) => {
           </p>
           
           {/* Navigációs gombok 2x2 grid elrendezésben - függőleges kártyák */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8 max-w-4xl mx-auto mb-6 sm:max-w-full">
+          <div className="grid grid-cols-2 gap-3 sm:gap-6 max-w-2xl mx-auto mb-6">
             {/* Frissítés gomb */}
             <button
               onClick={loadGames}
               disabled={loading}
-              className="flex flex-col items-center justify-center gap-4 min-h-[200px] sm:min-h-[280px] w-full p-4 sm:p-6 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl disabled:cursor-not-allowed bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 disabled:from-gray-600 disabled:to-gray-500 text-white"
+              className="flex flex-col items-center justify-center gap-2 min-h-[120px] sm:min-h-[140px] w-full p-3 sm:p-4 rounded-lg font-semibold transition-all duration-200 shadow-md hover:shadow-lg disabled:cursor-not-allowed bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 disabled:from-gray-600 disabled:to-gray-500 text-white"
             >
               {loading ? (
                 <>
@@ -346,12 +346,12 @@ const AdminPanel = ({ onBack }) => {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  <span className="text-sm sm:text-xs">Frissítés...</span>
+                  <span className="text-xs">Frissítés...</span>
                 </>
               ) : (
                 <>
-                  <span className="text-2xl sm:text-xl">🔄</span>
-                  <span className="text-sm sm:text-xs">Frissítés</span>
+                  <span className="text-xl">🔄</span>
+                  <span className="text-xs">Frissítés</span>
                 </>
               )}
             </button>
@@ -359,34 +359,34 @@ const AdminPanel = ({ onBack }) => {
             {/* Játékok listája gomb */}
             <button
               onClick={() => setView('list')}
-              className={`flex flex-col items-center justify-center gap-4 min-h-[200px] sm:min-h-[280px] w-full p-4 sm:p-6 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl disabled:cursor-not-allowed ${
+              className={`flex flex-col items-center justify-center gap-2 min-h-[120px] sm:min-h-[140px] w-full p-3 sm:p-4 rounded-lg font-semibold transition-all duration-200 shadow-md hover:shadow-lg disabled:cursor-not-allowed ${
                 view === 'list' 
                   ? 'bg-gradient-to-r from-orange-500 to-orange-400 text-white' 
                   : 'bg-gradient-to-r from-gray-600 to-gray-500 hover:from-gray-500 hover:to-gray-400 text-white'
               }`}
             >
-              <span className="text-2xl sm:text-xl">📋</span>
-              <span className="text-sm sm:text-xs">Játékok listája</span>
+              <span className="text-xl">📋</span>
+              <span className="text-xs">Játékok listája</span>
             </button>
 
             {/* Új játék gomb */}
             <button
               onClick={() => setView('create')}
-              className={`flex flex-col items-center justify-center gap-4 min-h-[200px] sm:min-h-[280px] w-full p-4 sm:p-6 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl disabled:cursor-not-allowed ${
+              className={`flex flex-col items-center justify-center gap-2 min-h-[120px] sm:min-h-[140px] w-full p-3 sm:p-4 rounded-lg font-semibold transition-all duration-200 shadow-md hover:shadow-lg disabled:cursor-not-allowed ${
                 view === 'create' 
                   ? 'bg-gradient-to-r from-orange-500 to-orange-400 text-white' 
                   : 'bg-gradient-to-r from-gray-600 to-gray-500 hover:from-gray-500 hover:to-gray-400 text-white'
               }`}
             >
-              <span className="text-2xl sm:text-xl">➕</span>
-              <span className="text-sm sm:text-xs">Új játék</span>
+              <span className="text-xl">➕</span>
+              <span className="text-xs">Új játék</span>
             </button>
 
             {/* Játékok kezelése gomb */}
             <button
               onClick={() => setView('manage')}
               disabled={!currentGame}
-              className={`flex flex-col items-center justify-center gap-4 min-h-[200px] sm:min-h-[280px] w-full p-4 sm:p-6 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl disabled:cursor-not-allowed ${
+              className={`flex flex-col items-center justify-center gap-2 min-h-[120px] sm:min-h-[140px] w-full p-3 sm:p-4 rounded-lg font-semibold transition-all duration-200 shadow-md hover:shadow-lg disabled:cursor-not-allowed ${
                 view === 'manage' && currentGame
                   ? 'bg-gradient-to-r from-orange-500 to-orange-400 text-white' 
                   : currentGame
@@ -394,8 +394,8 @@ const AdminPanel = ({ onBack }) => {
                     : 'bg-gradient-to-r from-gray-700 to-gray-600 text-gray-400 cursor-not-allowed'
               }`}
             >
-              <span className="text-2xl sm:text-xl">⚙️</span>
-              <span className="text-sm sm:text-xs">Játékok kezelése</span>
+              <span className="text-xl">⚙️</span>
+              <span className="text-xs">Játékok kezelése</span>
             </button>
           </div>
         </div>
@@ -413,7 +413,7 @@ const AdminPanel = ({ onBack }) => {
           </div>
         )}
 
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-2xl mx-auto">
 
           {/* Játékok listája */}
           {view === 'list' && (

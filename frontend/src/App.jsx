@@ -7,7 +7,8 @@ import AdminPanel from './components/AdminPanel';
 import ProgressDisplay from './components/ProgressDisplay';
 import ChallengePanel from './components/ChallengePanel';
 import GameResults from './components/GameResults';
-import GameReset from './components/GameReset';
+import GameExitDialog from './components/GameExitDialog';
+import Toast from './components/Toast';
 import { gameAPI } from './services/api';
 import './App.css';
 
@@ -15,6 +16,7 @@ function App() {
   const [appState, setAppState] = useState('welcome'); // welcome, registration, admin, game, finished
   const [playerName, setPlayerName] = useState('');
   const [gameData, setGameData] = useState(null);
+  const [toasts, setToasts] = useState([]);
   const [gameState, setGameState] = useState({
     gameId: null,
     gameName: null,
@@ -28,6 +30,17 @@ function App() {
   const [currentChallenge, setCurrentChallenge] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Toast hozzáadása
+  const addToast = (message, type = 'info') => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, message, type }]);
+  };
+
+  // Toast eltávolítása
+  const removeToast = (id) => {
+    setToasts(prev => prev.filter(toast => toast.id !== id));
+  };
 
   // Session ellenőrzése az oldal betöltésekor
   useEffect(() => {
@@ -223,6 +236,7 @@ function App() {
             }));
             setAppState('game');
             setPlayerName(restoreResponse.player.name);
+            addToast('Üdvözöllek újra a játékban!', 'success');
             setLoading(false);
             return;
           } else {
@@ -280,7 +294,7 @@ function App() {
         // Ne dobj hibát, a polling majd frissíti
       }
       
-      console.log('Sikeresen csatlakoztál!');
+      addToast('Sikeresen csatlakoztál a játékhoz!', 'success');
       
     } catch (err) {
       setError(err.message || 'Hiba a csatlakozáskor');
@@ -303,6 +317,8 @@ function App() {
     });
     setCurrentChallenge(null);
     setError('');
+    // Toast-ok törlése
+    setToasts([]);
   };
 
   // QR kód validálás
@@ -395,6 +411,7 @@ function App() {
 
       setCurrentChallenge(null);
       setError('');
+      addToast('Játék sikeresen visszaállítva!', 'success');
     } catch (err) {
       setError(err.message || 'Hiba a játék visszaállításakor');
     } finally {
@@ -402,20 +419,42 @@ function App() {
     }
   };
 
-  // Kilépés a játékból - javított verzió
-  const handleGameExit = async () => {
+  // Kilépés a játékból - javított verzió toast-okkal
+  const handleGameExit = async (exitType = 'exit') => {
     setLoading(true);
     setError('');
     
     try {
-      // Backend API hívás a játékos törléséhez
-      await gameAPI.exitGame();
-      console.log('Sikeresen kiléptél a játékból!');
+      if (exitType === 'logout') {
+        // Végleges kilépés - token törlése
+        await gameAPI.logoutPlayer();
+        localStorage.removeItem('session_token');
+        // Toast hozzáadása a sikeres művelet után, de az állapot törlése előtt
+        addToast('Sikeresen kijelentkeztél - nem térhetsz vissza ebbe a játékba', 'success');
+      } else {
+        // Szüneteltetés - token megmarad
+        await gameAPI.exitGame();
+        // Toast hozzáadása a sikeres művelet után, de az állapot törlése előtt
+        addToast('Játék szüneteltetve - később folytathatod ugyanitt', 'success');
+      }
+      
+      // Frontend állapot törlése mindkét esetben - toast után
+      setAppState('welcome');
+      setPlayerName('');
+      setGameState({
+        gameId: null,
+        status: 'setup',
+        currentPlayer: null,
+        teams: [],
+        players: []
+      });
+      setCurrentChallenge(null);
+      setError('');
+      
     } catch (err) {
       console.error('Hiba a kilépéskor:', err.message);
-      // Még ha a backend hívás sikertelen is, töröljük a frontend állapotot
-    } finally {
-      // Frontend állapot törlése (session token megtartása)
+      addToast('Hiba történt a kilépéskor', 'error');
+      // Hiba esetén is töröljük az állapotot
       setAppState('welcome');
       setPlayerName('');
       setGameState({
@@ -427,39 +466,7 @@ function App() {
       });
       setCurrentChallenge(null);
       setError('');
-      setLoading(false);
-    }
-  };
-
-  const handleLogout = async () => {
-    setLoading(true);
-    setError('');
-    
-    try {
-      // Backend API hívás a session token érvénytelenítéséhez
-      if (gameState.currentPlayer && gameState.currentPlayer.id) {
-        await gameAPI.logoutPlayer(gameState.currentPlayer.id);
-      }
-      console.log('Sikeresen kijelentkeztél!');
-    } catch (err) {
-      console.error('Hiba a kijelentkezéskor:', err.message);
-      // Még ha a backend hívás sikertelen is, töröljük a frontend állapotot
     } finally {
-      // Session token törlése
-      localStorage.removeItem('session_token');
-      
-      // Frontend állapot törlése
-      setAppState('welcome');
-      setPlayerName('');
-      setGameState({
-        gameId: null,
-        status: 'setup',
-        currentPlayer: null,
-        teams: [],
-        players: []
-      });
-      setCurrentChallenge(null);
-      setError('');
       setLoading(false);
     }
   };
@@ -503,7 +510,6 @@ function App() {
               gameStatus={gameState.status}
               gameInfo={gameState.gameInfo}
               gameName={gameState.gameName}
-              onLogout={handleLogout}
             />
             
             <ChallengePanel
@@ -523,34 +529,57 @@ function App() {
 
   // Ha welcome, registration vagy admin állapotban vagyunk, ne jelenítsük meg a header-t
   if (appState === 'welcome' || appState === 'registration' || appState === 'admin') {
-    return renderContent();
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-purple-900 via-orange-800 to-black text-white">
+        {/* Toast-ok megjelenítése */}
+        {toasts.map(toast => (
+          <Toast
+            key={toast.id}
+            message={toast.message}
+            type={toast.type}
+            onClose={() => removeToast(toast.id)}
+          />
+        ))}
+        {renderContent()}
+      </div>
+    );
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-900 via-orange-800 to-black text-white">
-      <header className="bg-black bg-opacity-50 p-4 text-center">
-        <div className="flex justify-between items-center">
-          <div className="flex-1"></div>
-          <div className="flex-1 text-center">
-            <h1 className="text-3xl font-bold text-orange-400">
-              🎃 Halloween Kincskereső 👻
-            </h1>
-            {gameState.currentPlayer && (
-              <p className="text-lg mt-2">
-                {gameState.currentPlayer.name} - {
-                  gameState.currentPlayer.team === 'pumpkin' ? '🎃 Tök Csapat' : '👻 Szellem Csapat'
-                }
-              </p>
-            )}
-          </div>
-          <div className="flex-1 flex justify-end">
-            {gameState.gameId && (
-              <GameReset 
-                onReset={handleGameReset}
-                onExit={handleGameExit}
-                loading={loading}
-              />
-            )}
+      {/* Toast-ok megjelenítése */}
+      {toasts.map(toast => (
+        <Toast
+          key={toast.id}
+          message={toast.message}
+          type={toast.type}
+          onClose={() => removeToast(toast.id)}
+        />
+      ))}
+
+      <header className="container mx-auto px-4 py-6">
+        <div className="bg-black bg-opacity-60 rounded-lg p-4">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="order-2 sm:order-1 flex-1 text-center">
+              <h1 className="text-2xl sm:text-3xl font-bold text-orange-400">
+                🎃 Halloween Kincskereső 👻
+              </h1>
+              {gameState.currentPlayer && (
+                <p className="text-sm sm:text-lg mt-2">
+                  {gameState.currentPlayer.name} - {
+                    gameState.currentPlayer.team === 'pumpkin' ? '🎃 Tök Csapat' : '👻 Szellem Csapat'
+                  }
+                </p>
+              )}
+            </div>
+            <div className="order-1 sm:order-2 flex justify-center sm:justify-end">
+              {gameState.gameId && (
+                <GameExitDialog
+                  onExit={handleGameExit}
+                  loading={loading}
+                />
+              )}
+            </div>
           </div>
         </div>
       </header>

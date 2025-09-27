@@ -122,8 +122,10 @@ export const gameAPI = {
 
   // Játékos kilépése a játékból
   exitGame: async () => {
+    const sessionToken = localStorage.getItem('session_token');
     return apiRequest('/api/player/exit/', {
-      method: 'POST'
+      method: 'POST',
+      body: { session_token: sessionToken }
     });
   },
 
@@ -137,8 +139,10 @@ export const gameAPI = {
 
   // Játékos kijelentkezése (session token érvénytelenítése)
   logoutPlayer: async () => {
+    const sessionToken = localStorage.getItem('session_token');
     return apiRequest('/api/player/logout/', {
-      method: 'POST'
+      method: 'POST',
+      body: { session_token: sessionToken }
     });
   },
 

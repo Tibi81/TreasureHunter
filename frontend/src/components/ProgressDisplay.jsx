@@ -1,7 +1,7 @@
 // components/ProgressDisplay.jsx
 import React from 'react';
 
-const ProgressDisplay = ({ currentPlayer, teams, gameStatus, gameInfo, gameName, onLogout }) => {
+const ProgressDisplay = ({ currentPlayer, teams, gameStatus, gameInfo, gameName }) => {
   // Jelenlegi csapat állapotának lekérdezése
   const getCurrentTeamStatus = () => {
     if (!currentPlayer) return null;
@@ -65,8 +65,8 @@ const ProgressDisplay = ({ currentPlayer, teams, gameStatus, gameInfo, gameName,
         {/* Játék név */}
         {gameName && (
           <div className="mb-4">
-            <h1 className="text-2xl font-bold text-orange-400 mb-2">
-              🎮 {gameName}
+            <h1 className="text-xl sm:text-2xl font-bold text-orange-400 mb-2">
+              {gameName}
             </h1>
             {gameInfo && (
               <div className="text-sm text-gray-300">
@@ -78,12 +78,12 @@ const ProgressDisplay = ({ currentPlayer, teams, gameStatus, gameInfo, gameName,
                 )}
                 {gameStatus === 'waiting' && gameInfo.total_players < 1 && (
                   <div className="text-xs text-blue-300 mt-1">
-                    ⏳ Várjuk az első játékos csatlakozását...
+                    Várjuk az első játékos csatlakozását...
                   </div>
                 )}
                 {gameStatus === 'setup' && (
                   <div className="text-xs text-orange-300 mt-1">
-                    ✅ Készen áll az indításra! Admin indítsa el a játékot.
+                    Készen áll az indításra! Admin indítja el a játékot.
                   </div>
                 )}
               </div>
@@ -91,8 +91,8 @@ const ProgressDisplay = ({ currentPlayer, teams, gameStatus, gameInfo, gameName,
           </div>
         )}
 
-        <h2 className="text-xl font-bold text-orange-400 mb-4">
-          📊 Haladás
+        <h2 className="text-lg sm:text-xl font-bold text-orange-400 mb-4">
+          Haladás
         </h2>
         
         {/* Haladás sáv */}
@@ -114,10 +114,10 @@ const ProgressDisplay = ({ currentPlayer, teams, gameStatus, gameInfo, gameName,
 
         {/* Jelenlegi állomás */}
         <div className="bg-gray-900 bg-opacity-50 rounded-lg p-3">
-          <div className="text-lg font-semibold text-purple-300 mb-1">
+          <div className="text-base sm:text-lg font-semibold text-purple-300 mb-1">
             Jelenlegi állomás: {teamStatus.currentStation}. 
           </div>
-          <div className="text-sm text-gray-300">
+          <div className="text-xs sm:text-sm text-gray-300">
             {gameStatus === 'separate' ? 'Külön fázis' : 'Közös fázis'}
           </div>
         </div>
@@ -125,12 +125,12 @@ const ProgressDisplay = ({ currentPlayer, teams, gameStatus, gameInfo, gameName,
         {/* Játékosok listája */}
         {teams && teams.length > 0 && (
           <div className="mb-4">
-            <h3 className="text-lg font-semibold text-purple-300 mb-3">
-              👥 Játékosok
+            <h3 className="text-base sm:text-lg font-semibold text-purple-300 mb-3">
+              Játékosok
             </h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {teams.map((team) => (
-                <div key={team.name} className="bg-gray-900 bg-opacity-50 rounded-lg p-3">
+                <div key={team.name} className="bg-gray-900 bg-opacity-50 rounded-lg p-3 sm:p-4">
                   <div className="text-center mb-2">
                     <div className="text-2xl mb-1">
                       {team.name === 'pumpkin' ? '🎃' : '👻'}
@@ -145,10 +145,10 @@ const ProgressDisplay = ({ currentPlayer, teams, gameStatus, gameInfo, gameName,
                   
                   <div className="space-y-1">
                     {team.players.map((player, index) => (
-                      <div key={index} className="text-sm text-gray-300 flex items-center justify-between">
-                        <span>{player.name}</span>
+                      <div key={index} className="text-xs sm:text-sm text-gray-300 flex items-center justify-between">
+                        <span className="truncate">{player.name}</span>
                         {player.name === currentPlayer?.name && (
-                          <span className="text-orange-400 text-xs">(Te)</span>
+                          <span className="text-orange-400 text-xs ml-1">(Te)</span>
                         )}
                       </div>
                     ))}
@@ -166,44 +166,32 @@ const ProgressDisplay = ({ currentPlayer, teams, gameStatus, gameInfo, gameName,
         )}
 
         {/* Próbálkozások, segítség és mentesítő feladat */}
-        <div className="grid grid-cols-3 gap-4 mt-4">
-          <div className="bg-orange-900 bg-opacity-30 rounded-lg p-2">
-            <div className="text-sm text-orange-300 font-semibold">Próbálkozások</div>
-            <div className="text-lg">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
+          <div className="bg-orange-900 bg-opacity-30 rounded-lg p-3 text-center">
+            <div className="text-xs sm:text-sm text-orange-300 font-semibold mb-1">Próbálkozások</div>
+            <div className="text-base sm:text-lg">
               {teamStatus.attempts}/3
               {teamStatus.attempts >= 2 && (
                 <span className="text-red-400 ml-1">⚠️</span>
               )}
             </div>
           </div>
-          <div className="bg-purple-900 bg-opacity-30 rounded-lg p-2">
-            <div className="text-sm text-purple-300 font-semibold">Segítség</div>
-            <div className="text-lg">
-              {teamStatus.helpUsed ? '❌ Használva' : '✅ Elérhető'}
+          <div className="bg-purple-900 bg-opacity-30 rounded-lg p-3 text-center">
+            <div className="text-xs sm:text-sm text-purple-300 font-semibold mb-1">Segítség</div>
+            <div className="text-base sm:text-lg">
+              {teamStatus.helpUsed ? 'Használva' : 'Elérhető'}
             </div>
           </div>
-          <div className="bg-green-900 bg-opacity-30 rounded-lg p-2">
-            <div className="text-sm text-green-300 font-semibold">Mentesítő</div>
-            <div className="text-lg">
+          <div className="bg-green-900 bg-opacity-30 rounded-lg p-3 text-center">
+            <div className="text-xs sm:text-sm text-green-300 font-semibold mb-1">Mentesítő</div>
+            <div className="text-base sm:text-lg">
               {gameStatus === 'separate' ? 
-                (teamStatus.separatePhaseSaveUsed ? '❌ Használva' : '✅ Elérhető') :
-                (teamStatus.togetherPhaseSaveUsed ? '❌ Használva' : '✅ Elérhető')
+                (teamStatus.separatePhaseSaveUsed ? 'Használva' : 'Elérhető') :
+                (teamStatus.togetherPhaseSaveUsed ? 'Használva' : 'Elérhető')
               }
             </div>
           </div>
         </div>
-
-        {/* Kijelentkezés gomb */}
-        {onLogout && (
-          <div className="mt-4 text-center">
-            <button
-              onClick={onLogout}
-              className="bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200"
-            >
-              🚪 Kijelentkezés
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );

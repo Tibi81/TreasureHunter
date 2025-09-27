@@ -185,8 +185,8 @@ def join_game(request, game_id):
     
     team = get_object_or_404(Team, game=game, name=team_name)
     
-    # Csapat telítettség ellenőrzése
-    if team.players.count() >= GameConstants.MAX_PLAYERS_PER_TEAM:
+    # Csapat telítettség ellenőrzése (csak aktív játékosok alapján)
+    if team.players.filter(is_active=True).count() >= GameConstants.MAX_PLAYERS_PER_TEAM:
         return Response({'error': 'Ez a csapat már tele van'}, 
                        status=status.HTTP_400_BAD_REQUEST)
     
@@ -422,47 +422,50 @@ def check_player_session(request):
 
 @api_view(['POST'])
 def exit_game(request):
-    """Játékos kilépése a játékból"""
-    game_id = request.session.get('game_id')
-    player_name = request.session.get('player_name')
-    team_name = request.session.get('team_name')
+    """Játékos kilépése a játékból - szüneteltetés (session token megmarad)"""
+    # POST body-ból vagy session-ből próbáljuk meg
+    session_token = request.data.get('session_token') or request.session.get('session_token')
     
-    if not all([game_id, player_name, team_name]):
+    if not session_token:
         return Response({'error': 'Nincs aktív játékos session'}, 
                        status=status.HTTP_400_BAD_REQUEST)
     
     try:
-        game = Game.objects.get(id=game_id)
-        team = Team.objects.get(game=game, name=team_name)
-        player = Player.objects.filter(team=team, name=player_name).first()
+        # Játékos keresése token alapján
+        player = Player.objects.get(session_token=session_token)
+        game = player.team.game
+        team = player.team
         
-        if not player:
-            # Ha a játékos nem létezik, töröljük a session-t
-            request.session.flush()
-            return Response({'error': 'Játékos nem található'}, 
-                           status=status.HTTP_404_NOT_FOUND)
+        # Szüneteltetés: játékos inaktív, de token megmarad
+        player.is_active = False
+        player.save()
         
-        # Játékos törlése az adatbázisból
-        player.delete()
-        
-        # Session törlése
+        # Session törlése (de token megmarad a localStorage-ban)
         request.session.flush()
         
-        # Ha a csapat üres lett, visszaállítjuk a játékot waiting állapotba
-        if not team.players.exists():
+        # Ha szükséges, játék állapot frissítése
+        active_players = Player.objects.filter(
+            team__game=game, 
+            session_token__isnull=False,
+            is_active=True
+        ).count()
+        
+        if active_players == 0:
             game.status = 'waiting'
             game.save()
         
         return Response({
-            'message': 'Sikeresen kiléptél a játékból!',
+            'message': 'Játék szüneteltetve - később folytathatod ugyanitt!',
             'game_status': game.status
         })
         
-    except (Game.DoesNotExist, Team.DoesNotExist):
-        # Ha a játék vagy csapat nem létezik, töröljük a session-t
-        request.session.flush()
-        return Response({'error': 'Játék vagy csapat nem található'}, 
+    except Player.DoesNotExist:
+        return Response({'error': 'Játékos nem található'}, 
                        status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.error(f"Hiba a kilépéskor: {e}")
+        return Response({'error': 'Hiba történt a kilépés során'}, 
+                       status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET'])
 def list_games(request):
@@ -482,8 +485,8 @@ def list_games(request):
     
     games_data = []
     for game in games:
-        # Játékosok számának lekérdezése - már prefetch-elt
-        total_players = sum(team.players.count() for team in game.teams.all())
+        # Játékosok számának lekérdezése - csak aktív játékosok
+        total_players = sum(team.players.filter(is_active=True).count() for team in game.teams.all())
         
         # Csapatok állapotának lekérdezése - már prefetch-elt
         teams_data = []
@@ -491,9 +494,9 @@ def list_games(request):
             teams_data.append({
                 'name': team.name,
                 'display_name': team.get_name_display(),
-                'player_count': team.players.count(),
+                'player_count': team.players.filter(is_active=True).count(),
                 'current_station': team.current_station,
-                'players': [{'id': p.id, 'name': p.name} for p in team.players.all()]
+                'players': [{'id': p.id, 'name': p.name} for p in team.players.filter(is_active=True)]
             })
         
         games_data.append({
@@ -605,9 +608,9 @@ def move_player(request, game_id, player_id):
             return Response({'error': 'Érvénytelen csapat név'}, 
                            status=status.HTTP_400_BAD_REQUEST)
         
-        # Ellenőrizzük, hogy a célcsapat nem tele
+        # Ellenőrizzük, hogy a célcsapat nem tele (csak aktív játékosok alapján)
         target_team = Team.objects.get(game=game, name=new_team_name)
-        if target_team.players.count() >= 2:
+        if target_team.players.filter(is_active=True).count() >= 2:
             return Response({'error': 'A célcsapat már tele van'}, 
                            status=status.HTTP_400_BAD_REQUEST)
         
@@ -653,8 +656,8 @@ def add_player(request, game_id):
     try:
         team = Team.objects.get(game=game, name=team_name)
         
-        # Ellenőrizzük, hogy a csapat nem tele
-        if team.players.count() >= 2:
+        # Ellenőrizzük, hogy a csapat nem tele (csak aktív játékosok alapján)
+        if team.players.filter(is_active=True).count() >= 2:
             return Response({'error': 'Ez a csapat már tele van'}, 
                            status=status.HTTP_400_BAD_REQUEST)
         
@@ -700,6 +703,11 @@ def restore_session(request):
             return Response({'error': 'Session token lejárt vagy érvénytelen'}, 
                            status=status.HTTP_401_UNAUTHORIZED)
         
+        # Ha a játékos inaktív, aktiváljuk újra (szüneteltetésből visszatérés)
+        if not player.is_active:
+            player.is_active = True
+            player.save()
+        
         # Session frissítése
         request.session['game_id'] = str(player.team.game.id)
         request.session['player_name'] = player.name
@@ -723,22 +731,32 @@ def restore_session(request):
 
 @api_view(['POST'])
 def logout_player(request):
-    """Játékos kijelentkezése - session token érvénytelenítése"""
-    session_token = request.session.get('session_token')
+    """Játékos kijelentkezése - végleges kilépés (játékos törlése)"""
+    # Próbáljuk POST body-ból, majd session-ből
+    session_token = request.data.get('session_token') or request.session.get('session_token')
     
     if not session_token:
         return Response({'error': 'Nincs aktív session'}, 
                        status=status.HTTP_400_BAD_REQUEST)
     
     try:
-        # Játékos keresése és token érvénytelenítése
+        # Játékos keresése
         player = Player.objects.get(session_token=session_token)
-        SessionTokenService.invalidate(player)
+        game = player.team.game
+        team = player.team
+        
+        # Játékos törlése (végleges kilépés)
+        player.delete()
         
         # Session törlése
         request.session.flush()
         
-        return Response({'message': 'Sikeresen kijelentkeztél'})
+        # Ha a csapat üres lett, visszaállítjuk a játékot waiting állapotba
+        if not team.players.exists():
+            game.status = 'waiting'
+            game.save()
+        
+        return Response({'message': 'Sikeresen kijelentkeztél - nem térhetsz vissza ebbe a játékba'})
         
     except Player.DoesNotExist:
         # Ha a játékos nem található, akkor is töröljük a sessiont

@@ -61,16 +61,18 @@ const PlayerRegistration = ({ gameData, onJoinGame, onBack }) => {
                 <label htmlFor="playerName" className="block text-lg font-medium mb-3 text-center">
                   Add meg a neved:
                 </label>
-                <input
-                  type="text"
-                  id="playerName"
-                  value={playerName}
-                  onChange={(e) => setPlayerName(e.target.value)}
-                  className="w-48 sm:w-56 md:w-64 px-4 py-3 bg-gray-800 border border-orange-300 rounded-xl text-white text-xl text-center placeholder-gray-400 focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  placeholder="Írd be a neved..."
-                  maxLength={20}
-                  autoFocus
-                />
+                <div className="flex justify-center">
+                  <input
+                    type="text"
+                    id="playerName"
+                    value={playerName}
+                    onChange={(e) => setPlayerName(e.target.value)}
+                    className="w-48 sm:w-56 md:w-64 px-4 py-3 bg-gray-800 border border-orange-300 rounded-xl text-white text-xl text-center placeholder-gray-400 focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    placeholder="Írd be a neved..."
+                    maxLength={20}
+                    autoFocus
+                  />
+                </div>
               </div>
 
               {/* Csapat választás */}

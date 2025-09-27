@@ -23,16 +23,20 @@ const Welcome = ({ onGameCodeSubmit }) => {
       <div className="max-w-md mx-auto p-8">
       
         {/* Fehér tartalom blokk */}
-        <div className="white-content-block border-4 border-orange-500">
+        <div className="white-content-block border-4 border-orange-500 relative">
           {/* Admin gomb */}
-          <div className="mt-6">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2">
             <button
               onClick={() => onGameCodeSubmit('ADMIN')}
-              className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-500 hover:to-blue-500 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 text-xl w-48 sm:w-56 md:w-64"
+              className="bg-gradient-to-r from-green-600 to-blue-600 
+                        hover:from-green-500 hover:to-blue-500 
+                        text-white font-bold py-2 px-4 rounded-md 
+                        transition-all duration-200 text-lg"
             >
-              🛠️ Játék beállítások
+              🎛️ Vezérlőpult
             </button>
           </div>
+
           {/* Cím */}
           <div className="text-center mb-8">
             <div className="text-6xl mb-4">🎃👻</div>
