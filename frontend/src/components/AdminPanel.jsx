@@ -6,6 +6,7 @@ import GameCreate from './admin/GameCreate';
 import GameManage from './admin/GameManage';
 import GameEditModal from './admin/GameEditModal';
 import PlayerAddModal from './admin/PlayerAddModal';
+import ProgressDisplay from './ProgressDisplay';
 
 const AdminPanel = ({ onBack }) => {
   const [adminName, setAdminName] = useState('');

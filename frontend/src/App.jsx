@@ -510,6 +510,7 @@ function App() {
               gameStatus={gameState.status}
               gameInfo={gameState.gameInfo}
               gameName={gameState.gameName}
+              showAllTeams={true}
             />
             
             <ChallengePanel

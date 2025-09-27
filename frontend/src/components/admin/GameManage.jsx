@@ -1,6 +1,7 @@
 // components/admin/GameManage.jsx
 import React from 'react';
 import { getStatusColor, getStatusText } from '../../utils/gameUtils';
+import ProgressDisplay from '../ProgressDisplay';
 
 const GameManage = ({ 
   currentGame, 
@@ -14,6 +15,27 @@ const GameManage = ({
 }) => {
   return (
     <div className="space-y-6">
+      {/* Csapatok haladása - csak ha a játék fut */}
+      {((currentGame.status || currentGame.game?.status) === 'separate' || 
+        (currentGame.status || currentGame.game?.status) === 'together' || 
+        (currentGame.status || currentGame.game?.status) === 'finished') && (
+        <ProgressDisplay
+          teams={currentGame.teams || currentGame.game?.teams || []}
+          gameStatus={currentGame.status || currentGame.game?.status}
+          gameInfo={{
+            total_players: (currentGame.teams || currentGame.game?.teams || [])
+              .reduce((total, team) => total + (team.players?.length || 0), 0),
+            max_players: 4,
+            available_slots: 4 - (currentGame.teams || currentGame.game?.teams || [])
+              .reduce((total, team) => total + (team.players?.length || 0), 0),
+            is_full: (currentGame.teams || currentGame.game?.teams || [])
+              .reduce((total, team) => total + (team.players?.length || 0), 0) >= 4
+          }}
+          gameName={currentGame.name || currentGame.game?.name}
+          showAllTeams={true}
+        />
+      )}
+
       {/* Játék információk */}
       <div className="bg-black bg-opacity-60 rounded-lg p-6">
         <h2 className="text-2xl font-bold text-orange-400 mb-4 text-center">
