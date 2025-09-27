@@ -35,21 +35,41 @@ const ProgressDisplay = ({ currentPlayer, teams, gameStatus, gameInfo, gameName,
     }));
   };
 
+  // Aktív csapatok lekérdezése (csak azok, ahol van játékos)
+  const getActiveTeamsStatus = () => {
+    const allTeams = getAllTeamsStatus();
+    return allTeams.filter(team => team.players && team.players.length > 0);
+  };
+
+  // Döntés arról, hogy mit mutassunk
+  const shouldShowAllTeams = () => {
+    if (!showAllTeams) return false;
+    
+    const activeTeams = getActiveTeamsStatus();
+    // Ha nincs currentPlayer (admin oldal), mindig mutassuk az aktív csapatokat
+    if (!currentPlayer) {
+      return activeTeams.length > 0;
+    }
+    // Ha van currentPlayer (játékos oldal), csak akkor mutassuk mindkettőt, ha több aktív csapat van
+    return activeTeams.length > 1;
+  };
+
   // Összes állomás száma (fix érték)
   const totalStations = 6;
   
   // A backend már kiszámítja ezeket, csak használjuk a gameInfo adatokat
   const getCompletedStations = () => {
-    if (showAllTeams) {
+    if (shouldShowAllTeams()) {
       // Ha mindkét csapatot mutatjuk, akkor az átlagos haladást számítjuk
-      if (!allTeamsStatus || allTeamsStatus.length === 0) return 0;
+      const activeTeams = getActiveTeamsStatus();
+      if (!activeTeams || activeTeams.length === 0) return 0;
       
       // Ha a játék befejeződött, minden állomás kész
       if (gameStatus === 'finished') return totalStations;
       
       // Átlagos haladás számítása
       let totalProgress = 0;
-      allTeamsStatus.forEach(team => {
+      activeTeams.forEach(team => {
         if (gameStatus === 'separate') {
           totalProgress += Math.max(0, team.currentStation - 1);
         } else if (gameStatus === 'together') {
@@ -57,7 +77,7 @@ const ProgressDisplay = ({ currentPlayer, teams, gameStatus, gameInfo, gameName,
         }
       });
       
-      return Math.round(totalProgress / allTeamsStatus.length);
+      return Math.round(totalProgress / activeTeams.length);
     } else {
       // Egyedi csapat haladása
       const teamStatus = getCurrentTeamStatus();
@@ -150,18 +170,18 @@ const ProgressDisplay = ({ currentPlayer, teams, gameStatus, gameInfo, gameName,
           {/* Csapat logók a sáv felett és alatt */}
           {showAllTeams && allTeamsStatus && allTeamsStatus.length >= 2 && (
             <div className="flex justify-between items-center mb-2">
-              <div className="flex items-center gap-2">
-                <span className="text-2xl">🎃</span>
-                <span className="text-xs text-orange-300">
-                  {allTeamsStatus.find(t => t.name === 'pumpkin')?.currentStation || 1}. állomás
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-2xl">👻</span>
-                <span className="text-xs text-purple-300">
-                  {allTeamsStatus.find(t => t.name === 'ghost')?.currentStation || 1}. állomás
-                </span>
-              </div>
+              {allTeamsStatus.map(team => (
+                <div key={team.name} className="flex items-center gap-2">
+                  <span className="text-2xl">
+                    {team.name === 'pumpkin' ? '🎃' : 
+                     team.name === 'ghost' ? '👻' : 
+                     team.name === 'main' ? '🎮' : '🎯'}
+                  </span>
+                  <span className="text-xs text-orange-300">
+                    {team.currentStation || 1}. állomás
+                  </span>
+                </div>
+              ))}
             </div>
           )}
           
@@ -172,30 +192,23 @@ const ProgressDisplay = ({ currentPlayer, teams, gameStatus, gameInfo, gameName,
             ></div>
             
             {/* Csapat pozíciók jelölése a sávon */}
-            {showAllTeams && allTeamsStatus && allTeamsStatus.length >= 2 && (
+            {shouldShowAllTeams() && getActiveTeamsStatus().length >= 2 && (
               <>
-                {/* Tök csapat pozíciója */}
-                <div 
-                  className="absolute -top-1 w-3 h-5 bg-orange-300 rounded-full flex items-center justify-center text-xs font-bold"
-                  style={{ 
-                    left: `${Math.min(100, Math.max(0, ((allTeamsStatus.find(t => t.name === 'pumpkin')?.currentStation || 1) - 1) / totalStations * 100))}%`,
-                    transform: 'translateX(-50%)'
-                  }}
-                  title="🎃 Tök Csapat"
-                >
-                  🎃
-                </div>
-                {/* Szellem csapat pozíciója */}
-                <div 
-                  className="absolute -top-1 w-3 h-5 bg-purple-300 rounded-full flex items-center justify-center text-xs font-bold"
-                  style={{ 
-                    left: `${Math.min(100, Math.max(0, ((allTeamsStatus.find(t => t.name === 'ghost')?.currentStation || 1) - 1) / totalStations * 100))}%`,
-                    transform: 'translateX(-50%)'
-                  }}
-                  title="👻 Szellem Csapat"
-                >
-                  👻
-                </div>
+                {getActiveTeamsStatus().map(team => (
+                  <div 
+                    key={team.name}
+                    className="absolute -top-1 w-3 h-5 bg-orange-300 rounded-full flex items-center justify-center text-xs font-bold"
+                    style={{ 
+                      left: `${Math.min(100, Math.max(0, ((team.currentStation || 1) - 1) / totalStations * 100))}%`,
+                      transform: 'translateX(-50%)'
+                    }}
+                    title={team.displayName}
+                  >
+                    {team.name === 'pumpkin' ? '🎃' : 
+                     team.name === 'ghost' ? '👻' : 
+                     team.name === 'main' ? '🎮' : '🎯'}
+                  </div>
+                ))}
               </>
             )}
           </div>
@@ -206,9 +219,9 @@ const ProgressDisplay = ({ currentPlayer, teams, gameStatus, gameInfo, gameName,
         </div>
 
         {/* Csapatok állapota */}
-        {showAllTeams ? (
+        {shouldShowAllTeams() ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-            {allTeamsStatus.map((team) => (
+            {getActiveTeamsStatus().map((team) => (
               <div key={team.name} className="bg-gray-900 bg-opacity-50 rounded-lg p-4">
                 <div className="text-center mb-3">
                   <div className="text-2xl mb-2">
@@ -261,12 +274,20 @@ const ProgressDisplay = ({ currentPlayer, teams, gameStatus, gameInfo, gameName,
           </div>
         ) : (
           <div className="bg-gray-900 bg-opacity-50 rounded-lg p-3">
-            <div className="text-base sm:text-lg font-semibold text-purple-300 mb-1">
-              Jelenlegi állomás: {teamStatus.currentStation}. 
-            </div>
-            <div className="text-xs sm:text-sm text-gray-300">
-              {gameStatus === 'separate' ? 'Külön fázis' : 'Közös fázis'}
-            </div>
+            {teamStatus ? (
+              <>
+                <div className="text-base sm:text-lg font-semibold text-purple-300 mb-1">
+                  Jelenlegi állomás: {teamStatus.currentStation}. 
+                </div>
+                <div className="text-xs sm:text-sm text-gray-300">
+                  {gameStatus === 'separate' ? 'Külön fázis' : 'Közös fázis'}
+                </div>
+              </>
+            ) : (
+              <div className="text-base sm:text-lg font-semibold text-gray-400 mb-1">
+                Nincs aktív játékos
+              </div>
+            )}
           </div>
         )}
 

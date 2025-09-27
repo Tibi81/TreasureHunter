@@ -10,8 +10,7 @@ const GameManage = ({
   handleMovePlayer, 
   handleRemovePlayer, 
   handleStartGame, 
-  handleResetGame, 
-  setView 
+  handleResetGame
 }) => {
   return (
     <div className="space-y-6">
@@ -25,11 +24,11 @@ const GameManage = ({
           gameInfo={{
             total_players: (currentGame.teams || currentGame.game?.teams || [])
               .reduce((total, team) => total + (team.players?.length || 0), 0),
-            max_players: 4,
-            available_slots: 4 - (currentGame.teams || currentGame.game?.teams || [])
+            max_players: currentGame.game?.max_players || currentGame.max_players || 4,
+            available_slots: (currentGame.game?.max_players || currentGame.max_players || 4) - (currentGame.teams || currentGame.game?.teams || [])
               .reduce((total, team) => total + (team.players?.length || 0), 0),
             is_full: (currentGame.teams || currentGame.game?.teams || [])
-              .reduce((total, team) => total + (team.players?.length || 0), 0) >= 4
+              .reduce((total, team) => total + (team.players?.length || 0), 0) >= (currentGame.game?.max_players || currentGame.max_players || 4)
           }}
           gameName={currentGame.name || currentGame.game?.name}
           showAllTeams={true}
@@ -75,7 +74,7 @@ const GameManage = ({
                      text-white font-bold py-2 px-4 rounded-lg 
                      transition-all duration-200"
           >
-            ➕ Játékos hozzáadása
+            ➕ Játékos
           </button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -174,22 +173,18 @@ const GameManage = ({
         </h3>
         <div className="flex flex-wrap gap-4 justify-center">
           {(currentGame.status || currentGame.game?.status) === 'setup' && (
-            <div className="text-center">
-              <button
-                onClick={handleStartGame}
-                disabled={loading}
-                className="bg-gradient-to-r from-green-600 to-blue-600 
-                         hover:from-green-500 hover:to-blue-500 
-                         disabled:from-gray-600 disabled:to-gray-600
-                         text-white font-bold py-3 px-6 rounded-lg 
-                         transition-all duration-200 disabled:cursor-not-allowed"
-              >
-                {loading ? 'Indítás...' : '🚀 Játék indítása'}
-              </button>
-              <p className="text-xs text-gray-300 mt-2">
-                A játék már készen áll az indításra! (Legalább 1 játékos szükséges)
-              </p>
-            </div>
+            <button
+              onClick={handleStartGame}
+              disabled={loading}
+              className="bg-gradient-to-r from-green-600 to-blue-600 
+                       hover:from-green-500 hover:to-blue-500 
+                       disabled:from-gray-600 disabled:to-gray-600
+                       text-white font-bold py-3 px-6 rounded-lg 
+                       transition-all duration-200 disabled:cursor-not-allowed
+                       min-w-32 sm:min-w-56"
+            >
+              {loading ? 'Indítás...' : '🚀 Játék indítása'}
+            </button>
           )}
           
           <button
@@ -199,19 +194,13 @@ const GameManage = ({
                      hover:from-red-500 hover:to-orange-500 
                      disabled:from-gray-600 disabled:to-gray-600
                      text-white font-bold py-3 px-6 rounded-lg 
-                     transition-all duration-200 disabled:cursor-not-allowed"
+                     transition-all duration-200 disabled:cursor-not-allowed
+                     min-w-56"
           >
             {loading ? 'Visszaállítás...' : '🔄 Játék visszaállítása'}
           </button>
 
-          <button
-            onClick={() => setView('list')}
-            className="bg-gray-600 hover:bg-gray-500 
-                     text-white font-bold py-3 px-6 rounded-lg 
-                     transition-all duration-200"
-          >
-            Vissza a listához
-          </button>
+          
         </div>
       </div>
     </div>

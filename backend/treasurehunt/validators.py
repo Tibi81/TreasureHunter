@@ -46,6 +46,8 @@ class AdminGameCreationValidator(serializers.Serializer):
     """Admin játék létrehozás validálása"""
     name = serializers.CharField(max_length=100, min_length=3)
     admin_name = serializers.CharField(max_length=100, min_length=2)
+    max_players = serializers.IntegerField(min_value=1, max_value=8, required=False, default=4)
+    team_count = serializers.IntegerField(min_value=1, max_value=2, required=False, default=2)
     
     def validate_name(self, value):
         if not value or not value.strip():

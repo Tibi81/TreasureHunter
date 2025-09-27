@@ -27,11 +27,21 @@ const PlayerRegistration = ({ gameData, onJoinGame, onBack }) => {
   const getTeamStatus = (teamName) => {
     const team = gameData.teams.find(t => t.name === teamName);
     const playerCount = team ? team.players.length : 0;
+    const maxPlayers = team ? team.max_players : 2;
     return {
       count: playerCount,
-      isFull: playerCount >= 2,
+      isFull: playerCount >= maxPlayers,
+      maxPlayers: maxPlayers,
       players: team ? team.players : []
     };
+  };
+
+  const getAvailableTeams = () => {
+    // Mindig mindkét csapatot mutatjuk
+    return [
+      { name: 'pumpkin', displayName: 'Tök Csapat', icon: '🎃' },
+      { name: 'ghost', displayName: 'Szellem Csapat', icon: '👻' }
+    ];
   };
 
   return (
@@ -50,6 +60,11 @@ const PlayerRegistration = ({ gameData, onJoinGame, onBack }) => {
             </p>
             <p className="text-sm text-gray-600">
               Kód: <span className="font-mono text-orange-600">{gameData.game.game_code}</span>
+            </p>
+            <p className="text-sm text-gray-600">
+              Játékosok: <span className="text-orange-600 font-semibold">
+                {gameData.game_info?.total_players || 0}/{gameData.game_info?.max_players || gameData.game?.max_players || 4}
+              </span>
             </p>
           </div>
 
@@ -80,74 +95,41 @@ const PlayerRegistration = ({ gameData, onJoinGame, onBack }) => {
                 <label className="block text-lg font-medium mb-4 text-center">
                   Válassz egy csapatot:
                 </label>
-                <div className="grid grid-cols-2 gap-4">
-                {/* Tök Csapat */}
-                {(() => {
-                  const teamStatus = getTeamStatus('pumpkin');
-                  return (
-                    <button
-                      type="button"
-                      onClick={() => setSelectedTeam('pumpkin')}
-                      disabled={teamStatus.isFull}
-                      className={`p-4 rounded-lg border-2 transition-all duration-200 ${
-                        selectedTeam === 'pumpkin'
-                          ? 'border-orange-500 bg-orange-100'
-                          : teamStatus.isFull
-                          ? 'border-gray-400 bg-gray-100 opacity-50 cursor-not-allowed'
-                          : 'border-orange-300 bg-orange-50 hover:bg-orange-100 cursor-pointer'
-                      }`}
-                    >
-                      <div className="text-4xl mb-3">🎃</div>
-                      <div className="font-semibold text-lg text-gray-800">Tök Csapat</div>
-                      <div className="text-sm mt-2 text-gray-600">
-                        {teamStatus.count}/2 játékos
-                      </div>
-                      {teamStatus.isFull && (
-                        <div className="text-sm text-red-600 mt-1">TELE</div>
-                      )}
-                      {teamStatus.players.length > 0 && (
-                        <div className="text-xs text-gray-500 mt-2">
-                          {teamStatus.players.map(p => p.name).join(', ')}
+                <div className={`grid gap-4 ${getAvailableTeams().length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                  {getAvailableTeams().map(team => {
+                    const teamStatus = getTeamStatus(team.name);
+                    return (
+                      <button
+                        key={team.name}
+                        type="button"
+                        onClick={() => setSelectedTeam(team.name)}
+                        disabled={teamStatus.isFull}
+                        className={`p-4 rounded-lg border-2 transition-all duration-200 ${
+                          selectedTeam === team.name
+                            ? 'border-orange-500 bg-orange-100'
+                            : teamStatus.isFull
+                            ? 'border-gray-400 bg-gray-100 opacity-50 cursor-not-allowed'
+                            : 'border-orange-300 bg-orange-50 hover:bg-orange-100 cursor-pointer'
+                        }`}
+                      >
+                        <div className="text-4xl mb-3">{team.icon}</div>
+                        <div className="font-semibold text-lg text-gray-800">{team.displayName}</div>
+                        <div className="text-sm mt-2 text-gray-600">
+                          {teamStatus.count}/{teamStatus.maxPlayers} játékos
                         </div>
-                      )}
-                    </button>
-                  );
-                })()}
-
-                {/* Szellem Csapat */}
-                {(() => {
-                  const teamStatus = getTeamStatus('ghost');
-                  return (
-                    <button
-                      type="button"
-                      onClick={() => setSelectedTeam('ghost')}
-                      disabled={teamStatus.isFull}
-                      className={`p-4 rounded-lg border-2 transition-all duration-200 ${
-                        selectedTeam === 'ghost'
-                          ? 'border-purple-500 bg-purple-100'
-                          : teamStatus.isFull
-                          ? 'border-gray-400 bg-gray-100 opacity-50 cursor-not-allowed'
-                          : 'border-purple-300 bg-purple-50 hover:bg-purple-100 cursor-pointer'
-                      }`}
-                    >
-                      <div className="text-4xl mb-3">👻</div>
-                      <div className="font-semibold text-lg text-gray-800">Szellem Csapat</div>
-                      <div className="text-sm mt-2 text-gray-600">
-                        {teamStatus.count}/2 játékos
-                      </div>
-                      {teamStatus.isFull && (
-                        <div className="text-sm text-red-600 mt-1">TELE</div>
-                      )}
-                      {teamStatus.players.length > 0 && (
-                        <div className="text-xs text-gray-500 mt-2">
-                          {teamStatus.players.map(p => p.name).join(', ')}
-                        </div>
-                      )}
-                    </button>
-                  );
-                })()}
+                        {teamStatus.isFull && (
+                          <div className="text-sm text-red-600 mt-1">TELE</div>
+                        )}
+                        {teamStatus.players.length > 0 && (
+                          <div className="text-xs text-gray-500 mt-2">
+                            {teamStatus.players.map(p => p.name).join(', ')}
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
 
               {/* Hibaüzenet */}
               {error && (

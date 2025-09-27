@@ -107,7 +107,7 @@ def move_player(request, game_id, player_id):
         
         # Ellenőrizzük, hogy a célcsapat nem tele (csak aktív játékosok alapján)
         target_team = Team.objects.get(game=game, name=new_team_name)
-        if target_team.players.filter(is_active=True).count() >= 2:
+        if target_team.players.filter(is_active=True).count() >= target_team.max_players:
             return Response({'error': 'A célcsapat már tele van'}, 
                            status=status.HTTP_400_BAD_REQUEST)
         
@@ -155,7 +155,7 @@ def add_player(request, game_id):
         team = Team.objects.get(game=game, name=team_name)
         
         # Ellenőrizzük, hogy a csapat nem tele (csak aktív játékosok alapján)
-        if team.players.filter(is_active=True).count() >= 2:
+        if team.players.filter(is_active=True).count() >= team.max_players:
             return Response({'error': 'Ez a csapat már tele van'}, 
                            status=status.HTTP_400_BAD_REQUEST)
         

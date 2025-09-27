@@ -16,13 +16,13 @@ class GameConstants:
     SAVE_STATION = 98  # Mentesítő feladat állomás
     MAX_ATTEMPTS = 3  # Maximum próbálkozások száma
     
-    # Jelenlegi fix értékek (később rugalmassá tesszük)
-    MIN_TEAMS = 2
+    # Rugalmas értékek
+    MIN_TEAMS = 1
     MAX_TEAMS = 2
     MIN_PLAYERS_PER_TEAM = 1
-    MAX_PLAYERS_PER_TEAM = 2
-    MIN_TOTAL_PLAYERS = 2
-    MAX_TOTAL_PLAYERS = 4
+    MAX_PLAYERS_PER_TEAM = 8  # Maximum 8 játékos egy csapatban
+    MIN_TOTAL_PLAYERS = 1
+    MAX_TOTAL_PLAYERS = 8
 
 
 class GameStateManager:
@@ -70,9 +70,9 @@ class GameStateManager:
                 'display_name': team.get_name_display(),
                 'players': team_players,
                 'player_count': len(team_players),
-                'max_players': GameConstants.MAX_PLAYERS_PER_TEAM,
-                'available_slots': GameConstants.MAX_PLAYERS_PER_TEAM - len(team_players),
-                'is_full': len(team_players) >= GameConstants.MAX_PLAYERS_PER_TEAM,
+                'max_players': team.max_players,
+                'available_slots': team.max_players - len(team_players),
+                'is_full': len(team_players) >= team.max_players,
                 'current_station': team.current_station,
                 'attempts': team.attempts,
                 'help_used': team.help_used,
@@ -82,7 +82,7 @@ class GameStateManager:
             })
         
         total_players = len(all_players)
-        available_slots = GameConstants.MAX_TOTAL_PLAYERS - total_players
+        available_slots = self.game.max_players - total_players
         
         return {
             'game': {
@@ -92,48 +92,67 @@ class GameStateManager:
                 'status': self.game.status,
                 'meeting_station': self.game.meeting_station,
                 'created_by': self.game.created_by,
-                'created_at': self.game.created_at
+                'created_at': self.game.created_at,
+                'max_players': self.game.max_players,
+                'team_count': self.game.team_count
             },
             'teams': teams_info,
             'players': all_players,
             'game_info': {
                 'total_players': total_players,
-                'max_players': GameConstants.MAX_TOTAL_PLAYERS,
+                'max_players': self.game.max_players,
                 'available_slots': available_slots,
-                'is_full': total_players >= GameConstants.MAX_TOTAL_PLAYERS,
+                'is_full': total_players >= self.game.max_players,
                 'can_start': self.can_game_start()
             }
         }
     
     def can_game_start(self):
-        """Játék indíthatóság ellenőrzése"""
+        """Rugalmas játék indíthatóság ellenőrzése"""
         if self.game.status not in ['waiting', 'setup']:
             return False
         
         teams = self.teams
+        total_players = sum(team.players.filter(is_active=True).count() for team in teams)
         
-        # Ellenőrizzük a csapatok számát
-        if len(teams) < GameConstants.MIN_TEAMS:
-            return False
+        logger.info(f"Játék indíthatóság ellenőrzése: team_count={self.game.team_count}, total_players={total_players}")
         
-        # Minden csapatban kell lennie legalább egy aktív játékosnak
-        total_players = 0
-        for team in teams:
-            player_count = team.players.filter(is_active=True).count()
-            if player_count < GameConstants.MIN_PLAYERS_PER_TEAM:
-                return False
-            total_players += player_count
-        
-        # Összesen elég játékos kell hogy legyen
-        return total_players >= GameConstants.MIN_TOTAL_PLAYERS
+        if self.game.team_count == 1:
+            # Egy csapat játék: minimum 1 játékos bármelyik csapatban
+            teams_with_players = 0
+            for team in teams:
+                if team.players.filter(is_active=True).count() > 0:
+                    teams_with_players += 1
+            result = teams_with_players >= 1
+            logger.info(f"Egy csapat játék indítható: {result} (teams_with_players={teams_with_players})")
+            return result
+        else:
+            # Két csapat: mindkét csapatban minimum 1 játékos
+            teams_with_players = 0
+            for team in teams:
+                if team.players.filter(is_active=True).count() > 0:
+                    teams_with_players += 1
+            result = teams_with_players >= 2
+            logger.info(f"Két csapat játék indítható: {result} (teams_with_players={teams_with_players})")
+            return result
     
     def should_auto_transition_to_setup(self):
-        """Automatikus setup állapotba váltás ellenőrzése"""
+        """Rugalmas automatikus setup állapotba váltás ellenőrzése"""
         if self.game.status != 'waiting':
             return False
         
         total_players = sum(team.players.filter(is_active=True).count() for team in self.teams)
-        return total_players >= 1
+        
+        if self.game.team_count == 1:
+            # Egy csapat: minimum 1 játékos
+            return total_players >= 1
+        else:
+            # Két csapat: mindkét csapatban minimum 1 játékos
+            teams_with_players = 0
+            for team in self.teams:
+                if team.players.filter(is_active=True).count() > 0:
+                    teams_with_players += 1
+            return teams_with_players >= 2
     
     @transaction.atomic
     def start_separate_phase(self):

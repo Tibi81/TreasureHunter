@@ -51,10 +51,15 @@ export const gameAPI = {
 
 
   // Új játék létrehozása (Admin)
-  createGame: async (gameName = 'Halloween Kincskereső', adminName = 'Admin') => {
+  createGame: async (gameName = 'Halloween Kincskereső', adminName = 'Admin', maxPlayers = 4, teamCount = 2) => {
     return apiRequest('/api/game/create/', {
       method: 'POST',
-      body: { name: gameName, admin_name: adminName }
+      body: { 
+        name: gameName, 
+        admin_name: adminName,
+        max_players: maxPlayers,
+        team_count: teamCount
+      }
     });
   },
 

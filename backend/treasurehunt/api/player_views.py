@@ -30,8 +30,14 @@ def join_game(request, game_id):
     
     team = get_object_or_404(Team, game=game, name=team_name)
     
+    # Játék teljes kapacitás ellenőrzése
+    total_active_players = sum(team.players.filter(is_active=True).count() for team in game.teams.all())
+    if total_active_players >= game.max_players:
+        return Response({'error': f'A játék már tele van (maximum {game.max_players} játékos)'}, 
+                       status=status.HTTP_400_BAD_REQUEST)
+    
     # Csapat telítettség ellenőrzése (csak aktív játékosok alapján)
-    if team.players.filter(is_active=True).count() >= GameConstants.MAX_PLAYERS_PER_TEAM:
+    if team.players.filter(is_active=True).count() >= team.max_players:
         return Response({'error': 'Ez a csapat már tele van'}, 
                        status=status.HTTP_400_BAD_REQUEST)
     

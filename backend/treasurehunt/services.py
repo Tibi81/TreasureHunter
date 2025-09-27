@@ -22,7 +22,7 @@ class GameLogicService:
             'attempts': team.attempts,
             'help_used': team.help_used,
             'completed_at': team.completed_at,
-            'is_full': team.players.filter(is_active=True).count() >= GameConstants.MAX_PLAYERS_PER_TEAM,
+            'is_full': team.players.filter(is_active=True).count() >= team.max_players,
             'player_count': team.players.filter(is_active=True).count(),
             'can_use_help': progress_info['can_use_help'],
             'can_use_save': progress_info['can_use_save'],

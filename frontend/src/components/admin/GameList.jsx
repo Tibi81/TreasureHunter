@@ -18,17 +18,17 @@ const GameList = ({
   return (
     <div className="space-y-6">
       <div className="bg-black bg-opacity-60 rounded-lg p-6">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-4">
           <h2 className="text-2xl font-bold text-orange-400">
             Játékok listája ({filteredGames.length})
           </h2>
-          <div className="flex gap-4">
+          <div className="flex flex-col sm:flex-row gap-4">
             <input
               type="text"
               placeholder="Keresés játékok között..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400"
+              className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 w-full sm:w-auto"
             />
             <button
               onClick={loadGames}
@@ -70,7 +70,7 @@ const GameList = ({
             {filteredGames.map((game) => (
               <div key={game.id} className="bg-white rounded-lg p-4 border border-gray-300 shadow-lg">
                 <div className="mb-4">
-                  <h3 className="text-lg font-bold text-orange-600 mb-2">{game.name}</h3>
+                  <h3 className="text-lg font-bold text-orange-600 mb-2 break-words">{game.name}</h3>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Kód:</span>

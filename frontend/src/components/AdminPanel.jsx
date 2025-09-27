@@ -71,7 +71,7 @@ const AdminPanel = ({ onBack }) => {
   }, [games, searchTerm]);
 
   // Játék létrehozása
-  const handleCreateGame = async (e) => {
+  const handleCreateGame = async (e, gameConfig = null) => {
     e.preventDefault();
     
     // Alapvető frontend validáció (a részletes validáció a backend-ben történik)
@@ -84,7 +84,12 @@ const AdminPanel = ({ onBack }) => {
     setError('');
 
     try {
-      const response = await gameAPI.createGame(gameName, adminName.trim());
+      const response = await gameAPI.createGame(
+        gameName, 
+        adminName.trim(),
+        gameConfig?.maxPlayers || 4,
+        gameConfig?.teamCount || 2
+      );
       setCurrentGame(response);
       setView('manage');
       await loadGames(); // Frissítsük a játékok listáját
@@ -324,17 +329,18 @@ const AdminPanel = ({ onBack }) => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-900 via-orange-800 to-black text-white">
       <div className="container mx-auto px-4 py-8">
-        {/* Fejléc */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-orange-400 mb-2">
-            🛠️ Admin Felület
-          </h1>
-          <p className="text-xl text-gray-300 mb-6">
-            Játékok kezelése és létrehozása
-          </p>
-          
-          {/* Navigációs gombok 2x2 grid elrendezésben - függőleges kártyák */}
-          <div className="grid grid-cols-2 gap-3 sm:gap-6 max-w-2xl mx-auto mb-6">
+        <div className="max-w-2xl mx-auto">
+          {/* Fejléc */}
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold text-orange-400 mb-2">
+              🛠️ Admin Felület
+            </h1>
+            <p className="text-xl text-gray-300 mb-6">
+              Játékok kezelése és létrehozása
+            </p>
+            
+            {/* Navigációs gombok 2x2 grid elrendezésben - függőleges kártyák */}
+            <div className="grid grid-cols-2 gap-3 sm:gap-6 mb-6">
             {/* Frissítés gomb */}
             <button
               onClick={loadGames}
@@ -413,8 +419,6 @@ const AdminPanel = ({ onBack }) => {
             </button>
           </div>
         )}
-
-        <div className="max-w-2xl mx-auto">
 
           {/* Játékok listája */}
           {view === 'list' && (

@@ -99,16 +99,44 @@ def create_game(request):
     
     validated_data = validator.validated_data
     
+    # Debug log
+    logger.info(f"Játék létrehozása: max_players={validated_data.get('max_players', 4)}, team_count={validated_data.get('team_count', 2)}")
+    
     # Játék létrehozása
     game = Game.objects.create(
         name=validated_data['name'],
         created_by=validated_data['admin_name'],
-        status='waiting'
+        status='waiting',
+        max_players=validated_data.get('max_players', 4),
+        team_count=validated_data.get('team_count', 2)
     )
     
-    # Alapértelmezett csapatok létrehozása
-    Team.objects.create(game=game, name='pumpkin')
-    Team.objects.create(game=game, name='ghost')
+    # Rugalmas csapatok létrehozása
+    if game.team_count == 1:
+        # Egy csapat játék - mindkét csapat elérhető, de csak egy játékos játszik
+        Team.objects.create(
+            game=game, 
+            name='pumpkin',
+            max_players=1
+        )
+        Team.objects.create(
+            game=game, 
+            name='ghost',
+            max_players=1
+        )
+    else:
+        # Két csapat - egyenlő elosztás
+        players_per_team = game.max_players // 2
+        Team.objects.create(
+            game=game, 
+            name='pumpkin',
+            max_players=players_per_team
+        )
+        Team.objects.create(
+            game=game, 
+            name='ghost',
+            max_players=players_per_team
+        )
     
     # Játék összefoglaló lekérdezése a szolgáltatáson keresztül
     data = GameStateService.get_game_summary(game)
@@ -122,8 +150,12 @@ def start_game(request, game_id):
     
     # Játék indíthatóság ellenőrzése a szolgáltatáson keresztül
     if not GameStateService.can_game_start(game):
-        return Response({'error': 'A játék nem indítható el. Legalább 2 játékos szükséges és minden csapatban kell lennie legalább egy játékosnak'}, 
-                       status=status.HTTP_400_BAD_REQUEST)
+        if game.team_count == 1:
+            return Response({'error': 'A játék nem indítható el. Legalább 1 játékos szükséges a főcsapatban'}, 
+                           status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({'error': 'A játék nem indítható el. Mindkét csapatban kell lennie legalább egy játékosnak'}, 
+                           status=status.HTTP_400_BAD_REQUEST)
     
     try:
         # Játék indítása a GameStateService-en keresztül

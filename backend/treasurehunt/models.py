@@ -12,6 +12,22 @@ class Game(models.Model):
         ('finished', 'Befejezve'),
     ]
     
+    MAX_PLAYER_CHOICES = [
+        (1, '1 játékos'),
+        (2, '2 játékos'),
+        (3, '3 játékos'),
+        (4, '4 játékos'),
+        (5, '5 játékos'),
+        (6, '6 játékos'),
+        (7, '7 játékos'),
+        (8, '8 játékos'),
+    ]
+    
+    TEAM_COUNT_CHOICES = [
+        (1, '1 csapat'),
+        (2, '2 csapat'),
+    ]
+    
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)  # Egyedi azonosító minden játékhoz
     game_code = models.CharField(max_length=8, unique=True, db_index=True, help_text="Rövid azonosító a játékhoz csatlakozáshoz")  # Játék kód, amivel csatlakozni lehet
     name = models.CharField(max_length=100, default="Halloween Kincskereső")  # Játék neve
@@ -20,8 +36,28 @@ class Game(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)  # Létrehozás ideje
     created_by = models.CharField(max_length=100, null=True, blank=True, help_text="Admin neve aki létrehozta")  # Admin neve, aki létrehozta a játékot
     
+    # Új mezők a rugalmassághoz
+    max_players = models.PositiveIntegerField(
+        default=4, 
+        choices=MAX_PLAYER_CHOICES,
+        help_text="Maximum játékosok száma"
+    )
+    team_count = models.PositiveIntegerField(
+        default=2, 
+        choices=TEAM_COUNT_CHOICES,
+        help_text="Csapatok száma"
+    )
+    
     def __str__(self):
         return "Játék - {} ({})".format(self.name, self.status)
+    
+    @property
+    def players_per_team(self):
+        """Játékosok száma csapatonként"""
+        if self.team_count == 1:
+            return self.max_players
+        else:
+            return self.max_players // 2
     
     def save(self, *args, **kwargs):
         if not self.game_code:
@@ -45,6 +81,7 @@ class Team(models.Model):
     TEAM_CHOICES = [
         ('pumpkin', '🎃 Tök Csapat'),
         ('ghost', '👻 Szellem Csapat'),
+        ('main', '🎮 Főcsapat'),
     ]
     
     game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name='teams', db_index=True)  # Melyik játékhoz tartozik a csapat
@@ -55,6 +92,12 @@ class Team(models.Model):
     completed_at = models.DateTimeField(null=True, blank=True, db_index=True)  # Mikor ért célba a csapat (találkozási pont)
     separate_phase_save_used = models.BooleanField(default=False)  # Használták-e a mentesítő feladatot a külön fázisban
     together_phase_save_used = models.BooleanField(default=False)  # Használták-e a mentesítő feladatot a közös fázisban
+    
+    # Új mező a rugalmassághoz
+    max_players = models.PositiveIntegerField(
+        default=2,
+        help_text="Maximum játékosok száma ebben a csapatban"
+    )
     
     def __str__(self):
         return "{} - Állomás {}".format(self.get_name_display(), self.current_station)
