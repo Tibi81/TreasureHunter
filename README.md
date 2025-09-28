@@ -5,9 +5,11 @@ Egy interaktív QR kód alapú kincskereső játék Halloween témában, Django 
 ## 🚀 Funkciók
 
 ### 🎮 Játék funkciók
-- **Csapatok**: 2 csapat (🎃 Tök Csapat és 👻 Szellem Csapat)
-- **Játékosok**: Maximum 4 játékos (2-2 fő csapatonként)
-- **Játék fázisok**: Külön versenyzés → Közös együttműködés
+- **Rugalmas csapat beállítás**: 1-2 csapat választható
+- **Konfigurálható játékosok**: 1-8 játékos (admin által beállítható)
+- **Játék módok**: 
+  - **1 csapat**: Egyedül vagy együttműködés
+  - **2 csapat**: Verseny mód (külön fázis → közös fázis)
 - **QR kódok**: Minden állomáson QR kód beolvasás szükséges
 - **Segítség rendszer**: 1 segítség állomásonként
 - **Mentés rendszer**: 1 mentés külön fázisban, 1 mentés közös fázisban
@@ -16,6 +18,7 @@ Egy interaktív QR kód alapú kincskereső játék Halloween témában, Django 
 
 ### 🛠️ Admin funkciók
 - **Teljes játékkezelés**: Játék létrehozás, szerkesztés, törlés
+- **Rugalmas játék konfiguráció**: Csapatok és játékosok számának beállítása
 - **Játékos kezelés**: Hozzáadás, eltávolítás, áthelyezés
 - **Valós idejű monitoring**: Csapatok haladásának követése
 - **Játék állapot kezelés**: Indítás, leállítás, visszaállítás
@@ -106,6 +109,7 @@ npm run build
 
 2. **Játék létrehozása**:
    - Új játék létrehozása
+   - Csapatok és játékosok számának beállítása (1-2 csapat, 1-8 játékos)
    - Csapatok automatikus létrehozása
    - Játékosok hozzáadása
 
@@ -146,6 +150,26 @@ frontend/src/
 └── utils/
     └── gameUtils.js           # Segédfunkciók
 ```
+
+## ⚙️ Játék konfiguráció
+
+### Játék módok
+
+#### 1 csapatos játék
+- **Játékosok**: 1-8 játékos
+- **Csapatok**: 1 csapat (🎮 Főcsapat)
+- **Játékmenet**: Egyedül vagy együttműködés
+- **Fázisok**: Csak közös fázis (5-6. állomás)
+
+#### 2 csapatos játék (verseny)
+- **Játékosok**: 2, 4, 6, vagy 8 játékos
+- **Csapatok**: 2 csapat (🎃 Tök Csapat és 👻 Szellem Csapat)
+- **Játékmenet**: Verseny → Együttműködés
+- **Fázisok**: Külön fázis (1-4. állomás) → Közös fázis (5-6. állomás)
+
+### Játékos elosztás
+- **1 csapat**: Minden játékos ugyanabban a csapatban
+- **2 csapat**: Játékosok egyenlően elosztva (pl. 4 játékos = 2-2 fő/csapat)
 
 ## 🔧 Admin felület beállítása
 
@@ -193,18 +217,20 @@ python manage.py setup_test_data
 ## 🎯 Játék menete
 
 ### 1. Beállítás fázis
-- Admin létrehozza a játékot és csapatokat
+- Admin létrehozza a játékot és beállítja a csapatok/játékosok számát
+- Csapatok automatikusan létrejönnek a beállítások alapján
 - Játékosok csatlakoznak a frontend-en keresztül
-- Amikor mindkét csapatban van 2 játékos, a játék automatikusan elindul
+- A játék automatikusan elindul, amikor elegendő játékos csatlakozott
 
-### 2. Külön fázis (1-4. állomás)
+### 2. Külön fázis (1-4. állomás) - Csak 2 csapatos játékban
 - A csapatok versenyeznek egymással
 - Minden csapat a saját feladatait oldja meg
 - A cél: minél gyorsabban elérni a 4. állomást
 - 1 mentés használható
 
 ### 3. Közös fázis (5-6. állomás)
-- A csapatok együttműködnek
+- **2 csapatos játék**: A csapatok együttműködnek
+- **1 csapatos játék**: A játékos(ok) együtt dolgoznak
 - Közös feladatok megoldása
 - A végső cél: a 6. állomás elérése
 - 1 mentés használható
@@ -283,8 +309,8 @@ A QR kódokat bármilyen QR kód generátorral létrehozhatod:
    - A QR kód kis- és nagybetű érzékeny
 
 3. **Játék nem indul el**
-   - Ellenőrizd, hogy mindkét csapatban van-e 2 játékos
-   - Az admin felületen ellenőrizd a játék állapotát
+   - Ellenőrizd, hogy elegendő játékos csatlakozott-e (a beállított számnak megfelelően)
+   - Az admin felületen ellenőrizd a játék állapotát és konfigurációját
 
 4. **Admin felület nem elérhető**
    - Ellenőrizd, hogy létrehoztad-e a superuser fiókot
