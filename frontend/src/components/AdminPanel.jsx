@@ -327,7 +327,7 @@ const AdminPanel = ({ onBack }) => {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-900 via-orange-800 to-black text-white">
+    <div className=" text-white">
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-2xl mx-auto">
           {/* Fejléc */}

@@ -17,10 +17,9 @@ const Welcome = ({ onGameCodeSubmit }) => {
     onGameCodeSubmit(gameCode.trim().toUpperCase());
   };
 
-  return (
-    
-    <div className="min-h-screen bg-gradient-to-b from-purple-900 via-orange-800 to-black flex items-center justify-center">
-      <div className="max-w-md mx-auto p-8">
+  return (    
+    <div className="min-h-screen">
+      <div className="max-w-md mx-auto p-8 pt-16">
       
         {/* Fehér tartalom blokk */}
         <div className="white-content-block border-4 border-orange-500 relative">

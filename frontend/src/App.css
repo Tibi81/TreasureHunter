@@ -5,16 +5,14 @@ body {
   height: 100%;
   min-height: 100vh;
   /* Megtartjuk a meglévő gyönyörű gradienst, de sötétebb Halloween-hez */
-  background: linear-gradient(to right top, #1a0f00, #2d1a00, #422801, #533c01, #6e5403, #8b6914, #b8841b, #e7b81b);
+  background-image: url('/Halloween.png');
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
   margin: 0;
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
 }
 
-/* GAME BACKGROUND */
-.game-background {
-  min-height: 100vh;
-  background: linear-gradient(to right top, #1a0f00, #2d1a00, #422801, #533c01, #6e5403, #8b6914, #b8841b, #e7b81b);
-}
 
 #root {  
   max-width: 1280px;

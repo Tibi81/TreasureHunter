@@ -45,7 +45,7 @@ const PlayerRegistration = ({ gameData, onJoinGame, onBack }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-900 via-orange-800 to-black flex items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center">
       <div className="max-w-md mx-auto p-8">
         {/* Fehér tartalom blokk */}
         <div className="white-content-block border-4 border-orange-500">

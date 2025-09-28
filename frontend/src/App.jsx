@@ -531,7 +531,7 @@ function App() {
   // Ha welcome, registration vagy admin állapotban vagyunk, ne jelenítsük meg a header-t
   if (appState === 'welcome' || appState === 'registration' || appState === 'admin') {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-purple-900 via-orange-800 to-black text-white">
+      <div className="min-h-screen text-white">
         {/* Toast-ok megjelenítése */}
         {toasts.map(toast => (
           <Toast
@@ -547,7 +547,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-900 via-orange-800 to-black text-white">
+    <div className="min-h-screen text-white">
       {/* Toast-ok megjelenítése */}
       {toasts.map(toast => (
         <Toast
