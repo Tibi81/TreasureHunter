@@ -94,7 +94,8 @@ class GameStateManager:
                 'created_by': self.game.created_by,
                 'created_at': self.game.created_at,
                 'max_players': self.game.max_players,
-                'team_count': self.game.team_count
+                'team_count': self.game.team_count,
+                'players_per_team': self.game.players_per_team
             },
             'teams': teams_info,
             'players': all_players,

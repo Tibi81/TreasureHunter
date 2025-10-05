@@ -39,8 +39,9 @@ const Welcome = ({ onGameCodeSubmit }) => {
           {/* Cím */}
           <div className="text-center mb-8">
             <div className="text-6xl mb-4">🎃👻</div>
-            <h1 className="text-4xl font-bold mb-2 text-orange-600">
-              Halloween Kincskereső
+            <h1 className="text-lg sm:text-2xl md:text-3xl font-bold mb-2 text-orange-600 px-8 leading-tight">
+              <span className="sm:hidden">Halloween<br />Kincskereső</span>
+              <span className="hidden sm:inline">Halloween Kincskereső</span>
             </h1>
             <p className="text-lg text-gray-600">
               Üdvözöljük a kalandos játékban!

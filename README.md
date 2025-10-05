@@ -35,6 +35,7 @@ Egy interaktív QR kód alapú kincskereső játék Halloween témában, Django 
 - Python 3.8+
 - Node.js 16+
 - npm vagy yarn
+- ngrok (opcionális - távoli hozzáféréshez)
 
 ## 🛠️ Telepítés és futtatás
 
@@ -82,12 +83,84 @@ npm run dev
 npm run build
 ```
 
+## 🌐 Ngrok beállítása (távoli hozzáférés)
+
+Ha szeretnéd, hogy a játék elérhető legyen az interneten (pl. gyerekekkel való játékhoz), használhatod az ngrok-ot:
+
+### 1. Ngrok telepítése
+
+```bash
+# Windows (Chocolatey)
+choco install ngrok
+
+# Vagy letöltés: https://ngrok.com/download
+```
+
+### 2. Ngrok indítása
+
+```bash
+# Django szerver indítása (egy terminálban)
+cd backend
+python manage.py runserver
+
+# Ngrok indítása (másik terminálban)
+ngrok http 8000
+```
+
+### 3. Környezeti változó beállítása
+
+```bash
+# Windows (PowerShell)
+$env:NGROK_URL="https://your-ngrok-url.ngrok-free.app"
+
+# Windows (CMD)
+set NGROK_URL=https://your-ngrok-url.ngrok-free.app
+
+# Linux/Mac
+export NGROK_URL="https://your-ngrok-url.ngrok-free.app"
+```
+
+### 4. Django szerver újraindítása
+
+```bash
+cd backend
+python manage.py runserver
+```
+
+### 5. Automatizált indítás
+
+Használhatod a `start_with_ngrok.bat` scriptet:
+
+```bash
+# Windows
+start_with_ngrok.bat
+
+# A script megkérdezi az ngrok URL-t és automatikusan beállítja
+```
+
+### 6. Frontend build és ngrok
+
+```bash
+# Frontend build
+cd frontend
+npm run build
+
+# Django szerver indítása ngrok URL-lel
+cd ../backend
+set NGROK_URL=https://your-ngrok-url.ngrok-free.app
+python manage.py runserver
+```
+
+**Fontos**: Az ngrok URL minden újraindításkor változik (ingyenes verzióban). Ha új URL-t kapsz, frissítsd a `NGROK_URL` környezeti változót!
+
 ## 🎮 Játék használata
 
 ### Játékosok számára
 
 1. **Játékos csatlakozás**: 
-   - Nyisd meg a frontend alkalmazást (`http://localhost:5173`)
+   - Nyisd meg a frontend alkalmazást:
+     - **Helyi játék**: `http://localhost:8000` (Django szerver)
+     - **Ngrok játék**: `https://your-ngrok-url.ngrok-free.app` (távoli hozzáférés)
    - Add meg a játék kódját
    - Add meg a játékosneved és válassz csapatot
 
@@ -104,7 +177,9 @@ npm run build
 ### Adminok számára
 
 1. **Admin felület elérése**: 
-   - URL: `http://localhost:5173/admin`
+   - URL: 
+     - **Helyi**: `http://localhost:8000/admin`
+     - **Ngrok**: `https://your-ngrok-url.ngrok-free.app/admin`
    - Bejelentkezés a létrehozott admin fiókkal
 
 2. **Játék létrehozása**:
@@ -323,6 +398,16 @@ A QR kódokat bármilyen QR kód generátorral létrehozhatod:
 6. **Progress nem frissül**
    - Frissítsd az oldalt (F5)
    - Ellenőrizd a böngésző konzolt hibákért
+
+7. **Ngrok kapcsolódási problémák**
+   - Ellenőrizd, hogy az ngrok fut-e (`ngrok http 8000`)
+   - Frissítsd a `NGROK_URL` környezeti változót az új URL-lel
+   - Django szerver újraindítása szükséges URL változás után
+   - Ellenőrizd, hogy a Django `ALLOWED_HOSTS` tartalmazza-e az ngrok domaint
+
+8. **CORS hibák ngrok használatakor**
+   - Django automatikusan kezeli a CORS beállításokat ngrok URL-ekhez
+   - Ha mégis hibát kapsz, ellenőrizd a `settings.py`-ban a `CORS_ALLOWED_ORIGINS` beállítást
 
 ## 📝 Licenc
 

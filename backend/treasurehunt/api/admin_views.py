@@ -147,7 +147,7 @@ def add_player(request, game_id):
         return Response({'error': 'Játékos név és csapat megadása kötelező'}, 
                        status=status.HTTP_400_BAD_REQUEST)
     
-    if team_name not in ['pumpkin', 'ghost']:
+    if team_name not in ['pumpkin', 'ghost', 'main']:
         return Response({'error': 'Érvénytelen csapat név'}, 
                        status=status.HTTP_400_BAD_REQUEST)
     

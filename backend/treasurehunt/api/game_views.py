@@ -103,12 +103,19 @@ def create_game(request):
     game = Game.objects.create(
         name=validated_data['name'],
         created_by=validated_data['admin_name'],
-        status='waiting'
+        status='waiting',
+        max_players=validated_data.get('max_players', 4),
+        team_count=validated_data.get('team_count', 2)
     )
     
-    # Alapértelmezett csapatok létrehozása
-    Team.objects.create(game=game, name='pumpkin')
-    Team.objects.create(game=game, name='ghost')
+    # Csapatok létrehozása a team_count alapján
+    if game.team_count == 1:
+        # 1 csapatos játék - csak tök csapat
+        Team.objects.create(game=game, name='pumpkin', max_players=game.max_players)
+    else:
+        # 2 csapatos játék - tök és szellem csapat
+        Team.objects.create(game=game, name='pumpkin', max_players=game.players_per_team)
+        Team.objects.create(game=game, name='ghost', max_players=game.players_per_team)
     
     # Játék összefoglaló lekérdezése a szolgáltatáson keresztül
     data = GameStateService.get_game_summary(game)

@@ -25,7 +25,15 @@ SECRET_KEY = 'django-insecure-zssoifwpm@i^@4*dby61(#vbnu0gd&y-upva6m#b8vqkwf&8hj
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+# Ngrok URL környezeti változóból
+import os
+NGROK_URL = os.environ.get('NGROK_URL', 'https://e221695bd537.ngrok-free.app')
+
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+if NGROK_URL:
+    # Ngrok domain kinyerése (pl: https://abc123.ngrok.io -> abc123.ngrok.io)
+    ngrok_domain = NGROK_URL.replace('https://', '').replace('http://', '')
+    ALLOWED_HOSTS.append(ngrok_domain)
 
 
 # Application definition
@@ -60,7 +68,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -120,7 +128,11 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',
+]
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -133,6 +145,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5173",
     "http://localhost:5176",
     "http://127.0.0.1:5176",
+    "http://192.168.50.195:5173",  # React szerver címe
 ]
 CORS_ALLOW_CREDENTIALS = True
 
@@ -142,4 +155,6 @@ CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5176",
     "http://127.0.0.1:5176",
 ]
+if NGROK_URL:
+    CSRF_TRUSTED_ORIGINS.append(NGROK_URL)
 

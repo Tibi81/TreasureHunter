@@ -33,7 +33,7 @@ const GameExitDialog = ({ onExit, loading }) => {
                  flex items-center justify-center gap-1"
       >
         <span className="text-sm">🚪</span>
-        <span className="hidden sm:inline">Kilépés</span>
+        <span>Kilépés</span>
       </button>
     );
   }

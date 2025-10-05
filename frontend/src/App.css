@@ -5,7 +5,7 @@ body {
   height: 100%;
   min-height: 100vh;
   /* Megtartjuk a meglévő gyönyörű gradienst, de sötétebb Halloween-hez */
-  background-image: url('/Halloween.png');
+  background-image: url('/static/Halloween.png');
   background-repeat: no-repeat;
   background-size: cover;
   background-position: center;

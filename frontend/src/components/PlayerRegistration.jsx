@@ -37,11 +37,31 @@ const PlayerRegistration = ({ gameData, onJoinGame, onBack }) => {
   };
 
   const getAvailableTeams = () => {
-    // Mindig mindkét csapatot mutatjuk
-    return [
-      { name: 'pumpkin', displayName: 'Tök Csapat', icon: '🎃' },
-      { name: 'ghost', displayName: 'Szellem Csapat', icon: '👻' }
-    ];
+    // Mindig a játékban lévő csapatokat mutatjuk
+    // 1 csapatos játék esetén csak egy csapat lesz, 2 csapatos játék esetén két csapat
+    return gameData.teams.map(team => {
+      // Csapat megjelenítési név és ikon meghatározása
+      let displayName, icon;
+      switch (team.name) {
+        case 'pumpkin':
+          displayName = 'Tök Csapat';
+          icon = '🎃';
+          break;
+        case 'ghost':
+          displayName = 'Szellem Csapat';
+          icon = '👻';
+          break;
+        default:
+          displayName = team.display_name || team.name;
+          icon = '🎯';
+      }
+      
+      return {
+        name: team.name,
+        displayName: displayName,
+        icon: icon
+      };
+    });
   };
 
   return (

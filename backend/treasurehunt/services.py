@@ -50,6 +50,10 @@ class GameStateService:
     @staticmethod
     def start_game(game):
         game_manager = GameStateManager(game)
+        # Először setup állapotba kerüljön
+        game.status = 'setup'
+        game.save()
+        # Majd separate fázisba
         game_manager.start_separate_phase()
 
 class ChallengeService:

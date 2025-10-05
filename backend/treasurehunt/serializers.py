@@ -2,9 +2,12 @@ from rest_framework import serializers
 from .models import Game, Team, Player, Station, Challenge
 
 class GameSerializer(serializers.ModelSerializer):
+    players_per_team = serializers.ReadOnlyField()
+    
     class Meta:
         model = Game
-        fields = ['id', 'game_code', 'name', 'status', 'created_at', 'created_by']
+        fields = ['id', 'game_code', 'name', 'status', 'created_at', 'created_by', 
+                 'max_players', 'team_count', 'players_per_team']
 
 class PlayerSerializer(serializers.ModelSerializer):
     team_name = serializers.CharField(source='team.name', read_only=True)

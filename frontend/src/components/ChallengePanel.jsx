@@ -1,11 +1,13 @@
 // components/ChallengePanel.jsx
 import React, { useState } from 'react';
+import QRScanner from './QRScanner';
 
 const ChallengePanel = ({ challenge, onQRScan, onGetHelp, loading, gameStatus }) => {
   const [qrCode, setQrCode] = useState('');
   const [showHelp, setShowHelp] = useState(false);
   const [helpText, setHelpText] = useState('');
   const [scanResult, setScanResult] = useState(null);
+  const [showQRScanner, setShowQRScanner] = useState(false);
 
   // QR kód beküldése
   const handleQRSubmit = async (e) => {
@@ -17,6 +19,21 @@ const ChallengePanel = ({ challenge, onQRScan, onGetHelp, loading, gameStatus })
     setScanResult(result);
     
     // QR kód mező törlése sikeres validálás vagy reset esetén
+    if (result.success || result.reset) {
+      setQrCode('');
+    }
+  };
+
+  // QR kód scanner kezelése
+  const handleQRScan = async (scannedCode) => {
+    setShowQRScanner(false);
+    setQrCode(scannedCode);
+    
+    // Automatikusan beküldjük a beolvasott kódot
+    setScanResult(null);
+    const result = await onQRScan(scannedCode);
+    setScanResult(result);
+    
     if (result.success || result.reset) {
       setQrCode('');
     }
@@ -121,28 +138,41 @@ const ChallengePanel = ({ challenge, onQRScan, onGetHelp, loading, gameStatus })
               disabled={loading}
             />
           </div>
-          <button
-            type="submit"
-            disabled={loading || !qrCode.trim()}
-            className="w-full bg-gradient-to-r from-orange-600 to-purple-600 
-                     hover:from-orange-500 hover:to-purple-500 
-                     disabled:from-gray-600 disabled:to-gray-600
-                     text-white font-bold py-3 px-4 rounded-lg 
-                     transition-all duration-200 
-                     disabled:cursor-not-allowed"
-          >
-            {loading ? (
-              <span className="flex items-center justify-center">
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Ellenőrzés...
-              </span>
-            ) : (
-              'QR kód ellenőrzése 🔍'
-            )}
-          </button>
+          <div className="flex space-x-2">
+            <button
+              type="submit"
+              disabled={loading || !qrCode.trim()}
+              className="flex-1 bg-gradient-to-r from-orange-600 to-purple-600 
+                       hover:from-orange-500 hover:to-purple-500 
+                       disabled:from-gray-600 disabled:to-gray-600
+                       text-white font-bold py-3 px-4 rounded-lg 
+                       transition-all duration-200 
+                       disabled:cursor-not-allowed"
+            >
+              {loading ? (
+                <span className="flex items-center justify-center">
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Ellenőrzés...
+                </span>
+              ) : (
+                'QR kód ellenőrzése 🔍'
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowQRScanner(true)}
+              disabled={loading}
+              className="bg-blue-600 hover:bg-blue-500 disabled:bg-gray-600
+                       text-white px-4 py-3 rounded-lg font-semibold
+                       transition-all duration-200 disabled:cursor-not-allowed"
+              title="QR kód beolvasása kamerával"
+            >
+              📷
+            </button>
+          </div>
         </form>
       </div>
 
@@ -211,6 +241,13 @@ const ChallengePanel = ({ challenge, onQRScan, onGetHelp, loading, gameStatus })
           <li>• Ha elakadsz, kérj segítséget!</li>
         </ul>
       </div>
+
+      {/* QR Scanner Modal */}
+      <QRScanner
+        isOpen={showQRScanner}
+        onScan={handleQRScan}
+        onClose={() => setShowQRScanner(false)}
+      />
     </div>
   );
 };
