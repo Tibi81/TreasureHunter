@@ -559,7 +559,7 @@ function App() {
       ))}
 
       <header className="container mx-auto px-4 py-6">
-        <div className="bg-black bg-opacity-60 rounded-lg p-4">
+        <div className="bg-gradient-to-b from-purple-900/90 to-gray-800/90 backdrop-blur-sm rounded-lg p-4">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
             <div className="order-2 sm:order-1 flex-1 text-center">
               <h1 className="text-2xl sm:text-3xl font-bold text-orange-400">

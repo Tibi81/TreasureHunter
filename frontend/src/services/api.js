@@ -1,19 +1,8 @@
 // services/api.js
-// Dinamikus API URL - ngrok használatához
+// Dinamikus API URL - statikus beágyazáshoz
 const getApiBaseUrl = () => {
-  // Ha ngrok URL van a localStorage-ban, használd azt
-  const ngrokUrl = localStorage.getItem('ngrok_url');
-  if (ngrokUrl) {
-    return ngrokUrl;
-  }
-  
-  // Egyébként használd a jelenlegi domain-t (build módban)
-  if (window.location.hostname !== 'localhost') {
-    return window.location.origin;
-  }
-  
-  // Fejlesztési módban localhost
-  return 'http://127.0.0.1:8000';
+  // Mindig használd a jelenlegi domain-t (build módban)
+  return window.location.origin;
 };
 
 const API_BASE_URL = getApiBaseUrl();

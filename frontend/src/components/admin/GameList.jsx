@@ -17,7 +17,7 @@ const GameList = ({
 }) => {
   return (
     <div className="space-y-6">
-      <div className="bg-black bg-opacity-60 rounded-lg p-6">
+      <div className="bg-gradient-to-b from-purple-900/90 to-gray-800/90 backdrop-blur-sm rounded-lg p-6">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-4">
           <h2 className="text-2xl font-bold text-orange-400">
             Játékok listája ({filteredGames.length})

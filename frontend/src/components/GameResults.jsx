@@ -56,43 +56,43 @@ const GameResults = ({ teams, players, onRestart }) => {
     <div className="max-w-4xl mx-auto">
       {/* Győztes kihirdetése */}
       <div className="text-center mb-8">
-        <div className="text-6xl mb-4">
+        <div className="text-6xl mb-4 animate-float">
           {isTie ? '🤝' : winner?.name === 'pumpkin' ? '🎃' : '👻'}
         </div>
-        <h1 className="text-4xl font-bold text-orange-400 mb-2">
+        <h1 className="text-4xl md:text-5xl font-extrabold text-orange-400 mb-2 font-spooky drop-shadow-glow-orange">
           {isTie ? 'Döntetlen!' : `${utils.formatTeamName(winner?.name)} nyert!`}
         </h1>
-        <p className="text-xl text-purple-300">
+        <p className="text-xl text-purple-300 font-spooky">
           Gratulálunk a játékosoknak! 🎉
         </p>
       </div>
 
       {/* Eredmények táblázat */}
-      <div className="bg-black bg-opacity-60 rounded-lg p-6 mb-6">
-        <h2 className="text-2xl font-bold text-center text-orange-400 mb-6">
+      <div className="bg-gradient-to-b from-purple-900/90 to-gray-800/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 mb-6 border border-orange-500/20">
+        <h2 className="text-3xl font-bold text-center text-orange-400 mb-6 font-spooky drop-shadow-glow-orange">
           🏆 Végeredmény
         </h2>
         
         <div className="space-y-4">
           {sortedTeams.map((team, index) => (
-            <div key={team.name} className={`p-4 rounded-lg border-2 ${
-              index === 0 ? 'border-yellow-400 bg-yellow-900 bg-opacity-30' :
-              index === 1 ? 'border-gray-400 bg-gray-800 bg-opacity-30' :
-              'border-gray-600 bg-gray-900 bg-opacity-30'
+            <div key={team.name} className={`p-6 rounded-xl border-2 shadow-lg ${
+              index === 0 ? 'border-yellow-400 bg-gradient-to-b from-yellow-900/30 to-yellow-800/30' :
+              index === 1 ? 'border-gray-400 bg-gradient-to-b from-gray-800/30 to-gray-700/30' :
+              'border-gray-600 bg-gradient-to-b from-purple-900/30 to-gray-800/30'
             }`}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
-                  <div className="text-2xl font-bold text-orange-400">
+                  <div className="text-3xl font-bold text-orange-400 font-spooky">
                     #{index + 1}
                   </div>
-                  <div className="text-3xl">
+                  <div className="text-4xl animate-float">
                     {team.name === 'pumpkin' ? '🎃' : '👻'}
                   </div>
                   <div>
-                    <div className="text-xl font-semibold">
+                    <div className="text-xl font-bold font-spooky">
                       {utils.formatTeamName(team.name)}
                     </div>
-                    <div className="text-sm text-gray-300">
+                    <div className="text-sm text-gray-200 font-spooky">
                       {team.completed_at ? 'Befejezve' : `${team.current_station}. állomás`}
                     </div>
                   </div>
@@ -101,15 +101,15 @@ const GameResults = ({ teams, players, onRestart }) => {
                 <div className="text-right">
                   {team.completed_at ? (
                     <div>
-                      <div className="text-lg font-semibold text-green-400">
+                      <div className="text-lg font-bold text-green-400 font-spooky">
                         {formatTime(team.completed_at)}
                       </div>
-                      <div className="text-sm text-gray-300">
+                      <div className="text-sm text-gray-200 font-spooky">
                         Időtartam: {getDuration(team)}
                       </div>
                     </div>
                   ) : (
-                    <div className="text-lg font-semibold text-orange-400">
+                    <div className="text-lg font-bold text-orange-400 font-spooky">
                       Folyamatban...
                     </div>
                   )}
@@ -117,14 +117,14 @@ const GameResults = ({ teams, players, onRestart }) => {
               </div>
               
               {/* Csapat részletek */}
-              <div className="mt-3 grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-gray-400">Próbálkozások:</span>
-                  <span className="ml-2 font-semibold">{team.attempts}</span>
+              <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
+                <div className="flex items-center">
+                  <span className="text-gray-300 font-spooky">Próbálkozások:</span>
+                  <span className="ml-2 font-bold text-orange-400 font-spooky">{team.attempts}</span>
                 </div>
-                <div>
-                  <span className="text-gray-400">Segítség:</span>
-                  <span className="ml-2 font-semibold">
+                <div className="flex items-center">
+                  <span className="text-gray-300 font-spooky">Segítség:</span>
+                  <span className="ml-2 font-bold font-spooky">
                     {team.help_used ? '✅ Használva' : '❌ Nem'}
                   </span>
                 </div>
@@ -135,33 +135,33 @@ const GameResults = ({ teams, players, onRestart }) => {
       </div>
 
       {/* Játékosok listája */}
-      <div className="bg-black bg-opacity-60 rounded-lg p-6 mb-6">
-        <h2 className="text-2xl font-bold text-center text-orange-400 mb-6">
+      <div className="bg-gradient-to-b from-purple-900/90 to-gray-800/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 mb-6 border border-orange-500/20">
+        <h2 className="text-3xl font-bold text-center text-orange-400 mb-6 font-spooky drop-shadow-glow-orange">
           👥 Játékosok
         </h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {teams.map(team => (
-            <div key={team.name} className="bg-gray-900 bg-opacity-50 rounded-lg p-4">
-              <div className="flex items-center mb-3">
-                <div className="text-2xl mr-3">
+            <div key={team.name} className="bg-gradient-to-b from-gray-800 to-gray-700 rounded-xl p-4 border border-orange-500/20 shadow-lg">
+              <div className="flex items-center mb-4">
+                <div className="text-3xl mr-3 animate-float">
                   {team.name === 'pumpkin' ? '🎃' : '👻'}
                 </div>
-                <div className="font-semibold text-lg">
+                <div className="font-bold text-lg font-spooky">
                   {utils.formatTeamName(team.name)}
                 </div>
               </div>
               
               <div className="space-y-2">
                 {team.players?.map((player, index) => (
-                  <div key={index} className="flex items-center justify-between bg-gray-800 rounded p-2">
-                    <span className="text-gray-200">{player.name}</span>
-                    <span className="text-xs text-gray-400">
+                  <div key={index} className="flex items-center justify-between bg-gray-800 rounded-xl p-3 border border-gray-600">
+                    <span className="text-gray-200 font-spooky">{player.name}</span>
+                    <span className="text-xs text-gray-400 font-spooky">
                       {new Date(player.joined_at).toLocaleTimeString('hu-HU')}
                     </span>
                   </div>
                 )) || (
-                  <div className="text-gray-400 text-sm">Nincs játékos</div>
+                  <div className="text-gray-400 text-sm font-spooky">Nincs játékos</div>
                 )}
               </div>
             </div>
@@ -170,27 +170,27 @@ const GameResults = ({ teams, players, onRestart }) => {
       </div>
 
       {/* Statisztikák */}
-      <div className="bg-black bg-opacity-60 rounded-lg p-6 mb-6">
-        <h2 className="text-2xl font-bold text-center text-orange-400 mb-6">
+      <div className="bg-gradient-to-b from-purple-900/90 to-gray-800/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 mb-6 border border-orange-500/20">
+        <h2 className="text-3xl font-bold text-center text-orange-400 mb-6 font-spooky drop-shadow-glow-orange">
           📊 Játék statisztikák
         </h2>
         
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="text-center">
-            <div className="text-3xl font-bold text-orange-400">{totalPlayers}</div>
-            <div className="text-sm text-gray-300">Játékos</div>
+          <div className="text-center bg-gradient-to-b from-orange-900/20 to-orange-800/20 rounded-xl p-4 border border-orange-500/20">
+            <div className="text-3xl font-bold text-orange-400 font-spooky">{totalPlayers}</div>
+            <div className="text-sm text-gray-200 font-spooky">Játékos</div>
           </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-green-400">{completedTeams}</div>
-            <div className="text-sm text-gray-300">Befejezett csapat</div>
+          <div className="text-center bg-gradient-to-b from-green-900/20 to-green-800/20 rounded-xl p-4 border border-green-500/20">
+            <div className="text-3xl font-bold text-green-400 font-spooky">{completedTeams}</div>
+            <div className="text-sm text-gray-200 font-spooky">Befejezett csapat</div>
           </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-purple-400">{totalAttempts}</div>
-            <div className="text-sm text-gray-300">Összes próbálkozás</div>
+          <div className="text-center bg-gradient-to-b from-purple-900/20 to-purple-800/20 rounded-xl p-4 border border-purple-500/20">
+            <div className="text-3xl font-bold text-purple-400 font-spooky">{totalAttempts}</div>
+            <div className="text-sm text-gray-200 font-spooky">Összes próbálkozás</div>
           </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-yellow-400">{helpUsed}</div>
-            <div className="text-sm text-gray-300">Segítség használva</div>
+          <div className="text-center bg-gradient-to-b from-yellow-900/20 to-yellow-800/20 rounded-xl p-4 border border-yellow-500/20">
+            <div className="text-3xl font-bold text-yellow-400 font-spooky">{helpUsed}</div>
+            <div className="text-sm text-gray-200 font-spooky">Segítség használva</div>
           </div>
         </div>
       </div>
@@ -199,10 +199,11 @@ const GameResults = ({ teams, players, onRestart }) => {
       <div className="text-center">
         <button
           onClick={onRestart}
-          className="bg-gradient-to-r from-orange-600 to-purple-600 
-                   hover:from-orange-500 hover:to-purple-500 
-                   text-white font-bold py-4 px-8 rounded-lg 
-                   transition-all duration-200 text-xl"
+          className="bg-gradient-to-r from-orange-500 to-purple-600 
+                   hover:from-orange-400 hover:to-purple-500 
+                   text-white font-bold py-4 px-8 rounded-xl 
+                   transition-all duration-200 text-xl transform hover:scale-105
+                   shadow-md hover:shadow-orange-400/40 font-spooky"
         >
           🎮 Új játék indítása
         </button>

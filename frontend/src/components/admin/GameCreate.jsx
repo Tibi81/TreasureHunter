@@ -51,14 +51,14 @@ const GameCreate = ({
     handleCreateGame(e, gameConfig);
   };
   return (
-    <div className="bg-black bg-opacity-60 rounded-lg p-8">
-      <h2 className="text-2xl font-bold text-orange-400 mb-6 text-center">
+    <div className="bg-gradient-to-b from-purple-900/90 to-gray-800/90 backdrop-blur-sm rounded-2xl shadow-lg p-8 border border-orange-500/20">
+      <h2 className="text-3xl font-extrabold text-orange-400 mb-6 text-center font-spooky drop-shadow-glow-orange">
         Új játék létrehozása
       </h2>
       
       <form onSubmit={handleCreateGameWithConfig} className="space-y-6">
         <div>
-          <label htmlFor="adminName" className="block text-lg font-medium mb-3">
+          <label htmlFor="adminName" className="block text-xl font-bold mb-3 text-orange-300 font-spooky">
             Admin neve:
           </label>
           <input
@@ -66,16 +66,16 @@ const GameCreate = ({
             id="adminName"
             value={adminName}
             onChange={(e) => setAdminName(e.target.value)}
-            className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg 
-                     focus:ring-2 focus:ring-orange-500 focus:border-transparent
-                     text-white placeholder-gray-400"
+            className="w-full px-4 py-4 bg-gray-800 border-2 border-orange-400 rounded-xl 
+                     focus:ring-2 focus:ring-orange-400 focus:border-transparent
+                     text-white placeholder-gray-400 font-spooky transition-all duration-200"
             placeholder="Add meg a neved..."
             required
           />
         </div>
 
         <div>
-          <label htmlFor="gameName" className="block text-lg font-medium mb-3">
+          <label htmlFor="gameName" className="block text-xl font-bold mb-3 text-orange-300 font-spooky">
             Játék neve:
           </label>
           <input
@@ -83,24 +83,24 @@ const GameCreate = ({
             id="gameName"
             value={gameName}
             onChange={(e) => setGameName(e.target.value)}
-            className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg 
-                     focus:ring-2 focus:ring-orange-500 focus:border-transparent
-                     text-white placeholder-gray-400"
+            className="w-full px-4 py-4 bg-gray-800 border-2 border-orange-400 rounded-xl 
+                     focus:ring-2 focus:ring-orange-400 focus:border-transparent
+                     text-white placeholder-gray-400 font-spooky transition-all duration-200"
             placeholder="Halloween Kincskereső"
           />
         </div>
 
         <div>
-          <label htmlFor="teamCount" className="block text-lg font-medium mb-3">
+          <label htmlFor="teamCount" className="block text-xl font-bold mb-3 text-orange-300 font-spooky">
             Csapatok száma:
           </label>
           <select
             id="teamCount"
             value={gameConfig.teamCount}
             onChange={(e) => handleTeamCountChange(parseInt(e.target.value))}
-            className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg 
-                     focus:ring-2 focus:ring-orange-500 focus:border-transparent
-                     text-white"
+            className="w-full px-4 py-4 bg-gray-800 border-2 border-orange-400 rounded-xl 
+                     focus:ring-2 focus:ring-orange-400 focus:border-transparent
+                     text-white font-spooky transition-all duration-200"
           >
             <option value={1}>1 csapat (egyedül/együtt)</option>
             <option value={2}>2 csapat (verseny)</option>
@@ -108,16 +108,16 @@ const GameCreate = ({
         </div>
 
         <div>
-          <label htmlFor="maxPlayers" className="block text-lg font-medium mb-3">
+          <label htmlFor="maxPlayers" className="block text-xl font-bold mb-3 text-orange-300 font-spooky">
             Játékosok száma:
           </label>
           <select
             id="maxPlayers"
             value={gameConfig.maxPlayers}
             onChange={(e) => setGameConfig(prev => ({...prev, maxPlayers: parseInt(e.target.value)}))}
-            className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg 
-                     focus:ring-2 focus:ring-orange-500 focus:border-transparent
-                     text-white"
+            className="w-full px-4 py-4 bg-gray-800 border-2 border-orange-400 rounded-xl 
+                     focus:ring-2 focus:ring-orange-400 focus:border-transparent
+                     text-white font-spooky transition-all duration-200"
           >
             {getPlayerOptions().map(option => (
               <option key={option.value} value={option.value}>
@@ -128,15 +128,15 @@ const GameCreate = ({
         </div>
 
         {gameConfig.teamCount === 1 && (
-          <div className="bg-green-900 bg-opacity-50 border border-green-500 rounded-lg p-4">
-            <p className="text-green-200 text-sm">
+          <div className="bg-gradient-to-b from-green-900/50 to-green-800/50 border border-green-500/50 rounded-xl p-4">
+            <p className="text-green-200 text-sm font-spooky">
               ℹ️ Egy játékos játék - mindkét csapat elérhető, a játékos választhat
             </p>
           </div>
         )}
         {gameConfig.teamCount === 2 && (
-          <div className="bg-blue-900 bg-opacity-50 border border-blue-500 rounded-lg p-4">
-            <p className="text-blue-200 text-sm">
+          <div className="bg-gradient-to-b from-blue-900/50 to-blue-800/50 border border-blue-500/50 rounded-xl p-4">
+            <p className="text-blue-200 text-sm font-spooky">
               ℹ️ Minden csapatban {gameConfig.maxPlayers / 2} játékos lesz
             </p>
           </div>
@@ -146,9 +146,10 @@ const GameCreate = ({
           <button
             type="button"
             onClick={() => setView('list')}
-            className="flex-1 bg-gray-600 hover:bg-gray-500 
-                     text-white font-bold py-3 px-6 rounded-lg 
-                     transition-all duration-200"
+            className="flex-1 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-500 hover:to-gray-600 
+                     text-white font-bold py-4 px-6 rounded-xl 
+                     transition-all duration-200 transform hover:scale-105
+                     shadow-md hover:shadow-gray-400/40 font-spooky"
           >
             Vissza
           </button>
@@ -157,9 +158,10 @@ const GameCreate = ({
             disabled={loading}
             className="flex-1 bg-gradient-to-r from-green-600 to-blue-600 
                      hover:from-green-500 hover:to-blue-500 
-                     disabled:from-gray-600 disabled:to-gray-600
-                     text-white font-bold py-3 px-6 rounded-lg 
-                     transition-all duration-200 disabled:cursor-not-allowed"
+                     disabled:from-gray-600 disabled:to-gray-700
+                     text-white font-bold py-4 px-6 rounded-xl 
+                     transition-all duration-200 disabled:cursor-not-allowed
+                     transform hover:scale-105 shadow-md hover:shadow-green-400/40 font-spooky"
           >
             {loading ? 'Létrehozás...' : 'Játék létrehozása'}
           </button>

@@ -36,7 +36,7 @@ const GameManage = ({
       )}
 
       {/* Játék információk */}
-      <div className="bg-black bg-opacity-60 rounded-lg p-6">
+      <div className="bg-gradient-to-b from-purple-900/90 to-gray-800/90 backdrop-blur-sm rounded-lg p-6">
         <h2 className="text-2xl font-bold text-orange-400 mb-4 text-center">
           Játék információk
         </h2>
@@ -63,7 +63,7 @@ const GameManage = ({
       </div>
 
       {/* Játékosok listája */}
-      <div className="bg-black bg-opacity-60 rounded-lg p-6">
+      <div className="bg-gradient-to-b from-purple-900/90 to-gray-800/90 backdrop-blur-sm rounded-lg p-6">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-bold text-orange-400">
             Játékosok
@@ -167,7 +167,7 @@ const GameManage = ({
       </div>
 
       {/* Admin műveletek */}
-      <div className="bg-black bg-opacity-60 rounded-lg p-6">
+      <div className="bg-gradient-to-b from-purple-900/90 to-gray-800/90 backdrop-blur-sm rounded-lg p-6">
         <h3 className="text-xl font-bold text-orange-400 mb-4 text-center">
           Admin műveletek
         </h3>
