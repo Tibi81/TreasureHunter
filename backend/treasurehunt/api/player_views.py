@@ -4,68 +4,85 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
+from django.core.exceptions import ValidationError
 from ..models import Game, Team, Player
 from ..serializers import PlayerSerializer
 from ..validators import PlayerRegistrationValidator
 from ..services import GameStateService, SessionTokenService
 from ..game_state_manager import GameConstants
+from ..utils.error_handler import GameErrorHandler, api_error_handler
 
 logger = logging.getLogger(__name__)
 
 
 @api_view(['POST'])
+@api_error_handler
 def join_game(request, game_id):
     """Játékos csatlakozás - optimalizált verzió"""
-    # Prefetch related objects to avoid N+1 queries
-    game = get_object_or_404(Game.objects.prefetch_related('teams__players'), id=game_id)
-    
-    # Validáció
-    validator = PlayerRegistrationValidator(data=request.data)
-    if not validator.is_valid():
-        return Response({'error': validator.errors}, status=status.HTTP_400_BAD_REQUEST)
-    
-    validated_data = validator.validated_data
-    player_name = validated_data['name']
-    team_name = validated_data['team']
-    
-    team = get_object_or_404(Team, game=game, name=team_name)
-    
-    # Játék teljes kapacitás ellenőrzése
-    total_active_players = sum(team.players.filter(is_active=True).count() for team in game.teams.all())
-    if total_active_players >= game.max_players:
-        return Response({'error': f'A játék már tele van (maximum {game.max_players} játékos)'}, 
-                       status=status.HTTP_400_BAD_REQUEST)
-    
-    # Csapat telítettség ellenőrzése (csak aktív játékosok alapján)
-    if team.players.filter(is_active=True).count() >= team.max_players:
-        return Response({'error': 'Ez a csapat már tele van'}, 
-                       status=status.HTTP_400_BAD_REQUEST)
-    
-    player = Player.objects.create(team=team, name=player_name)
-    
-    # Session token generálása
-    session_token = SessionTokenService.generate_token(player)
-    
-    # Session frissítése
-    request.session['game_id'] = str(game.id)
-    request.session['player_name'] = player_name
-    request.session['team_name'] = team_name
-    request.session['session_token'] = session_token
-    
-    # Automatikus állapotváltás ellenőrzése a szolgáltatáson keresztül
-    if GameStateService.should_auto_transition_to_setup(game):
-        game.status = 'setup'
-        game.save()
-    
-    # Egyszerűsített válasz - csak a szükséges adatokat adjuk vissza
-    return Response({
-        'id': player.id,
-        'name': player.name,
-        'team_name': team.get_name_display(),
-        'joined_at': player.joined_at,
-        'session_token': session_token,
-        'message': 'Sikeresen csatlakoztál a játékhoz!'
-    }, status=status.HTTP_201_CREATED)
+    try:
+        # Prefetch related objects to avoid N+1 queries
+        game = get_object_or_404(Game.objects.prefetch_related('teams__players'), id=game_id)
+        
+        # Validáció
+        validator = PlayerRegistrationValidator(data=request.data)
+        if not validator.is_valid():
+            return GameErrorHandler.handle_validation_error(
+                f"Érvénytelen adatok: {validator.errors}",
+                'player_registration'
+            )
+        
+        validated_data = validator.validated_data
+        player_name = validated_data['name']
+        team_name = validated_data['team']
+        
+        team = get_object_or_404(Team, game=game, name=team_name)
+        
+        # Játék teljes kapacitás ellenőrzése
+        total_active_players = sum(team.players.filter(is_active=True).count() for team in game.teams.all())
+        if total_active_players >= game.max_players:
+            return GameErrorHandler.handle_game_state_error(
+                f'A játék már tele van (maximum {game.max_players} játékos)'
+            )
+        
+        # Csapat telítettség ellenőrzése (csak aktív játékosok alapján)
+        if team.players.filter(is_active=True).count() >= team.max_players:
+            return GameErrorHandler.handle_game_state_error('Ez a csapat már tele van')
+        
+        player = Player.objects.create(team=team, name=player_name)
+        
+        # Session token generálása
+        session_token = SessionTokenService.generate_token(player)
+        
+        # Session frissítése
+        request.session['game_id'] = str(game.id)
+        request.session['player_name'] = player_name
+        request.session['team_name'] = team_name
+        request.session['session_token'] = session_token
+        
+        # Automatikus állapotváltás ellenőrzése a szolgáltatáson keresztül
+        if GameStateService.should_auto_transition_to_setup(game):
+            game.status = 'setup'
+            game.save()
+        
+        # Egyszerűsített válasz - csak a szükséges adatokat adjuk vissza
+        return Response({
+            'id': player.id,
+            'name': player.name,
+            'team_name': team.get_name_display(),
+            'joined_at': player.joined_at,
+            'session_token': session_token,
+            'message': 'Sikeresen csatlakoztál a játékhoz!'
+        }, status=status.HTTP_201_CREATED)
+        
+    except Game.DoesNotExist:
+        return GameErrorHandler.handle_game_not_found(game_id)
+    except Team.DoesNotExist:
+        return GameErrorHandler.handle_team_not_found(team_name)
+    except ValidationError as e:
+        return GameErrorHandler.handle_validation_error(str(e))
+    except Exception as e:
+        logger.error(f"Unexpected error in join_game: {e}")
+        return GameErrorHandler.handle_game_state_error("Váratlan hiba történt a csatlakozáskor")
 
 
 @api_view(['GET'])

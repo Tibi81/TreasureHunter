@@ -5,32 +5,46 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
 from django.db.models import Count
+from django.core.exceptions import ValidationError
 from ..models import Game, Team, Player
 from ..serializers import GameSerializer
 from ..validators import GameCodeValidator, AdminGameCreationValidator
 from ..services import GameStateService
 from ..game_state_manager import GameConstants
+from ..utils.error_handler import GameErrorHandler, api_error_handler
 
 logger = logging.getLogger(__name__)
 
 
 @api_view(['GET'])
+@api_error_handler
 def find_game_by_code(request, game_code):
     """Játék keresése kód alapján - optimalizált verzió"""
-    # Validáció
-    validator = GameCodeValidator(data={'game_code': game_code})
-    if not validator.is_valid():
-        return Response({'error': validator.errors['game_code'][0]}, status=status.HTTP_400_BAD_REQUEST)
-    
     try:
+        # Validáció
+        validator = GameCodeValidator(data={'game_code': game_code})
+        if not validator.is_valid():
+            return GameErrorHandler.handle_validation_error(
+                validator.errors['game_code'][0], 
+                'game_code'
+            )
+        
         # Prefetch related objects to avoid N+1 queries
-        game = Game.objects.prefetch_related('teams__players').get(game_code=validator.validated_data['game_code'])
+        game = Game.objects.prefetch_related('teams__players').get(
+            game_code=validator.validated_data['game_code']
+        )
+        
+        # Játék összefoglaló lekérdezése a szolgáltatáson keresztül
+        data = GameStateService.get_game_summary(game)
+        return Response(data)
+        
     except Game.DoesNotExist:
-        return Response({'error': 'Nem található játék ezzel a kóddal'}, status=status.HTTP_404_NOT_FOUND)
-    
-    # Játék összefoglaló lekérdezése a szolgáltatáson keresztül
-    data = GameStateService.get_game_summary(game)
-    return Response(data)
+        return GameErrorHandler.handle_game_not_found(game_code)
+    except ValidationError as e:
+        return GameErrorHandler.handle_validation_error(str(e))
+    except Exception as e:
+        logger.error(f"Unexpected error in find_game_by_code: {e}")
+        return GameErrorHandler.handle_game_state_error("Váratlan hiba történt a játék keresésekor")
 
 
 @api_view(['GET'])
@@ -90,49 +104,63 @@ def find_active_game(request):
 
 
 @api_view(['POST'])
+@api_error_handler
 def create_game(request):
     """Új játék létrehozása (Admin)"""
-    # Validáció
-    validator = AdminGameCreationValidator(data=request.data)
-    if not validator.is_valid():
-        return Response({'error': validator.errors}, status=status.HTTP_400_BAD_REQUEST)
-    
-    validated_data = validator.validated_data
-    
-    # Játék létrehozása
-    game = Game.objects.create(
-        name=validated_data['name'],
-        created_by=validated_data['admin_name'],
-        status='waiting',
-        max_players=validated_data.get('max_players', 4),
-        team_count=validated_data.get('team_count', 2)
-    )
-    
-    # Csapatok létrehozása a team_count alapján
-    if game.team_count == 1:
-        # 1 csapatos játék - csak tök csapat
-        Team.objects.create(game=game, name='pumpkin', max_players=game.max_players)
-    else:
-        # 2 csapatos játék - tök és szellem csapat
-        Team.objects.create(game=game, name='pumpkin', max_players=game.players_per_team)
-        Team.objects.create(game=game, name='ghost', max_players=game.players_per_team)
-    
-    # Játék összefoglaló lekérdezése a szolgáltatáson keresztül
-    data = GameStateService.get_game_summary(game)
-    return Response(data, status=status.HTTP_201_CREATED)
+    try:
+        # Validáció
+        validator = AdminGameCreationValidator(data=request.data)
+        if not validator.is_valid():
+            return GameErrorHandler.handle_validation_error(
+                f"Érvénytelen adatok: {validator.errors}",
+                'game_creation'
+            )
+        
+        validated_data = validator.validated_data
+        
+        # Játék létrehozása
+        game = Game.objects.create(
+            name=validated_data['name'],
+            created_by=validated_data['admin_name'],
+            status='waiting',
+            max_players=validated_data.get('max_players', 4),
+            team_count=validated_data.get('team_count', 2)
+        )
+        
+        # Csapatok létrehozása a team_count alapján
+        if game.team_count == 1:
+            # 1 csapatos játék - csak tök csapat
+            Team.objects.create(game=game, name='pumpkin', max_players=game.max_players)
+        else:
+            # 2 csapatos játék - tök és szellem csapat
+            Team.objects.create(game=game, name='pumpkin', max_players=game.players_per_team)
+            Team.objects.create(game=game, name='ghost', max_players=game.players_per_team)
+        
+        # Játék összefoglaló lekérdezése a szolgáltatáson keresztül
+        data = GameStateService.get_game_summary(game)
+        data['message'] = 'Játék sikeresen létrehozva!'
+        return Response(data, status=status.HTTP_201_CREATED)
+        
+    except ValidationError as e:
+        return GameErrorHandler.handle_validation_error(str(e))
+    except Exception as e:
+        logger.error(f"Unexpected error in create_game: {e}")
+        return GameErrorHandler.handle_game_state_error("Váratlan hiba történt a játék létrehozásakor")
 
 
 @api_view(['POST'])
+@api_error_handler
 def start_game(request, game_id):
     """Játék indítása (Admin)"""
-    game = get_object_or_404(Game, id=game_id)
-    
-    # Játék indíthatóság ellenőrzése a szolgáltatáson keresztül
-    if not GameStateService.can_game_start(game):
-        return Response({'error': 'A játék nem indítható el. Legalább 2 játékos szükséges és minden csapatban kell lennie legalább egy játékosnak'}, 
-                       status=status.HTTP_400_BAD_REQUEST)
-    
     try:
+        game = get_object_or_404(Game, id=game_id)
+        
+        # Játék indíthatóság ellenőrzése a szolgáltatáson keresztül
+        if not GameStateService.can_game_start(game):
+            return GameErrorHandler.handle_game_state_error(
+                'A játék nem indítható el. Legalább 2 játékos szükséges és minden csapatban kell lennie legalább egy játékosnak'
+            )
+        
         # Játék indítása a GameStateService-en keresztül
         GameStateService.start_game(game)
         
@@ -141,8 +169,14 @@ def start_game(request, game_id):
         data['message'] = 'Játék sikeresen elindítva!'
         
         return Response(data)
+        
+    except Game.DoesNotExist:
+        return GameErrorHandler.handle_game_not_found(game_id)
     except ValueError as e:
-        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return GameErrorHandler.handle_game_state_error(str(e))
+    except Exception as e:
+        logger.error(f"Unexpected error in start_game: {e}")
+        return GameErrorHandler.handle_game_state_error("Váratlan hiba történt a játék indításakor")
 
 
 @api_view(['DELETE'])
