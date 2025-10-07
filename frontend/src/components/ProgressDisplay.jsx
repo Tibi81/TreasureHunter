@@ -125,7 +125,7 @@ const ProgressDisplay = ({ currentPlayer, teams, gameStatus, gameInfo, gameName,
   const percentage = getProgressPercentage();
 
   return (
-    <div className="bg-gradient-to-b from-purple-900/90 to-gray-800/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 mb-6 border border-orange-500/20">
+    <div className="bg-gradient-to-b from-purple-900/90 to-gray-800/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 mb-6 border border-orange-500/20 relative">
       <div className="text-center">
         {/* Játék név */}
         {gameName && (

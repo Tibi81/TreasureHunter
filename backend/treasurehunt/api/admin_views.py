@@ -4,9 +4,11 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
+from django.core.exceptions import ValidationError
 from ..models import Game, Team, Player
 from ..serializers import PlayerSerializer
 from ..services import GameStateService
+from ..utils.error_handler import GameErrorHandler, api_error_handler
 
 logger = logging.getLogger(__name__)
 
@@ -92,6 +94,7 @@ def remove_player(request, game_id, player_id):
 
 
 @api_view(['POST'])
+@api_error_handler
 def move_player(request, game_id, player_id):
     """Játékos áthelyezése másik csapatba (Admin) - javított verzió"""
     # Prefetch related objects to avoid N+1 queries
@@ -135,6 +138,7 @@ def move_player(request, game_id, player_id):
 
 
 @api_view(['POST'])
+@api_error_handler
 def add_player(request, game_id):
     """Játékos hozzáadása (Admin) - javított verzió"""
     # Prefetch related objects to avoid N+1 queries

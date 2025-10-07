@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
 from django.core.exceptions import ValidationError
+from django.middleware.csrf import get_token
 from ..models import Game, Team, Player
 from ..serializers import PlayerSerializer
 from ..validators import PlayerRegistrationValidator
@@ -13,6 +14,17 @@ from ..game_state_manager import GameConstants
 from ..utils.error_handler import GameErrorHandler, api_error_handler
 
 logger = logging.getLogger(__name__)
+
+
+@api_view(['GET'])
+def get_csrf_token(request):
+    """CSRF token lekérdezése a frontend számára"""
+    csrf_token = get_token(request)
+    response = Response({'csrf_token': csrf_token})
+    # CORS header-ek beállítása
+    response['Access-Control-Allow-Credentials'] = 'true'
+    response['Access-Control-Allow-Origin'] = request.headers.get('Origin', '*')
+    return response
 
 
 @api_view(['POST'])
@@ -136,7 +148,7 @@ def get_player_status(request):
                        status=status.HTTP_404_NOT_FOUND)
 
 
-@api_view(['POST'])
+@api_view(['GET'])
 def check_player_session(request):
     """Játékos session ellenőrzése és visszaállítása"""
     game_id = request.session.get('game_id')
@@ -266,6 +278,7 @@ def restore_session(request):
 
 
 @api_view(['POST'])
+@api_error_handler
 def logout_player(request):
     """Játékos kijelentkezése - végleges kilépés (játékos törlése)"""
     # Próbáljuk POST body-ból, majd session-ből

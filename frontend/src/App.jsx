@@ -30,6 +30,7 @@ function App() {
   const [currentChallenge, setCurrentChallenge] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showExitDialog, setShowExitDialog] = useState(false);
 
   // Toast hozzáadása
   const addToast = (message, type = 'info') => {
@@ -575,15 +576,33 @@ function App() {
             </div>
             <div className="order-1 sm:order-2 flex justify-center sm:justify-end">
               {gameState.gameId && (
-                <GameExitDialog
-                  onExit={handleGameExit}
-                  loading={loading}
-                />
+                <button
+                  onClick={() => setShowExitDialog(true)}
+                  disabled={loading}
+                  className="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-500 hover:to-gray-600 disabled:from-gray-700 disabled:to-gray-800
+                           text-white px-3 py-2 rounded-xl text-xs sm:text-sm font-bold
+                           transition-all duration-200 disabled:cursor-not-allowed
+                           flex items-center justify-center gap-1 transform hover:scale-105
+                           shadow-md hover:shadow-gray-400/40 font-spooky"
+                >
+                  <span className="text-sm">🚪</span>
+                  <span>Kilépés</span>
+                </button>
               )}
             </div>
           </div>
         </div>
       </header>
+
+      {/* GameExitDialog modal - a header-en kívül, hogy megfelelően működjön */}
+      {gameState.gameId && (
+        <GameExitDialog
+          onExit={handleGameExit}
+          loading={loading}
+          showDialog={showExitDialog}
+          setShowDialog={setShowExitDialog}
+        />
+      )}
 
       <main className="container mx-auto px-4 py-6">
         {error && (

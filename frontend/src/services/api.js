@@ -16,14 +16,73 @@ class APIError extends Error {
   }
 }
 
+// CSRF token cache
+let csrfToken = null;
+let csrfTokenPromise = null;
+
+// CSRF token lekérdezése
+const getCSRFToken = async () => {
+  // Ha már van folyamatban lévő kérés, várjuk meg azt
+  if (csrfTokenPromise) {
+    return await csrfTokenPromise;
+  }
+  
+  // Ha már van token, használjuk azt
+  if (csrfToken) {
+    return csrfToken;
+  }
+  
+  // Új token lekérdezése
+  csrfTokenPromise = (async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/csrf-token/`, {
+        method: 'GET',
+        credentials: 'include' // Cookie-k küldése
+      });
+      
+      if (!response.ok) {
+        throw new Error(`CSRF token kérés sikertelen: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      csrfToken = data.csrf_token;
+      return csrfToken;
+    } catch (error) {
+      console.error('CSRF token lekérdezési hiba:', error);
+      throw new APIError('CSRF token lekérdezési hiba', 0);
+    } finally {
+      csrfTokenPromise = null;
+    }
+  })();
+  
+  return await csrfTokenPromise;
+};
+
 const apiRequest = async (endpoint, options = {}) => {
   try {
     const url = `${API_BASE_URL}${endpoint}`;
+    
+    // CSRF token hozzáadása POST, PUT, DELETE, PATCH kérésekhez
+    const needsCSRF = ['POST', 'PUT', 'DELETE', 'PATCH'].includes(options.method || 'GET');
+    let csrfToken = null;
+    
+    if (needsCSRF) {
+      try {
+        csrfToken = await getCSRFToken();
+        console.log('CSRF token lekérdezve:', csrfToken);
+      } catch (error) {
+        console.error('CSRF token lekérdezési hiba:', error);
+        throw new APIError('CSRF token lekérdezési hiba', 0);
+      }
+    }
+    
     const config = {
       headers: {
         'Content-Type': 'application/json',
+        ...(csrfToken && { 'X-CSRFToken': csrfToken }),
         ...options.headers,
       },
+      credentials: 'include', // Cookie-k küldése
       ...options,
     };
 
@@ -31,10 +90,12 @@ const apiRequest = async (endpoint, options = {}) => {
       config.body = JSON.stringify(config.body);
     }
 
+    console.log('API kérés:', url, config);
     const response = await fetch(url, config);
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+      console.error('API hiba:', response.status, errorData);
       throw new APIError(
         errorData.error || `HTTP error! status: ${response.status}`,
         response.status
@@ -46,6 +107,7 @@ const apiRequest = async (endpoint, options = {}) => {
     if (error instanceof APIError) {
       throw error;
     }
+    console.error('API kérés hiba:', error);
     throw new APIError('Hálózati hiba', 0);
   }
 };
@@ -127,9 +189,7 @@ export const gameAPI = {
 
   // Játékos session ellenőrzése
   checkPlayerSession: async () => {
-    return apiRequest('/api/player/check-session/', {
-      method: 'POST'
-    });
+    return apiRequest('/api/player/check-session/');
   },
 
   // Játékos kilépése a játékból

@@ -33,5 +33,8 @@ urlpatterns = [
     # Session token funkciók
     path('player/restore-session/', player_views.restore_session, name='restore_session'),
     path('player/logout/', player_views.logout_player, name='logout_player'),
+    
+    # CSRF token
+    path('csrf-token/', player_views.get_csrf_token, name='get_csrf_token'),
 
 ]

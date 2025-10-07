@@ -1,13 +1,8 @@
 // components/GameExitDialog.jsx
 import React, { useState } from 'react';
 
-const GameExitDialog = ({ onExit, loading }) => {
-  const [showDialog, setShowDialog] = useState(false);
+const GameExitDialog = ({ onExit, loading, showDialog, setShowDialog }) => {
   const [selectedOption, setSelectedOption] = useState('exit'); // 'exit' vagy 'logout'
-
-  const handleExitClick = () => {
-    setShowDialog(true);
-  };
 
   const handleConfirmAction = async () => {
     // Átadjuk a választott opciót az App.js-nek
@@ -22,26 +17,17 @@ const GameExitDialog = ({ onExit, loading }) => {
     setShowDialog(false);
   };
 
+  // Ha nincs megjelenítendő modal, ne rendereljünk semmit
   if (!showDialog) {
-    return (
-      <button
-        onClick={handleExitClick}
-        disabled={loading}
-        className="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-500 hover:to-gray-600 disabled:from-gray-700 disabled:to-gray-800
-                 text-white px-3 py-2 rounded-xl text-xs sm:text-sm font-bold
-                 transition-all duration-200 disabled:cursor-not-allowed
-                 flex items-center justify-center gap-1 transform hover:scale-105
-                 shadow-md hover:shadow-gray-400/40 font-spooky"
-      >
-        <span className="text-sm">🚪</span>
-        <span>Kilépés</span>
-      </button>
-    );
+    return null;
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-gradient-to-b from-purple-900/90 to-gray-800/90 backdrop-blur-sm rounded-2xl shadow-lg p-4 sm:p-6 max-w-sm sm:max-w-md mx-4 border border-orange-500/20">
+    <div 
+      className="fixed inset-0 flex items-center justify-center z-[99999] p-4"
+      style={{ backgroundColor: 'rgba(0, 0, 0, 0.1)' }}
+    >
+      <div className="bg-gradient-to-b from-purple-900/90 to-gray-800/90 backdrop-blur-sm rounded-2xl shadow-lg p-4 sm:p-6 max-w-sm sm:max-w-md w-full max-h-[90vh] overflow-y-auto border border-orange-500/20 relative">
         <div className="text-center">
           <div className="text-3xl sm:text-4xl mb-4 animate-float">🚪</div>
           <h3 className="text-lg sm:text-xl font-bold mb-4 text-orange-300 font-spooky drop-shadow-glow-orange">

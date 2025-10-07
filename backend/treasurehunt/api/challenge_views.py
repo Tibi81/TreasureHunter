@@ -4,10 +4,12 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
+from django.core.exceptions import ValidationError
 from ..models import Game, Team, Station, Challenge
 from ..serializers import ChallengeSerializer
 from ..validators import QRCodeValidator
 from ..services import ChallengeService
+from ..utils.error_handler import GameErrorHandler, api_error_handler
 
 logger = logging.getLogger(__name__)
 
@@ -41,25 +43,40 @@ def get_current_challenge(request, game_id, team_name):
 
 
 @api_view(['POST'])
+@api_error_handler
 def validate_qr(request, game_id, team_name):
     """QR kód validálása"""
-    game = get_object_or_404(Game, id=game_id)
-    team = get_object_or_404(Team, game=game, name=team_name)
-    
-    # Validáció
-    validator = QRCodeValidator(data=request.data)
-    if not validator.is_valid():
-        return Response({'error': validator.errors['qr_code'][0]}, 
-                       status=status.HTTP_400_BAD_REQUEST)
-    
-    qr_code = validator.validated_data['qr_code']
-    
-    # QR kód validálása a szolgáltatáson keresztül
-    result = ChallengeService.validate_qr_code(game, team, qr_code)
-    return Response(result)
+    try:
+        game = get_object_or_404(Game, id=game_id)
+        team = get_object_or_404(Team, game=game, name=team_name)
+        
+        # Validáció
+        validator = QRCodeValidator(data=request.data)
+        if not validator.is_valid():
+            return GameErrorHandler.handle_validation_error(
+                validator.errors['qr_code'][0], 
+                'qr_code'
+            )
+        
+        qr_code = validator.validated_data['qr_code']
+        
+        # QR kód validálása a szolgáltatáson keresztül
+        result = ChallengeService.validate_qr_code(game, team, qr_code)
+        return Response(result)
+        
+    except Game.DoesNotExist:
+        return GameErrorHandler.handle_game_not_found(game_id)
+    except Team.DoesNotExist:
+        return GameErrorHandler.handle_team_not_found(team_name)
+    except ValidationError as e:
+        return GameErrorHandler.handle_validation_error(str(e))
+    except Exception as e:
+        logger.error(f"Unexpected error in validate_qr: {e}")
+        return GameErrorHandler.handle_game_state_error("Váratlan hiba történt a QR kód validálásakor")
 
 
 @api_view(['POST'])
+@api_error_handler
 def get_help(request, game_id, team_name):
     """Segítség kérése - egyszerűsített verzió"""
     game = get_object_or_404(Game, id=game_id)
