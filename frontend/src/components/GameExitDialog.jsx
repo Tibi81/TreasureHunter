@@ -1,5 +1,6 @@
 // components/GameExitDialog.jsx
 import React, { useState } from 'react';
+import PropTypes from 'prop-types';
 
 const GameExitDialog = ({ onExit, loading, showDialog, setShowDialog }) => {
   const [selectedOption, setSelectedOption] = useState('exit'); // 'exit' vagy 'logout'
@@ -118,6 +119,13 @@ const GameExitDialog = ({ onExit, loading, showDialog, setShowDialog }) => {
       </div>
     </div>
   );
+};
+
+GameExitDialog.propTypes = {
+  onExit: PropTypes.func.isRequired,
+  loading: PropTypes.bool,
+  showDialog: PropTypes.bool.isRequired,
+  setShowDialog: PropTypes.func.isRequired,
 };
 
 export default GameExitDialog;

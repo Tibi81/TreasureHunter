@@ -1,5 +1,6 @@
 // components/AdminPanel.jsx
 import React, { useState, useEffect, useCallback } from 'react';
+import PropTypes from 'prop-types';
 import { gameAPI } from '../services/api';
 import GameList from './admin/GameList';
 import GameCreate from './admin/GameCreate';
@@ -500,6 +501,10 @@ const AdminPanel = ({ onBack }) => {
       </div>
     </div>
   );
+};
+
+AdminPanel.propTypes = {
+  onBack: PropTypes.func.isRequired,
 };
 
 export default AdminPanel;

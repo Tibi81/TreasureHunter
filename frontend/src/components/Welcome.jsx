@@ -1,5 +1,6 @@
 // components/Welcome.jsx
 import React, { useState } from 'react';
+import PropTypes from 'prop-types';
 
 const Welcome = ({ onGameCodeSubmit }) => {
   const [gameCode, setGameCode] = useState('');
@@ -131,6 +132,10 @@ const Welcome = ({ onGameCodeSubmit }) => {
       </div>
     </div>
   );
+};
+
+Welcome.propTypes = {
+  onGameCodeSubmit: PropTypes.func.isRequired,
 };
 
 export default Welcome;

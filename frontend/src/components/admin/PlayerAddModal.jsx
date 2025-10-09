@@ -1,5 +1,6 @@
 // components/admin/PlayerAddModal.jsx
 import React from 'react';
+import PropTypes from 'prop-types';
 
 const PlayerAddModal = ({ 
   addingPlayer, 
@@ -72,6 +73,23 @@ const PlayerAddModal = ({
       </div>
     </div>
   );
+};
+
+PlayerAddModal.propTypes = {
+  addingPlayer: PropTypes.bool.isRequired,
+  setAddingPlayer: PropTypes.func.isRequired,
+  newPlayerName: PropTypes.string.isRequired,
+  setNewPlayerName: PropTypes.func.isRequired,
+  newPlayerTeam: PropTypes.string.isRequired,
+  setNewPlayerTeam: PropTypes.func.isRequired,
+  loading: PropTypes.bool,
+  handleAddPlayer: PropTypes.func.isRequired,
+  currentGame: PropTypes.shape({
+    id: PropTypes.number,
+    game: PropTypes.shape({
+      id: PropTypes.number,
+    }),
+  }),
 };
 
 export default PlayerAddModal;

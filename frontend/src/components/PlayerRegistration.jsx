@@ -1,5 +1,6 @@
 // components/PlayerRegistration.jsx
 import React, { useState } from 'react';
+import PropTypes from 'prop-types';
 
 const PlayerRegistration = ({ gameData, onJoinGame, onBack }) => {
   const [playerName, setPlayerName] = useState('');
@@ -204,6 +205,36 @@ const PlayerRegistration = ({ gameData, onJoinGame, onBack }) => {
       </div>
     </div>
   );
+};
+
+PlayerRegistration.propTypes = {
+  gameData: PropTypes.shape({
+    game: PropTypes.shape({
+      id: PropTypes.number.isRequired,
+      name: PropTypes.string.isRequired,
+      game_code: PropTypes.string.isRequired,
+      status: PropTypes.string.isRequired,
+      max_players: PropTypes.number,
+    }).isRequired,
+    teams: PropTypes.arrayOf(
+      PropTypes.shape({
+        name: PropTypes.string.isRequired,
+        display_name: PropTypes.string,
+        max_players: PropTypes.number.isRequired,
+        players: PropTypes.arrayOf(
+          PropTypes.shape({
+            name: PropTypes.string.isRequired,
+          })
+        ).isRequired,
+      })
+    ).isRequired,
+    game_info: PropTypes.shape({
+      total_players: PropTypes.number,
+      max_players: PropTypes.number,
+    }),
+  }).isRequired,
+  onJoinGame: PropTypes.func.isRequired,
+  onBack: PropTypes.func.isRequired,
 };
 
 export default PlayerRegistration;

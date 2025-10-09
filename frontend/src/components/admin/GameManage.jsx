@@ -1,5 +1,6 @@
 // components/admin/GameManage.jsx
 import React from 'react';
+import PropTypes from 'prop-types';
 import { getStatusColor, getStatusText } from '../../utils/gameUtils';
 import ProgressDisplay from '../ProgressDisplay';
 
@@ -205,6 +206,53 @@ const GameManage = ({
       </div>
     </div>
   );
+};
+
+GameManage.propTypes = {
+  currentGame: PropTypes.shape({
+    id: PropTypes.number,
+    name: PropTypes.string,
+    game_code: PropTypes.string,
+    status: PropTypes.string,
+    created_by: PropTypes.string,
+    max_players: PropTypes.number,
+    teams: PropTypes.arrayOf(
+      PropTypes.shape({
+        name: PropTypes.string.isRequired,
+        players: PropTypes.arrayOf(
+          PropTypes.shape({
+            id: PropTypes.number.isRequired,
+            name: PropTypes.string.isRequired,
+          })
+        ),
+      })
+    ),
+    game: PropTypes.shape({
+      id: PropTypes.number,
+      name: PropTypes.string,
+      game_code: PropTypes.string,
+      status: PropTypes.string,
+      created_by: PropTypes.string,
+      max_players: PropTypes.number,
+      teams: PropTypes.arrayOf(
+        PropTypes.shape({
+          name: PropTypes.string.isRequired,
+          players: PropTypes.arrayOf(
+            PropTypes.shape({
+              id: PropTypes.number.isRequired,
+              name: PropTypes.string.isRequired,
+            })
+          ),
+        })
+      ),
+    }),
+  }).isRequired,
+  loading: PropTypes.bool,
+  setAddingPlayer: PropTypes.func.isRequired,
+  handleMovePlayer: PropTypes.func.isRequired,
+  handleRemovePlayer: PropTypes.func.isRequired,
+  handleStartGame: PropTypes.func.isRequired,
+  handleResetGame: PropTypes.func.isRequired,
 };
 
 export default GameManage;

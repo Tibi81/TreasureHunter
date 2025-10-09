@@ -1,5 +1,6 @@
 // components/admin/GameEditModal.jsx
 import React from 'react';
+import PropTypes from 'prop-types';
 
 const GameEditModal = ({ 
   editingGame, 
@@ -66,6 +67,17 @@ const GameEditModal = ({
       </div>
     </div>
   );
+};
+
+GameEditModal.propTypes = {
+  editingGame: PropTypes.shape({
+    id: PropTypes.number.isRequired,
+    name: PropTypes.string.isRequired,
+    created_by: PropTypes.string.isRequired,
+  }),
+  setEditingGame: PropTypes.func.isRequired,
+  loading: PropTypes.bool,
+  handleEditGame: PropTypes.func.isRequired,
 };
 
 export default GameEditModal;

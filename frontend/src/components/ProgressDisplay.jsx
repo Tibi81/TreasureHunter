@@ -1,5 +1,6 @@
 // components/ProgressDisplay.jsx
 import React from 'react';
+import PropTypes from 'prop-types';
 
 const ProgressDisplay = ({ currentPlayer, teams, gameStatus, gameInfo, gameName, showAllTeams = false }) => {
   // Jelenlegi csapat állapotának lekérdezése
@@ -366,6 +367,42 @@ const ProgressDisplay = ({ currentPlayer, teams, gameStatus, gameInfo, gameName,
       </div>
     </div>
   );
+};
+
+ProgressDisplay.propTypes = {
+  currentPlayer: PropTypes.shape({
+    name: PropTypes.string,
+    team_name: PropTypes.string,
+    team: PropTypes.string,
+  }),
+  teams: PropTypes.arrayOf(
+    PropTypes.shape({
+      name: PropTypes.string.isRequired,
+      display_name: PropTypes.string,
+      current_station: PropTypes.number,
+      completed_at: PropTypes.string,
+      attempts: PropTypes.number,
+      help_used: PropTypes.bool,
+      separate_phase_save_used: PropTypes.bool,
+      together_phase_save_used: PropTypes.bool,
+      players: PropTypes.arrayOf(
+        PropTypes.shape({
+          name: PropTypes.string.isRequired,
+        })
+      ),
+      player_count: PropTypes.number,
+      max_players: PropTypes.number,
+      available_slots: PropTypes.number,
+    })
+  ),
+  gameStatus: PropTypes.string,
+  gameInfo: PropTypes.shape({
+    total_players: PropTypes.number,
+    max_players: PropTypes.number,
+    available_slots: PropTypes.number,
+  }),
+  gameName: PropTypes.string,
+  showAllTeams: PropTypes.bool,
 };
 
 export default ProgressDisplay;

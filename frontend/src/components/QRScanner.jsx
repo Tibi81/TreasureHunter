@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import QrScanner from 'qr-scanner';
 
 const QRScanner = ({ onScan, onClose, isOpen }) => {
@@ -171,6 +172,12 @@ const QRScanner = ({ onScan, onClose, isOpen }) => {
       </div>
     </div>
   );
+};
+
+QRScanner.propTypes = {
+  onScan: PropTypes.func.isRequired,
+  onClose: PropTypes.func.isRequired,
+  isOpen: PropTypes.bool.isRequired,
 };
 
 export default QRScanner;

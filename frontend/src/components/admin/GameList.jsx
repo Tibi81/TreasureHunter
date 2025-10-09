@@ -1,5 +1,6 @@
 // components/admin/GameList.jsx
 import React from 'react';
+import PropTypes from 'prop-types';
 import { getStatusColor, getStatusText } from '../../utils/gameUtils';
 
 const GameList = ({ 
@@ -144,6 +145,40 @@ const GameList = ({
       </div>
     </div>
   );
+};
+
+GameList.propTypes = {
+  games: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.number.isRequired,
+      name: PropTypes.string.isRequired,
+      game_code: PropTypes.string.isRequired,
+      status: PropTypes.string.isRequired,
+      total_players: PropTypes.number,
+      created_by: PropTypes.string,
+      created_at: PropTypes.string,
+    })
+  ).isRequired,
+  filteredGames: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.number.isRequired,
+      name: PropTypes.string.isRequired,
+      game_code: PropTypes.string.isRequired,
+      status: PropTypes.string.isRequired,
+      total_players: PropTypes.number,
+      created_by: PropTypes.string,
+      created_at: PropTypes.string,
+    })
+  ).isRequired,
+  loading: PropTypes.bool,
+  searchTerm: PropTypes.string.isRequired,
+  setSearchTerm: PropTypes.func.isRequired,
+  loadGames: PropTypes.func.isRequired,
+  handleSelectGame: PropTypes.func.isRequired,
+  setEditingGame: PropTypes.func.isRequired,
+  handleStopGame: PropTypes.func.isRequired,
+  handleDeleteGame: PropTypes.func.isRequired,
+  setView: PropTypes.func.isRequired,
 };
 
 export default GameList;

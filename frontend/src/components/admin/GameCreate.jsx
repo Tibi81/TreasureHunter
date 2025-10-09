@@ -1,5 +1,6 @@
 // components/admin/GameCreate.jsx
 import React from 'react';
+import PropTypes from 'prop-types';
 
 const GameCreate = ({ 
   adminName, 
@@ -169,6 +170,16 @@ const GameCreate = ({
       </form>
     </div>
   );
+};
+
+GameCreate.propTypes = {
+  adminName: PropTypes.string.isRequired,
+  setAdminName: PropTypes.func.isRequired,
+  gameName: PropTypes.string.isRequired,
+  setGameName: PropTypes.func.isRequired,
+  loading: PropTypes.bool,
+  handleCreateGame: PropTypes.func.isRequired,
+  setView: PropTypes.func.isRequired,
 };
 
 export default GameCreate;

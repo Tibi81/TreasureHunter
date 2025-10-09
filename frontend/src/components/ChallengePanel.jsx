@@ -1,5 +1,6 @@
 // components/ChallengePanel.jsx
 import React, { useState } from 'react';
+import PropTypes from 'prop-types';
 import QRScanner from './QRScanner';
 
 const ChallengePanel = ({ challenge, onQRScan, onGetHelp, loading, gameStatus }) => {
@@ -268,6 +269,27 @@ const ChallengePanel = ({ challenge, onQRScan, onGetHelp, loading, gameStatus })
       />
     </div>
   );
+};
+
+ChallengePanel.propTypes = {
+  challenge: PropTypes.shape({
+    station: PropTypes.shape({
+      icon: PropTypes.string,
+      name: PropTypes.string,
+    }),
+    challenge: PropTypes.shape({
+      title: PropTypes.string,
+      description: PropTypes.string,
+    }),
+    title: PropTypes.string,
+    description: PropTypes.string,
+    is_save: PropTypes.bool,
+    team_type: PropTypes.string,
+  }),
+  onQRScan: PropTypes.func.isRequired,
+  onGetHelp: PropTypes.func.isRequired,
+  loading: PropTypes.bool,
+  gameStatus: PropTypes.string,
 };
 
 export default ChallengePanel;

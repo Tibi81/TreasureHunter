@@ -1,5 +1,6 @@
 // components/GameResults.jsx
 import React from 'react';
+import PropTypes from 'prop-types';
 import { utils } from '../services/api';
 
 const GameResults = ({ teams, players, onRestart }) => {
@@ -210,6 +211,30 @@ const GameResults = ({ teams, players, onRestart }) => {
       </div>
     </div>
   );
+};
+
+GameResults.propTypes = {
+  teams: PropTypes.arrayOf(
+    PropTypes.shape({
+      name: PropTypes.string.isRequired,
+      completed_at: PropTypes.string,
+      current_station: PropTypes.number,
+      attempts: PropTypes.number,
+      help_used: PropTypes.bool,
+      players: PropTypes.arrayOf(
+        PropTypes.shape({
+          name: PropTypes.string.isRequired,
+          joined_at: PropTypes.string.isRequired,
+        })
+      ),
+    })
+  ).isRequired,
+  players: PropTypes.arrayOf(
+    PropTypes.shape({
+      name: PropTypes.string.isRequired,
+    })
+  ).isRequired,
+  onRestart: PropTypes.func.isRequired,
 };
 
 export default GameResults;
