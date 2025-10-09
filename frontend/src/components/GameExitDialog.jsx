@@ -25,10 +25,10 @@ const GameExitDialog = ({ onExit, loading, showDialog, setShowDialog }) => {
 
   return (
     <div 
-      className="fixed inset-0 flex items-center justify-center z-[99999] p-4"
+      className="fixed inset-0 flex items-center justify-center z-[99999] p-4 overflow-y-auto overflow-x-hidden"
       style={{ backgroundColor: 'rgba(0, 0, 0, 0.1)' }}
     >
-      <div className="bg-gradient-to-b from-purple-900/90 to-gray-800/90 backdrop-blur-sm rounded-2xl shadow-lg p-4 sm:p-6 max-w-sm sm:max-w-md w-full max-h-[90vh] overflow-y-auto border border-orange-500/20 relative">
+      <div className="bg-gradient-to-b from-purple-900/90 to-gray-800/90 backdrop-blur-sm rounded-2xl shadow-lg p-4 sm:p-6 max-w-sm sm:max-w-md w-full max-h-[90vh] overflow-y-auto border border-orange-500/20 relative my-4">
         <div className="text-center">
           <div className="text-3xl sm:text-4xl mb-4 animate-float">🚪</div>
           <h3 className="text-lg sm:text-xl font-bold mb-4 text-orange-300 font-spooky drop-shadow-glow-orange">

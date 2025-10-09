@@ -90,7 +90,7 @@ const ChallengePanel = ({ challenge, onQRScan, onGetHelp, loading, gameStatus })
   }
 
   return (
-    <div className="bg-gradient-to-b from-purple-900/90 to-gray-800/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-orange-500/20">
+    <div className="bg-gradient-to-b from-purple-900/90 to-gray-800/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-orange-500/20 overflow-hidden">
       {/* Feladat fejléc */}
       <div className="text-center mb-6">
         <div className="text-6xl mb-4 animate-float">{challenge.station?.icon || '🎯'}</div>
@@ -148,7 +148,7 @@ const ChallengePanel = ({ challenge, onQRScan, onGetHelp, loading, gameStatus })
                        hover:from-orange-400 hover:to-purple-500 
                        disabled:from-gray-600 disabled:to-gray-600
                        text-white font-bold py-4 px-4 rounded-xl 
-                       transition-all duration-200 transform hover:scale-105
+                       transition-all duration-200
                        disabled:cursor-not-allowed font-spooky
                        shadow-md hover:shadow-orange-400/40"
             >
@@ -171,7 +171,7 @@ const ChallengePanel = ({ challenge, onQRScan, onGetHelp, loading, gameStatus })
               className="bg-blue-600 hover:bg-blue-500 disabled:bg-gray-600
                        text-white px-4 py-4 rounded-xl font-bold
                        transition-all duration-200 disabled:cursor-not-allowed
-                       transform hover:scale-105 shadow-md hover:shadow-blue-400/40"
+                       shadow-md hover:shadow-blue-400/40"
               title="QR kód beolvasása kamerával"
             >
               📷
@@ -223,7 +223,7 @@ const ChallengePanel = ({ challenge, onQRScan, onGetHelp, loading, gameStatus })
             className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 disabled:from-gray-600 disabled:to-gray-700
                      text-white px-4 py-3 rounded-xl font-bold
                      transition-all duration-200 disabled:cursor-not-allowed
-                     transform hover:scale-105 shadow-md hover:shadow-purple-400/40 font-spooky"
+                     shadow-md hover:shadow-purple-400/40 font-spooky"
           >
             Segítség kérése
           </button>

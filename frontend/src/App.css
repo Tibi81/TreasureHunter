@@ -1,9 +1,10 @@
 /* App.css - Frissített verzió Halloween támogatással */
 
 /* ALAPVETŐ LAYOUT */
-body {
+html, body {
   height: 100%;
   min-height: 100vh;
+  overflow-x: hidden; /* Horizontális overflow eltávolítása */
   /* Megtartjuk a meglévő gyönyörű Halloween képet, de halvány lilás filterrel */
   background-image: 
     linear-gradient(rgba(91, 33, 182, 0.3), rgba(91, 33, 182, 0.3)),
@@ -20,6 +21,8 @@ body {
   max-width: 1280px;
   margin: 0 auto;
   padding: 3rem;
+  min-height: 100vh;
+  overflow-x: hidden; /* Horizontális overflow eltávolítása */
   /* Eltávolítjuk a text-align: center-t, mert komponens-specifikusan kezeljük */
 }
 
@@ -181,15 +184,72 @@ body {
 @media (max-width: 768px) {
   #root {
     padding: 0.5rem;
+    overflow-x: hidden; /* Mobil overflow védelem */
   }
   
   .white-content-block {
     padding: 1.5rem !important;
+    overflow-x: hidden; /* Mobil overflow védelem */
   }
   
   .dark-input {
     font-size: 1.125rem !important; /* text-lg mobile-on */
   }
+  
+  /* Container overflow védelem */
+  .container {
+    overflow-x: hidden;
+    max-width: 100%;
+  }
+  
+  /* Grid overflow védelem */
+  .grid {
+    overflow-x: hidden;
+  }
+}
+
+/* OVERFLOW VÉDELEM */
+.container {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+/* Modal overflow javítás */
+.modal-overlay {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Grid és flexbox overflow javítás */
+.grid, .flex {
+  overflow-x: hidden;
+}
+
+/* Text overflow kezelés */
+.text-overflow-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Biztonságos hover effektek - scale nélkül */
+.btn-safe-hover {
+  transition: all 0.2s ease;
+}
+
+.btn-safe-hover:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  filter: brightness(1.1);
+}
+
+/* Biztonságos scale hover (ha mégis kell) */
+.btn-scale-safe {
+  transition: all 0.2s ease;
+  transform-origin: center;
+}
+
+.btn-scale-safe:hover {
+  transform: scale(1.02); /* Kisebb scale érték */
 }
 
 /* MEGLÉVŐ STÍLUSOK MEGTARTÁSA (ha kellenek) */

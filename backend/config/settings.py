@@ -11,12 +11,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Alapbeállítások
 # =====================================================
 
-SECRET_KEY = 'django-insecure-zssoifwpm@i^@4*dby61(#vbnu0gd&y-upva6m#b8vqkwf&8hj'
-DEBUG = True
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-zssoifwpm@i^@4*dby61(#vbnu0gd&y-upva6m#b8vqkwf&8hj')
+DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
 
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
+    'treasurehunt-game.onrender.com',  # Render.com domain
+    '.onrender.com',  # Minden Render.com subdomain
 ]
 
 CSRF_TRUSTED_ORIGINS = [
@@ -24,6 +26,8 @@ CSRF_TRUSTED_ORIGINS = [
     'http://127.0.0.1:5173',
     'http://localhost:5176',
     'http://127.0.0.1:5176',
+    'https://treasurehunt-game.onrender.com',  # Render.com domain
+    'https://*.onrender.com',  # Minden Render.com subdomain
 ]
 
 # =====================================================
@@ -88,12 +92,19 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Adatbázis
 # =====================================================
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# Production PostgreSQL, Development SQLite
+if os.environ.get('DATABASE_URL'):
+    import dj_database_url
+    DATABASES = {
+        'default': dj_database_url.parse(os.environ.get('DATABASE_URL'))
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 # =====================================================
 # Jelszóvalidálás
@@ -141,6 +152,12 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5176",
     "http://127.0.0.1:5176",
     "http://192.168.50.195:5173",  # Helyi hálózatos React fejlesztés
+    "https://treasurehunt-game.onrender.com",  # Render.com domain
 ]
+
+# Production CORS beállítások
+if not DEBUG:
+    CORS_ALLOW_CREDENTIALS = True
+    CORS_ALLOW_ALL_ORIGINS = False
 
 CORS_ALLOW_CREDENTIALS = True

@@ -328,9 +328,9 @@ const AdminPanel = ({ onBack }) => {
 
 
   return (
-    <div className=" text-white">
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-2xl mx-auto">
+    <div className="text-white overflow-x-hidden">
+      <div className="container mx-auto px-4 py-8 overflow-x-hidden">
+        <div className="max-w-2xl mx-auto overflow-x-hidden">
           {/* Fejléc */}
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold text-orange-400 mb-2">

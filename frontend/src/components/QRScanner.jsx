@@ -86,8 +86,8 @@ const QRScanner = ({ onScan, onClose, isOpen }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-      <div className="bg-gradient-to-b from-purple-900/90 to-gray-800/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 max-w-md w-full mx-4 border border-orange-500/20">
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 overflow-y-auto overflow-x-hidden">
+      <div className="bg-gradient-to-b from-purple-900/90 to-gray-800/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 max-w-md w-full mx-4 border border-orange-500/20 my-4">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-bold text-orange-400 font-spooky drop-shadow-glow-orange">QR Kód Beolvasás</h3>
           <button
