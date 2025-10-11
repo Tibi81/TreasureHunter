@@ -68,9 +68,9 @@ class RateLimitMiddleware(MiddlewareMixin):
             general_key = f"rate_limit_general_{ip}"
             endpoint_key = f"rate_limit_endpoint_{ip}_{request.path_info}"
             
-            # Általános rate limiting (200 kérés/óra - fejlesztéshez növelve)
+            # Általános rate limiting (1000 kérés/óra - fejlesztéshez jelentősen növelve)
             general_count = cache.get(general_key, 0)
-            if general_count >= 200:
+            if general_count >= 1000:
                 logger.warning(f"Rate limit exceeded for IP {ip} - general limit")
                 return self.rate_limit_response("Általános kérési limit túllépve")
             

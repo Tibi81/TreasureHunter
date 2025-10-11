@@ -234,17 +234,89 @@ REST_FRAMEWORK = {
         'treasurehunt.middleware.CustomRateThrottle',  # Saját rate limiter
     ],
            'DEFAULT_THROTTLE_RATES': {
-               'anon': '200/hour',      # Névtelen felhasználók (fejlesztéshez növelve)
-               'user': '2000/hour',     # Bejelentkezett felhasználók (fejlesztéshez növelve)
-               'api': '500/hour',       # API végpontok (fejlesztéshez növelve)
-               'game': '100/hour',      # Játék műveletek (fejlesztéshez növelve)
-               'qr': '50/hour',         # QR kód validálás (fejlesztéshez növelve)
+               'anon': '1000/hour',     # Névtelen felhasználók (fejlesztéshez jelentősen növelve)
+               'user': '5000/hour',     # Bejelentkezett felhasználók (fejlesztéshez jelentősen növelve)
+               'api': '2000/hour',      # API végpontok (fejlesztéshez jelentősen növelve)
+               'game': '500/hour',      # Játék műveletek (fejlesztéshez jelentősen növelve)
+               'qr': '200/hour',        # QR kód validálás (fejlesztéshez jelentősen növelve)
            }
 }
 
 # =====================================================
 # Windows kompatibilis fejlesztési beállítások
 # =====================================================
+
+# =====================================================
+# Logging konfiguráció
+# =====================================================
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': BASE_DIR / 'logs' / 'django.log',
+            'formatter': 'verbose',
+        },
+        'console': {
+            'level': 'DEBUG' if DEBUG else 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
+    },
+    'root': {
+        'handlers': ['console', 'file'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'treasurehunt': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG' if DEBUG else 'INFO',
+            'propagate': False,
+        },
+    },
+}
+
+# =====================================================
+# Security Headers
+# =====================================================
+
+# HTTPS redirect production-ben
+SECURE_SSL_REDIRECT = not DEBUG
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# Security headers
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = 'DENY'
+SECURE_HSTS_SECONDS = 31536000 if not DEBUG else 0
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
+
+# Session security
+SESSION_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_HTTPONLY = True
+CSRF_COOKIE_SAMESITE = 'Lax'
 
 # Windows-on Gunicorn nem működik (fcntl modul hiányzik)
 # Django development szerver használata optimalizált beállításokkal
