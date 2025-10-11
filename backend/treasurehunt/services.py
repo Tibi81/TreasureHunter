@@ -2,6 +2,7 @@
 import logging
 from django.db.models import Count
 from django.db import transaction
+from django.core.cache import cache
 from .models import Game, Team, Player, Station, Challenge, GameProgress
 from django.utils import timezone
 from .game_state_manager import GameStateManager, GameConstants
@@ -30,12 +31,44 @@ class GameLogicService:
         }
 
 class GameStateService:
-    """Játék állapot kezelési szolgáltatások"""
+    """Játék állapot kezelési szolgáltatások - Redis cache optimalizálással"""
     
     @staticmethod
     def get_game_summary(game):
-        game_manager = GameStateManager(game)
-        return game_manager.get_game_summary()
+        """
+        Játék összefoglaló lekérdezése cache-eléssel - hibakezeléssel
+        """
+        try:
+            cache_key = f"game_summary_{game.id}"
+            cached_data = cache.get(cache_key)
+            
+            if cached_data:
+                logger.debug(f"Cache hit for game summary: {game.id}")
+                return cached_data
+            
+            # Cache miss - adatbázis lekérdezés
+            logger.debug(f"Cache miss for game summary: {game.id}")
+            game_manager = GameStateManager(game)
+            data = game_manager.get_game_summary()
+            
+            # Cache-be mentés (5 perc)
+            cache.set(cache_key, data, 300)
+            return data
+            
+        except Exception as e:
+            # Cache hiba esetén közvetlenül adatbázisból
+            logger.warning(f"Cache error, using database directly: {e}")
+            game_manager = GameStateManager(game)
+            return game_manager.get_game_summary()
+    
+    @staticmethod
+    def invalidate_game_cache(game_id):
+        """
+        Játék cache-jének invalidálása
+        """
+        cache_key = f"game_summary_{game_id}"
+        cache.delete(cache_key)
+        logger.info(f"Game cache invalidated: {game_id}")
     
     @staticmethod
     def can_game_start(game):

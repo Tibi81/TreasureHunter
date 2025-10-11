@@ -56,6 +56,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',  # CORS middleware a legelső helyen
+    'treasurehunt.middleware.RateLimitMiddleware',  # Rate limiting middleware
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -63,6 +64,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'treasurehunt.middleware.CacheHeadersMiddleware',  # Cache header middleware
 ]
 
 # =====================================================
@@ -161,3 +163,93 @@ if not DEBUG:
     CORS_ALLOW_ALL_ORIGINS = False
 
 CORS_ALLOW_CREDENTIALS = True
+
+# =====================================================
+# Redis Cache és Session Storage
+# =====================================================
+
+# Cache konfiguráció - Redis vagy fallback
+import os
+
+# Redis elérhetőség ellenőrzése
+REDIS_URL = os.environ.get('REDIS_URL', 'redis://127.0.0.1:6379/1')
+
+try:
+    # Redis kapcsolat tesztelése
+    import redis
+    r = redis.from_url(REDIS_URL)
+    r.ping()
+    REDIS_AVAILABLE = True
+    print("✅ Redis elérhető - Redis cache használata")
+    
+    CACHES = {
+        'default': {
+            'BACKEND': 'django_redis.cache.RedisCache',
+            'LOCATION': REDIS_URL,
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+                'CONNECTION_POOL_KWARGS': {
+                    'max_connections': 50,
+                    'retry_on_timeout': True,
+                },
+                'COMPRESSOR': 'django_redis.compressors.zlib.ZlibCompressor',
+                'SERIALIZER': 'django_redis.serializers.json.JSONSerializer',
+            },
+            'KEY_PREFIX': 'treasurehunt',
+            'TIMEOUT': 300,
+        }
+    }
+    
+except Exception as e:
+    # Fallback: memóriában tárolt cache
+    REDIS_AVAILABLE = False
+    print(f"⚠️ Redis nem elérhető - memóriában tárolt cache használata: {e}")
+    
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'unique-snowflake',
+            'OPTIONS': {
+                'MAX_ENTRIES': 1000,
+                'CULL_FREQUENCY': 3,
+            },
+            'TIMEOUT': 300,
+        }
+    }
+
+# Session storage Redis-re átállítása
+SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+SESSION_CACHE_ALIAS = 'default'
+SESSION_COOKIE_AGE = 3600 * 24 * 7  # 7 nap (session token alapján)
+
+# =====================================================
+# Rate Limiting konfiguráció
+# =====================================================
+
+# Django REST Framework throttling
+REST_FRAMEWORK = {
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+        'treasurehunt.middleware.CustomRateThrottle',  # Saját rate limiter
+    ],
+           'DEFAULT_THROTTLE_RATES': {
+               'anon': '200/hour',      # Névtelen felhasználók (fejlesztéshez növelve)
+               'user': '2000/hour',     # Bejelentkezett felhasználók (fejlesztéshez növelve)
+               'api': '500/hour',       # API végpontok (fejlesztéshez növelve)
+               'game': '100/hour',      # Játék műveletek (fejlesztéshez növelve)
+               'qr': '50/hour',         # QR kód validálás (fejlesztéshez növelve)
+           }
+}
+
+# =====================================================
+# Windows kompatibilis fejlesztési beállítások
+# =====================================================
+
+# Windows-on Gunicorn nem működik (fcntl modul hiányzik)
+# Django development szerver használata optimalizált beállításokkal
+if os.name == 'nt':  # Windows
+    print("🪟 Windows észlelve - Django development szerver használata")
+    print("💡 Production-ben Linux/Gunicorn ajánlott")
+else:
+    print("🐧 Linux/Mac észlelve - Gunicorn használható")

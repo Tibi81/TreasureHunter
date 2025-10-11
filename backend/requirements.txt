@@ -1,8 +1,18 @@
-asgiref==3.10.0
-dj-database-url==3.0.1
+# Optimalizált requirements.txt - Redis és Rate Limiting támogatással
+# Django és REST Framework
 Django==5.2.6
-django-cors-headers==4.7.0
 djangorestframework==3.16.1
-setuptools==80.9.0
+django-cors-headers==4.7.0
+
+# Redis és Rate Limiting
+redis==6.4.0
+django-redis==6.0.0
+django-ratelimit==4.1.0
+
+# Adatbázis és deployment
+dj-database-url==3.0.1
+
+# Django függőségek (automatikusan települnek)
+asgiref==3.10.0
 sqlparse==0.5.3
 tzdata==2025.2

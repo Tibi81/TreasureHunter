@@ -164,6 +164,9 @@ def start_game(request, game_id):
         # Játék indítása a GameStateService-en keresztül
         GameStateService.start_game(game)
         
+        # Cache invalidálása
+        GameStateService.invalidate_game_cache(game.id)
+        
         # Visszaadjuk a frissített játék adatokat
         data = GameStateService.get_game_summary(game)
         data['message'] = 'Játék sikeresen elindítva!'
