@@ -14,6 +14,9 @@ dj-database-url==3.0.1
 psycopg[binary]==3.2.10
 
 
+# Production WSGI server
+gunicorn==21.2.0
+
 # Django függőségek (automatikusan települnek)
 asgiref==3.10.0
 sqlparse==0.5.3

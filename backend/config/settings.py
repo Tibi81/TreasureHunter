@@ -98,14 +98,29 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASE_URL = os.environ.get('DATABASE_URL')
 print(f"🔍 DATABASE_URL: {DATABASE_URL}")
 
-if DATABASE_URL and DATABASE_URL.strip():
-    import dj_database_url
-    print("✅ PostgreSQL adatbázis használata")
-    DATABASES = {
-        'default': dj_database_url.parse(DATABASE_URL)
-    }
+if DATABASE_URL and DATABASE_URL.strip() and not DATABASE_URL.startswith('://'):
+    try:
+        import dj_database_url
+        print("✅ PostgreSQL adatbázis használata")
+        db_config = dj_database_url.parse(DATABASE_URL)
+        # SSL beállítások hozzáadása
+        db_config['OPTIONS'] = {
+            'sslmode': 'require',
+        }
+        DATABASES = {
+            'default': db_config
+        }
+    except Exception as e:
+        print(f"❌ DATABASE_URL parse hiba: {e}")
+        print("⚠️ SQLite adatbázis használata (fallback)")
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': BASE_DIR / 'db.sqlite3',
+            }
+        }
 else:
-    print("⚠️ SQLite adatbázis használata (DATABASE_URL hiányzik vagy üres)")
+    print("⚠️ SQLite adatbázis használata (DATABASE_URL hiányzik, üres vagy hibás)")
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
