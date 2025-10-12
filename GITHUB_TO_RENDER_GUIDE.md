@@ -53,7 +53,7 @@ git push -u origin main
 4. **Environment**: `Python 3`
 5. **Build Command**:
    ```bash
-   cd frontend && npm run build && cd ../backend && pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate
+   cd ../frontend && npm run build && cd ../backend && pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate
    ```
 6. **Start Command**:
    ```bash
