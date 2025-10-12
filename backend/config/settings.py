@@ -95,12 +95,17 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # =====================================================
 
 # Production PostgreSQL, Development SQLite
-if os.environ.get('DATABASE_URL'):
+DATABASE_URL = os.environ.get('DATABASE_URL')
+print(f"🔍 DATABASE_URL: {DATABASE_URL}")
+
+if DATABASE_URL and DATABASE_URL.strip():
     import dj_database_url
+    print("✅ PostgreSQL adatbázis használata")
     DATABASES = {
-        'default': dj_database_url.parse(os.environ.get('DATABASE_URL'))
+        'default': dj_database_url.parse(DATABASE_URL)
     }
 else:
+    print("⚠️ SQLite adatbázis használata (DATABASE_URL hiányzik vagy üres)")
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
