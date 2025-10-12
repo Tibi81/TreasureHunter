@@ -53,7 +53,7 @@ git push -u origin main
 4. **Environment**: `Python 3`
 5. **Build Command**:
    ```bash
-   cd ../frontend && npm install && npm run build && cd ../backend && pip install -r requirements.txt && python manage.py collectstatic --noinput --verbosity=2 && python manage.py migrate
+   cd ../frontend && npm install && npm run build && cd ../backend && pip install -r requirements.txt && python manage.py collectstatic --noinput --verbosity=2 --clear && python manage.py migrate
    ```
 6. **Start Command**:
    ```bash
@@ -182,6 +182,7 @@ ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
     'treasurehunt-game.onrender.com',  # Render service
+    'treasurehunter-mz1x.onrender.com',  # Aktuális Render domain
     '.onrender.com',  # Minden Render subdomain
 ]
 
@@ -189,6 +190,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "https://treasurehunt-game.onrender.com",  # Render service
+    "https://treasurehunter-mz1x.onrender.com",  # Aktuális Render domain
 ]
 
 # Production security headers már beállítva
@@ -296,14 +298,19 @@ curl https://treasurehunt-game.onrender.com/admin/
 
 ### Gyors Javítások:
 
-#### **Build Command (Render Dashboard):**
+#### **Build Command (Render Dashboard) - DEBUG VERZIÓ:**
 ```bash
-cd ../frontend && npm install && npm run build && cd ../backend && pip install -r requirements.txt && python manage.py collectstatic --noinput --verbosity=2 && python manage.py migrate
+cd ../frontend && npm install && npm run build && cd ../backend && pip install -r requirements.txt && echo "=== STATIC FILES DEBUG ===" && ls -la static/ && ls -la static/assets/ && echo "=== COLLECTSTATIC START ===" && python manage.py collectstatic --noinput --verbosity=2 --clear && echo "=== COLLECTSTATIC END ===" && ls -la staticfiles/ && ls -la staticfiles/assets/ && python manage.py migrate
 ```
 
 #### **Start Command (Render Dashboard):**
 ```bash
 gunicorn --config gunicorn.conf.py config.wsgi:application
+```
+
+#### **ALTERNATÍV Build Command (ha a fenti nem működik):**
+```bash
+cd ../frontend && npm install && npm run build && cd ../backend && pip install -r requirements.txt && echo "=== MANUAL COPY ===" && mkdir -p staticfiles/assets && cp static/assets/* staticfiles/assets/ && cp static/index.html staticfiles/ && cp static/*.ico staticfiles/ && cp static/*.png staticfiles/ && echo "=== MANUAL COPY END ===" && python manage.py migrate
 ```
 
 #### **Environment Variables (Render Dashboard):**

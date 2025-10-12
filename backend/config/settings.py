@@ -18,6 +18,7 @@ ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
     'treasurehunt-game.onrender.com',  # Render.com domain
+    'treasurehunter-mz1x.onrender.com',  # Aktuális Render.com domain
     '.onrender.com',  # Minden Render.com subdomain
 ]
 
@@ -27,6 +28,7 @@ CSRF_TRUSTED_ORIGINS = [
     'http://localhost:5176',
     'http://127.0.0.1:5176',
     'https://treasurehunt-game.onrender.com',  # Render.com domain
+    'https://treasurehunter-mz1x.onrender.com',  # Aktuális Render.com domain
     'https://*.onrender.com',  # Minden Render.com subdomain
 ]
 
@@ -199,6 +201,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5176",
     "http://192.168.50.195:5173",  # Helyi hálózatos React fejlesztés
     "https://treasurehunt-game.onrender.com",  # Render.com domain
+    "https://treasurehunter-mz1x.onrender.com",  # Aktuális Render.com domain
 ]
 
 # Production CORS beállítások
