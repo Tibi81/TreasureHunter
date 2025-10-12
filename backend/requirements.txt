@@ -11,7 +11,7 @@ django-ratelimit==4.1.0
 
 # Adatbázis és deployment
 dj-database-url==3.0.1
-psycopg[binary]==3.2.1
+psycopg[binary]==3.2.10
 
 
 # Django függőségek (automatikusan települnek)
