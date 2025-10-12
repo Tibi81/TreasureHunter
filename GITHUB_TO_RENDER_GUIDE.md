@@ -27,7 +27,7 @@ git push -u origin main
 
 ---
 
-## 🚀 Render.com Modern Deployment (Django + React Együtt)
+## 🚀 Render.com Külön Szolgáltatások Deployment
 
 ### 1. Render.com regisztráció
 
@@ -45,27 +45,36 @@ git push -u origin main
 6. **Plan**: `Free` (kezdéshez)
 7. **Create Database**
 
-### 3. Web Service létrehozása (Django + React Együtt)
+### 3. Backend Web Service létrehozása
 
 1. **Dashboard** → **New** → **Web Service**
 2. **Connect GitHub** → **treasurehunter** repository
-3. **Root Directory**: `backend` (marad!)
+3. **Root Directory**: `backend`
 4. **Environment**: `Python 3`
 5. **Build Command**:
    ```bash
-   cd ../frontend && npm install && npm run build && cd ../backend && pip install -r requirements.txt && python manage.py collectstatic --noinput --verbosity=2 --clear && python manage.py migrate
+   pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate
    ```
 6. **Start Command**:
    ```bash
    gunicorn --config gunicorn.conf.py config.wsgi:application
    ```
-7. **Publish Directory**: `backend` (marad!)
+7. **Publish Directory**: `backend`
 
-**Fontos**: A `gunicorn.conf.py` fájl már tartalmazza a production beállításokat!
+### 4. Frontend Static Site létrehozása
 
-### 4. Environment Variables beállítása
+1. **Dashboard** → **New** → **Static Site**
+2. **Connect GitHub** → **treasurehunter** repository
+3. **Root Directory**: `frontend`
+4. **Build Command**:
+   ```bash
+   npm install && npm run build
+   ```
+5. **Publish Directory**: `dist`
 
-**Service Settings** → **Environment**:
+### 5. Environment Variables beállítása
+
+#### **Backend Service Settings** → **Environment**:
 
 ```bash
 SECRET_KEY=django-insecure-your-new-secret-key-here-make-it-long-and-random
@@ -89,38 +98,29 @@ RATE_LIMIT_QR=50/hour
 ```
 
 **Fontos**: A `DATABASE_URL` automatikusan generálódik a PostgreSQL service-ben!
-**Megjegyzés**: Redis opcionális, de javasolt a jobb teljesítményért!
-
-### 5. Deploy és Tesztelés
-
-1. **Create Web Service**
-2. **Várj** a build-re (3-5 perc)
-3. **Ellenőrizd** a logokat hibákért
-4. **Jegyezd fel** a service URL-t: `https://treasurehunt-game.onrender.com`
 
 ---
 
-## 🔧 Modern Architektúra Magyarázata
+## 🔧 Architektúra Magyarázata
 
-### Miért egyetlen Web Service?
+### Miért külön szolgáltatások?
 
-#### **A. Egyszerűbb kezelés:**
-- ✅ **Egyetlen URL**: `treasurehunt-game.onrender.com`
-- ✅ **Egyetlen deploy**: Frontend + Backend együtt
-- ✅ **Nincs CORS probléma**: Minden ugyanazon a domain-en
-- ✅ **Egyszerűbb domain beállítás**: Egyetlen service
+#### **A. Frontend (Static Site):**
+- ✅ **Gyors betöltés**: CDN-en szolgáltatott statikus fájlok
+- ✅ **Skálázhatóság**: Automatikus CDN terjesztés
+- ✅ **Egyszerű deploy**: Csak build és upload
+- ✅ **Ingyenes**: Render.com Static Site ingyenes
 
-#### **B. Django szolgálja ki a frontend-et:**
-- ✅ **Frontend build**: `npm run build` → `../backend/static`
-- ✅ **Django collectstatic**: `staticfiles` mappába másolja
-- ✅ **Django URL routing**: `/` → React alkalmazás
-- ✅ **Static files**: `/static/` → CSS, JS, képek
-
-#### **C. Production optimalizáció:**
-- ✅ **Gunicorn**: Production WSGI server
-- ✅ **PostgreSQL**: Skálázható adatbázis
-- ✅ **Redis**: Cache és session storage
+#### **B. Backend (Web Service):**
+- ✅ **API szolgáltatás**: Django REST Framework
+- ✅ **Adatbázis kapcsolat**: PostgreSQL
+- ✅ **Session kezelés**: Cookie-k és session token-ek
 - ✅ **Rate limiting**: API védelem
+
+#### **C. Kommunikáció:**
+- ✅ **CORS**: Cross-Origin Resource Sharing beállítva
+- ✅ **HTTPS**: Biztonságos kommunikáció
+- ✅ **Cookie-k**: Session kezelés domain-ek között
 
 ---
 
@@ -133,7 +133,7 @@ RATE_LIMIT_QR=50/hour
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   build: {
-    outDir: '../backend/static',  // Django static mappába
+    outDir: 'dist', // Standard dist mappa
     emptyOutDir: true,
     assetsDir: 'assets',
     rollupOptions: {
@@ -147,28 +147,19 @@ export default defineConfig({
 })
 ```
 
-### 2. Django Static Files
+### 2. API Service (Automatikus)
 
-**backend/config/settings.py**:
-```python
-STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_DIRS = [
-    BASE_DIR / 'static',  # Frontend build ide kerül
-]
+**frontend/src/services/api.js**:
+```javascript
+const getApiBaseUrl = () => {
+  // Mindig használd a jelenlegi domain-t (build módban)
+  return window.location.origin;
+};
+
+const API_BASE_URL = getApiBaseUrl();
 ```
 
-### 3. Django URL Routing
-
-**backend/config/urls.py**:
-```python
-urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('api/', include('treasurehunt.urls')),
-    # React alkalmazás szolgáltatása
-    path('', TemplateView.as_view(template_name='index.html')),
-]
-```
+**Fontos**: A frontend automatikusan a jelenlegi domain-t használja API hívásokhoz!
 
 ---
 
@@ -181,21 +172,18 @@ urlpatterns = [
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
-    'treasurehunt-game.onrender.com',  # Render service
-    'treasurehunter-mz1x.onrender.com',  # Aktuális Render domain
+    'treasurehunt-backend.onrender.com',  # Backend service
+    'treasurehunter-mz1x.onrender.com',  # Aktuális Backend domain
     '.onrender.com',  # Minden Render subdomain
 ]
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-    "https://treasurehunt-game.onrender.com",  # Render service
-    "https://treasurehunter-mz1x.onrender.com",  # Aktuális Render domain
+    "https://treasurehunt-frontend.onrender.com",  # Frontend service
+    "https://treasurehunter-frontend.onrender.com",  # Aktuális Frontend domain
+    "https://*.onrender.com",  # Minden Render subdomain
 ]
-
-# Production security headers már beállítva
-# Logging konfiguráció már beállítva
-# Rate limiting már optimalizálva
 ```
 
 ### 2. Frontend API URL (automatikus)
@@ -214,7 +202,7 @@ A frontend automatikusan a jelenlegi domain-t használja API hívásokhoz, nincs
 
 ```bash
 git add .
-git commit -m "Production deployment konfiguráció"
+git commit -m "Külön szolgáltatások deployment konfiguráció"
 git push origin main
 ```
 
@@ -226,18 +214,18 @@ git push origin main
 
 ```bash
 # Alapvető API teszt
-curl https://treasurehunt-game.onrender.com/api/games/
+curl https://treasurehunt-backend.onrender.com/api/games/
 
 # Rate limiting teszt
-curl -v https://treasurehunt-game.onrender.com/api/player/check-session/
+curl -v https://treasurehunt-backend.onrender.com/api/player/check-session/
 
 # Health check
-curl https://treasurehunt-game.onrender.com/admin/
+curl https://treasurehunt-backend.onrender.com/admin/
 ```
 
 ### 2. Frontend tesztelése
 
-1. **Nyisd meg** a service URL-t: `https://treasurehunt-game.onrender.com`
+1. **Nyisd meg** a frontend URL-t: `https://treasurehunt-frontend.onrender.com`
 2. **Teszteld** a játék funkcionalitást
 3. **Ellenőrizd** a konzol hibákat
 4. **Teszteld** a rate limiting-et (több gyors kérés)
@@ -263,16 +251,15 @@ curl https://treasurehunt-game.onrender.com/admin/
 
 2. **Frontend nem tölt be**: 
    - Ellenőrizd a `frontend/vite.config.js` `outDir` beállítást
-   - Futtasd `python manage.py collectstatic --noinput`
-   - Ellenőrizd a `STATIC_ROOT` beállítást
+   - Ellenőrizd a `dist` mappa tartalmát
 
 3. **Database Error**: 
    - Ellenőrizd a `DATABASE_URL`
    - Futtasd `python manage.py migrate`
 
-4. **Static Files Error**: 
-   - Futtasd `collectstatic`-ot
-   - Ellenőrizd a `STATIC_ROOT` beállítást
+4. **CORS Error**: 
+   - Ellenőrizd a `CORS_ALLOWED_ORIGINS` beállításokat
+   - Győződj meg róla, hogy a frontend URL benne van
 
 5. **Rate Limiting Error**: 
    - Ellenőrizd a rate limiting environment változókat
@@ -282,38 +269,24 @@ curl https://treasurehunt-game.onrender.com/admin/
    - Ellenőrizd a `gunicorn.conf.py` fájlt
    - Győződj meg róla, hogy a `GUNICORN_WORKERS` be van állítva
 
-7. **"vite: not found" Error**: 
-   - Ellenőrizd, hogy a Build Command tartalmazza az `npm install`-t
-   - Build Command: `cd ../frontend && npm install && npm run build && ...`
-
-8. **"cd: backend: No such file or directory" Error**: 
-   - Ellenőrizd, hogy a Start Command NEM tartalmazza a `cd backend`-et
-   - Start Command: `gunicorn --config gunicorn.conf.py config.wsgi:application`
-
-9. **"Not Found: /static/assets/index.css" Error**: 
-   - Ellenőrizd, hogy a `backend/config/urls.py` tartalmazza a statikus fájlok routing-ot
-   - Győződj meg róla, hogy a `collectstatic` sikeresen lefutott
-   - Ellenőrizd a `STATIC_ROOT` és `STATIC_URL` beállításokat
-   - **Megoldás**: `urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)` minden módban
-
 ### Gyors Javítások:
 
-#### **Build Command (Render Dashboard) - DEBUG VERZIÓ:**
+#### **Backend Build Command (Render Dashboard):**
 ```bash
-cd ../frontend && npm install && npm run build && cd ../backend && pip install -r requirements.txt && echo "=== STATIC FILES DEBUG ===" && ls -la static/ && ls -la static/assets/ && echo "=== COLLECTSTATIC START ===" && python manage.py collectstatic --noinput --verbosity=2 --clear && echo "=== COLLECTSTATIC END ===" && ls -la staticfiles/ && ls -la staticfiles/assets/ && python manage.py migrate
+pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate
 ```
 
-#### **Start Command (Render Dashboard):**
+#### **Backend Start Command (Render Dashboard):**
 ```bash
 gunicorn --config gunicorn.conf.py config.wsgi:application
 ```
 
-#### **ALTERNATÍV Build Command (ha a fenti nem működik):**
+#### **Frontend Build Command (Render Dashboard):**
 ```bash
-cd ../frontend && npm install && npm run build && cd ../backend && pip install -r requirements.txt && echo "=== MANUAL COPY ===" && mkdir -p staticfiles/assets && cp static/assets/* staticfiles/assets/ && cp static/index.html staticfiles/ && cp static/*.ico staticfiles/ && cp static/*.png staticfiles/ && echo "=== MANUAL COPY END ===" && python manage.py migrate
+npm install && npm run build
 ```
 
-#### **Environment Variables (Render Dashboard):**
+#### **Environment Variables (Backend Service):**
 ```bash
 SECRET_KEY=django-insecure-your-new-secret-key-here-make-it-long-and-random
 DEBUG=False
@@ -322,8 +295,9 @@ DATABASE_URL=postgresql://treasurehunt_user:password@host:port/treasurehunt
 
 ### Logok ellenőrzése:
 
-1. **Web Service** → **Logs**
-2. **Database Service** → **Logs**
+1. **Backend Service** → **Logs**
+2. **Frontend Service** → **Logs**
+3. **Database Service** → **Logs**
 
 **Fontos**: A production logging már be van állítva, részletes logokat találsz!
 
@@ -331,7 +305,8 @@ DATABASE_URL=postgresql://treasurehunt_user:password@host:port/treasurehunt
 
 ## 🎉 Sikeres Deployment!
 
-**Service URL**: `https://treasurehunt-game.onrender.com`
+**Backend URL**: `https://treasurehunt-backend.onrender.com`
+**Frontend URL**: `https://treasurehunt-frontend.onrender.com`
 
 ### Production kapacitás:
 - ✅ **200-500 egyidejű felhasználó**
@@ -339,6 +314,7 @@ DATABASE_URL=postgresql://treasurehunt_user:password@host:port/treasurehunt
 - ✅ **Rate limiting aktív**
 - ✅ **Security headers beállítva**
 - ✅ **Logging és monitoring**
+- ✅ **CDN gyors betöltés**
 
 ### Következő lépések:
 
@@ -351,11 +327,14 @@ DATABASE_URL=postgresql://treasurehunt_user:password@host:port/treasurehunt
 ### Performance monitoring:
 
 ```bash
-# Teljesítmény ellenőrzése
-curl -w "@curl-format.txt" -o /dev/null -s https://treasurehunt-game.onrender.com/api/games/
+# Backend teljesítmény ellenőrzése
+curl -w "@curl-format.txt" -o /dev/null -s https://treasurehunt-backend.onrender.com/api/games/
+
+# Frontend betöltési idő ellenőrzése
+curl -w "@curl-format.txt" -o /dev/null -s https://treasurehunt-frontend.onrender.com/
 
 # Rate limiting teszt
-for i in {1..10}; do curl -s https://treasurehunt-game.onrender.com/api/player/check-session/; done
+for i in {1..10}; do curl -s https://treasurehunt-backend.onrender.com/api/player/check-session/; done
 ```
 
 ---
