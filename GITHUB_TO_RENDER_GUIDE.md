@@ -5,7 +5,7 @@
 ### 1. GitHub Repository létrehozása
 
 1. **GitHub.com** → **New Repository**
-2. **Repository name**: `halloween-treasure-hunter`
+2. **Repository name**: `treasurehunter` (vagy tetszőleges név)
 3. **Description**: `🎃 Halloween-themed treasure hunting game with React frontend and Django backend`
 4. **Public** ✅ (ajánlott portfolio miatt)
 5. **Add README** ✅
@@ -20,14 +20,14 @@ git add .
 git commit -m "Initial commit: Halloween Treasure Hunter game"
 
 # GitHub repository hozzáadása
-git remote add origin https://github.com/[USERNAME]/halloween-treasure-hunter.git
+git remote add origin https://github.com/[USERNAME]/treasurehunter.git
 git branch -M main
 git push -u origin main
 ```
 
 ---
 
-## 🗄️ Render.com Backend Setup
+## 🚀 Render.com Modern Deployment (Django + React Együtt)
 
 ### 1. Render.com regisztráció
 
@@ -38,27 +38,28 @@ git push -u origin main
 ### 2. PostgreSQL Database létrehozása
 
 1. **Dashboard** → **New** → **PostgreSQL**
-2. **Name**: `treasure-hunter-db`
-3. **Database**: `treasurehunter`
-4. **User**: `treasurehunter_user`
-5. **Region**: `Oregon (US West)` (legközelebbi)
+2. **Name**: `treasurehunt-db`
+3. **Database**: `treasurehunt`
+4. **User**: `treasurehunt_user`
+5. **Region**: `Frankfurt (EU Central)` (ajánlott)
 6. **Plan**: `Free` (kezdéshez)
 7. **Create Database**
 
-### 3. Backend Service létrehozása
+### 3. Web Service létrehozása (Django + React Együtt)
 
 1. **Dashboard** → **New** → **Web Service**
-2. **Connect GitHub** → **halloween-treasure-hunter** repository
-3. **Root Directory**: `backend`
+2. **Connect GitHub** → **treasurehunter** repository
+3. **Root Directory**: `backend` (marad!)
 4. **Environment**: `Python 3`
 5. **Build Command**:
    ```bash
-   pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate
+   cd frontend && npm run build && cd ../backend && pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate
    ```
 6. **Start Command**:
    ```bash
-   gunicorn --config gunicorn.conf.py config.wsgi:application
+   cd backend && gunicorn --config gunicorn.conf.py config.wsgi:application
    ```
+7. **Publish Directory**: `backend` (marad!)
 
 **Fontos**: A `gunicorn.conf.py` fájl már tartalmazza a production beállításokat!
 
@@ -69,15 +70,15 @@ git push -u origin main
 ```bash
 SECRET_KEY=django-insecure-your-new-secret-key-here-make-it-long-and-random
 DEBUG=False
-DATABASE_URL=postgresql://treasurehunter_user:password@host:port/treasurehunter
+DATABASE_URL=postgresql://treasurehunt_user:password@host:port/treasurehunt
 
 # Production optimalizálás
-GUNICORN_WORKERS=4
-GUNICORN_BIND=0.0.0.0:8000
+GUNICORN_WORKERS=2
+GUNICORN_BIND=0.0.0.0:$PORT
 GUNICORN_LOG_LEVEL=info
 
 # Redis cache (opcionális, de ajánlott)
-REDIS_URL=redis://localhost:6379/1
+REDIS_URL=redis://red-xxxxx:6379
 
 # Rate limiting (production értékek)
 RATE_LIMIT_ANON=200/hour
@@ -89,65 +90,84 @@ RATE_LIMIT_QR=50/hour
 
 **Fontos**: A `DATABASE_URL` automatikusan generálódik a PostgreSQL service-ben!
 **Megjegyzés**: Redis opcionális, de javasolt a jobb teljesítményért!
-**Megjegyzés:**: Létre kell hozni egy "logs" fájlt a backend mappában!!!
 
-### 5. Backend Deploy
+### 5. Deploy és Tesztelés
 
 1. **Create Web Service**
-2. **Várj** a build-re (2-3 perc)
+2. **Várj** a build-re (3-5 perc)
 3. **Ellenőrizd** a logokat hibákért
-4. **Jegyezd fel** a backend URL-t: `https://halloween-treasure-hunter.onrender.com`
-
-
+4. **Jegyezd fel** a service URL-t: `https://treasurehunt-game.onrender.com`
 
 ---
 
-## ⚛️ Render.com Frontend Setup
+## 🔧 Modern Architektúra Magyarázata
 
-### 1. Frontend Service létrehozása
+### Miért egyetlen Web Service?
 
-1. **Dashboard** → **New** → **Static Site**
-2. **Connect GitHub** → **halloween-treasure-hunter** repository
-3. **Root Directory**: `frontend`
-4. **Build Command**:
-   ```bash
-   npm install && npm run build
-   ```
-5. **Publish Directory**: `dist`
+#### **A. Egyszerűbb kezelés:**
+- ✅ **Egyetlen URL**: `treasurehunt-game.onrender.com`
+- ✅ **Egyetlen deploy**: Frontend + Backend együtt
+- ✅ **Nincs CORS probléma**: Minden ugyanazon a domain-en
+- ✅ **Egyszerűbb domain beállítás**: Egyetlen service
 
-### 2. Frontend Deploy
+#### **B. Django szolgálja ki a frontend-et:**
+- ✅ **Frontend build**: `npm run build` → `../backend/static`
+- ✅ **Django collectstatic**: `staticfiles` mappába másolja
+- ✅ **Django URL routing**: `/` → React alkalmazás
+- ✅ **Static files**: `/static/` → CSS, JS, képek
 
-1. **Create Static Site**
-2. **Várj** a build-re (1-2 perc)
-3. **Jegyezd fel** a frontend URL-t: `https://halloween-treasure-hunter-frontend.onrender.com`
+#### **C. Production optimalizáció:**
+- ✅ **Gunicorn**: Production WSGI server
+- ✅ **PostgreSQL**: Skálázható adatbázis
+- ✅ **Redis**: Cache és session storage
+- ✅ **Rate limiting**: API védelem
 
 ---
 
-## 🔧 Domain és CORS Beállítások
+## ⚛️ Frontend Build Folyamat
 
-### 1. Backend Domain frissítése
+### 1. Vite Configuration
 
-**Backend Service** → **Settings** → **Environment**:
-
-```bash
-ALLOWED_HOSTS=halloween-treasure-hunter.onrender.com,halloween-treasure-hunter-frontend.onrender.com
+**frontend/vite.config.js**:
+```javascript
+export default defineConfig({
+  plugins: [react(), tailwindcss()],
+  build: {
+    outDir: '../backend/static',  // Django static mappába
+    emptyOutDir: true,
+    assetsDir: 'assets',
+    rollupOptions: {
+      output: {
+        entryFileNames: 'assets/index.js',
+        chunkFileNames: 'assets/[name].js',
+        assetFileNames: 'assets/[name].[ext]'
+      }
+    }
+  }
+})
 ```
 
-### 2. CORS beállítások frissítése
+### 2. Django Static Files
 
-**Backend Service** → **Settings** → **Environment**:
-
-```bash
-CORS_ALLOWED_ORIGINS=https://halloween-treasure-hunter-frontend.onrender.com
-CSRF_TRUSTED_ORIGINS=https://halloween-treasure-hunter-frontend.onrender.com
+**backend/config/settings.py**:
+```python
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',  # Frontend build ide kerül
+]
 ```
 
-### 3. Frontend API URL frissítése
+### 3. Django URL Routing
 
-**Frontend Service** → **Settings** → **Environment**:
-
-```bash
-REACT_APP_API_URL=https://halloween-treasure-hunter.onrender.com
+**backend/config/urls.py**:
+```python
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('api/', include('treasurehunt.urls')),
+    # React alkalmazás szolgáltatása
+    path('', TemplateView.as_view(template_name='index.html')),
+]
 ```
 
 ---
@@ -161,15 +181,14 @@ REACT_APP_API_URL=https://halloween-treasure-hunter.onrender.com
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
-    'halloween-treasure-hunter.onrender.com',  # Render backend
-    'halloween-treasure-hunter-frontend.onrender.com',  # Render frontend
+    'treasurehunt-game.onrender.com',  # Render service
     '.onrender.com',  # Minden Render subdomain
 ]
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-    "https://halloween-treasure-hunter-frontend.onrender.com",  # Render frontend
+    "https://treasurehunt-game.onrender.com",  # Render service
 ]
 
 # Production security headers már beállítva
@@ -177,19 +196,17 @@ CORS_ALLOWED_ORIGINS = [
 # Rate limiting már optimalizálva
 ```
 
-### 2. Frontend API URL frissítése
+### 2. Frontend API URL (automatikus)
 
-```javascript
-// frontend/src/services/api.js
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-```
+A frontend automatikusan a jelenlegi domain-t használja API hívásokhoz, nincs szükség külön beállításra.
 
 ### 3. Production deployment ellenőrzése
 
 **Fontos**: Ellenőrizd, hogy ezek a fájlok léteznek:
 - ✅ `backend/gunicorn.conf.py` - Production Gunicorn konfiguráció
-- ✅ `backend/deploy.sh` - Deployment script
-- ✅ `backend/logs/` - Logging könyvtár (automatikusan létrejön)
+- ✅ `backend/requirements.txt` - Python dependencies
+- ✅ `frontend/package.json` - Node.js dependencies
+- ✅ `frontend/vite.config.js` - Frontend build konfiguráció
 
 ### 4. GitHub-ra push
 
@@ -207,43 +224,29 @@ git push origin main
 
 ```bash
 # Alapvető API teszt
-curl https://halloween-treasure-hunter.onrender.com/api/games/
+curl https://treasurehunt-game.onrender.com/api/games/
 
 # Rate limiting teszt
-curl -v https://halloween-treasure-hunter.onrender.com/api/player/check-session/
+curl -v https://treasurehunt-game.onrender.com/api/player/check-session/
 
 # Health check
-curl https://halloween-treasure-hunter.onrender.com/admin/
+curl https://treasurehunt-game.onrender.com/admin/
 ```
 
-### 2. Production teljesítmény tesztelése
+### 2. Frontend tesztelése
 
-```bash
-# Terheléses teszt (opcionális)
-cd backend
-python load_test.py
-```
-
-**Várható eredmények production-ben:**
-- ✅ 200-500 egyidejű felhasználó támogatás
-- ✅ 25-50 egyidejű játék
-- ✅ Rate limiting működik
-- ✅ Security headers aktívak
-
-### 3. Frontend tesztelése
-
-1. **Nyisd meg** a frontend URL-t
+1. **Nyisd meg** a service URL-t: `https://treasurehunt-game.onrender.com`
 2. **Teszteld** a játék funkcionalitást
 3. **Ellenőrizd** a konzol hibákat
 4. **Teszteld** a rate limiting-et (több gyors kérés)
 
-### 4. Teljes funkcionalitás tesztelése
+### 3. Teljes funkcionalitás tesztelése
 
 1. **Játék létrehozása** (Admin)
 2. **Játékos regisztráció**
 3. **QR kód beolvasás**
 4. **Játék végigjátszása**
-5. **Logok ellenőrzése** (Backend Service → Logs)
+5. **Logok ellenőrzése** (Service → Logs)
 
 ---
 
@@ -254,10 +257,12 @@ python load_test.py
 1. **Build Error**: 
    - Ellenőrizd a `requirements.txt` és `package.json`
    - Győződj meg róla, hogy a `gunicorn.conf.py` létezik
+   - Ellenőrizd a `vite.config.js` beállításokat
 
-2. **CORS Error**: 
-   - Frissítsd a CORS beállításokat
-   - Ellenőrizd az `ALLOWED_HOSTS` és `CORS_ALLOWED_ORIGINS`
+2. **Frontend nem tölt be**: 
+   - Ellenőrizd a `frontend/vite.config.js` `outDir` beállítást
+   - Futtasd `python manage.py collectstatic --noinput`
+   - Ellenőrizd a `STATIC_ROOT` beállítást
 
 3. **Database Error**: 
    - Ellenőrizd a `DATABASE_URL`
@@ -277,9 +282,8 @@ python load_test.py
 
 ### Logok ellenőrzése:
 
-1. **Backend Service** → **Logs**
-2. **Frontend Service** → **Logs**  
-3. **Database Service** → **Logs**
+1. **Web Service** → **Logs**
+2. **Database Service** → **Logs**
 
 **Fontos**: A production logging már be van állítva, részletes logokat találsz!
 
@@ -287,8 +291,7 @@ python load_test.py
 
 ## 🎉 Sikeres Deployment!
 
-**Backend URL**: `https://halloween-treasure-hunter.onrender.com`
-**Frontend URL**: `https://halloween-treasure-hunter-frontend.onrender.com`
+**Service URL**: `https://treasurehunt-game.onrender.com`
 
 ### Production kapacitás:
 - ✅ **200-500 egyidejű felhasználó**
@@ -304,16 +307,15 @@ python load_test.py
 3. **Monitoring** beállítása
 4. **Backup** stratégia
 5. **Redis cache** hozzáadása (teljesítmény javítás)
-6. **CDN** beállítása (static files gyorsítás)
 
 ### Performance monitoring:
 
 ```bash
 # Teljesítmény ellenőrzése
-curl -w "@curl-format.txt" -o /dev/null -s https://halloween-treasure-hunter.onrender.com/api/games/
+curl -w "@curl-format.txt" -o /dev/null -s https://treasurehunt-game.onrender.com/api/games/
 
 # Rate limiting teszt
-for i in {1..10}; do curl -s https://halloween-treasure-hunter.onrender.com/api/player/check-session/; done
+for i in {1..10}; do curl -s https://treasurehunt-game.onrender.com/api/player/check-session/; done
 ```
 
 ---
@@ -322,6 +324,6 @@ for i in {1..10}; do curl -s https://halloween-treasure-hunter.onrender.com/api/
 
 - **Render.com Documentation**: https://render.com/docs
 - **Django Deployment**: https://docs.djangoproject.com/en/stable/howto/deployment/
-- **React Deployment**: https://create-react-app.dev/docs/deployment/
+- **Vite Build**: https://vitejs.dev/guide/build.html
 
 **Sikeres deployment-et! 🚀🎃**
