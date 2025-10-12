@@ -89,6 +89,7 @@ RATE_LIMIT_QR=50/hour
 
 **Fontos**: A `DATABASE_URL` automatikusan generálódik a PostgreSQL service-ben!
 **Megjegyzés**: Redis opcionális, de javasolt a jobb teljesítményért!
+**Megjegyzés:**: Létre kell hozni egy "logs" fájlt a backend mappában!!!
 
 ### 5. Backend Deploy
 
@@ -96,6 +97,8 @@ RATE_LIMIT_QR=50/hour
 2. **Várj** a build-re (2-3 perc)
 3. **Ellenőrizd** a logokat hibákért
 4. **Jegyezd fel** a backend URL-t: `https://halloween-treasure-hunter.onrender.com`
+
+
 
 ---
 
