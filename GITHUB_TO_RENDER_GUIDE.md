@@ -53,11 +53,11 @@ git push -u origin main
 4. **Environment**: `Python 3`
 5. **Build Command**:
    ```bash
-   cd ../frontend && npm run build && cd ../backend && pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate
+   cd ../frontend && npm install && npm run build && cd ../backend && pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate
    ```
 6. **Start Command**:
    ```bash
-   cd backend && gunicorn --config gunicorn.conf.py config.wsgi:application
+   gunicorn --config gunicorn.conf.py config.wsgi:application
    ```
 7. **Publish Directory**: `backend` (marad!)
 
@@ -279,6 +279,33 @@ curl https://treasurehunt-game.onrender.com/admin/
 6. **Gunicorn Error**: 
    - Ellenőrizd a `gunicorn.conf.py` fájlt
    - Győződj meg róla, hogy a `GUNICORN_WORKERS` be van állítva
+
+7. **"vite: not found" Error**: 
+   - Ellenőrizd, hogy a Build Command tartalmazza az `npm install`-t
+   - Build Command: `cd ../frontend && npm install && npm run build && ...`
+
+8. **"cd: backend: No such file or directory" Error**: 
+   - Ellenőrizd, hogy a Start Command NEM tartalmazza a `cd backend`-et
+   - Start Command: `gunicorn --config gunicorn.conf.py config.wsgi:application`
+
+### Gyors Javítások:
+
+#### **Build Command (Render Dashboard):**
+```bash
+cd ../frontend && npm install && npm run build && cd ../backend && pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate
+```
+
+#### **Start Command (Render Dashboard):**
+```bash
+gunicorn --config gunicorn.conf.py config.wsgi:application
+```
+
+#### **Environment Variables (Render Dashboard):**
+```bash
+SECRET_KEY=django-insecure-your-new-secret-key-here-make-it-long-and-random
+DEBUG=False
+DATABASE_URL=postgresql://treasurehunt_user:password@host:port/treasurehunt
+```
 
 ### Logok ellenőrzése:
 
