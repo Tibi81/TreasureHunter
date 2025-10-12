@@ -52,7 +52,7 @@ const GameCreate = ({
     handleCreateGame(e, gameConfig);
   };
   return (
-    <div className="bg-gradient-to-b from-purple-900/90 to-gray-800/90 backdrop-blur-sm rounded-2xl shadow-lg p-8 border border-orange-500/20">
+    <div className="bg-gradient-to-b from-purple-900/90 to-gray-800/90 backdrop-blur-sm rounded-2xl shadow-lg p-mobile-lg border border-orange-500/20">
       <h2 className="text-3xl font-extrabold text-orange-400 mb-6 text-center font-spooky drop-shadow-glow-orange">
         Új játék létrehozása
       </h2>
@@ -67,9 +67,7 @@ const GameCreate = ({
             id="adminName"
             value={adminName}
             onChange={(e) => setAdminName(e.target.value)}
-            className="w-full px-4 py-4 bg-gray-800 border-2 border-orange-400 rounded-xl 
-                     focus:ring-2 focus:ring-orange-400 focus:border-transparent
-                     text-white placeholder-gray-400 font-spooky transition-all duration-200"
+            className="input-primary"
             placeholder="Add meg a neved..."
             required
           />
@@ -84,9 +82,7 @@ const GameCreate = ({
             id="gameName"
             value={gameName}
             onChange={(e) => setGameName(e.target.value)}
-            className="w-full px-4 py-4 bg-gray-800 border-2 border-orange-400 rounded-xl 
-                     focus:ring-2 focus:ring-orange-400 focus:border-transparent
-                     text-white placeholder-gray-400 font-spooky transition-all duration-200"
+            className="input-primary"
             placeholder="Halloween Kincskereső"
           />
         </div>
@@ -99,9 +95,7 @@ const GameCreate = ({
             id="teamCount"
             value={gameConfig.teamCount}
             onChange={(e) => handleTeamCountChange(parseInt(e.target.value))}
-            className="w-full px-4 py-4 bg-gray-800 border-2 border-orange-400 rounded-xl 
-                     focus:ring-2 focus:ring-orange-400 focus:border-transparent
-                     text-white font-spooky transition-all duration-200"
+            className="select-primary"
           >
             <option value={1}>1 csapat (egyedül/együtt)</option>
             <option value={2}>2 csapat (verseny)</option>
@@ -116,9 +110,7 @@ const GameCreate = ({
             id="maxPlayers"
             value={gameConfig.maxPlayers}
             onChange={(e) => setGameConfig(prev => ({...prev, maxPlayers: parseInt(e.target.value)}))}
-            className="w-full px-4 py-4 bg-gray-800 border-2 border-orange-400 rounded-xl 
-                     focus:ring-2 focus:ring-orange-400 focus:border-transparent
-                     text-white font-spooky transition-all duration-200"
+            className="select-primary"
           >
             {getPlayerOptions().map(option => (
               <option key={option.value} value={option.value}>
@@ -147,22 +139,14 @@ const GameCreate = ({
           <button
             type="button"
             onClick={() => setView('list')}
-            className="flex-1 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-500 hover:to-gray-600 
-                     text-white font-bold py-4 px-6 rounded-xl 
-                     transition-all duration-200 transform hover:scale-105
-                     shadow-md hover:shadow-gray-400/40 font-spooky"
+            className="btn-secondary flex-1"
           >
             Vissza
           </button>
           <button
             type="submit"
             disabled={loading}
-            className="flex-1 bg-gradient-to-r from-green-600 to-blue-600 
-                     hover:from-green-500 hover:to-blue-500 
-                     disabled:from-gray-600 disabled:to-gray-700
-                     text-white font-bold py-4 px-6 rounded-xl 
-                     transition-all duration-200 disabled:cursor-not-allowed
-                     transform hover:scale-105 shadow-md hover:shadow-green-400/40 font-spooky"
+            className="btn-success flex-1"
           >
             {loading ? 'Létrehozás...' : 'Játék létrehozása'}
           </button>

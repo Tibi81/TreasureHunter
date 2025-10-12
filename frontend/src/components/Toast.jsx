@@ -12,7 +12,7 @@ const Toast = ({ message, type, onClose }) => {
   }, [onClose]);
 
   const getToastStyles = () => {
-    const baseStyles = "fixed top-4 right-4 z-50 p-4 rounded-xl shadow-lg transition-all duration-300 max-w-sm border-2 font-spooky";
+    const baseStyles = "fixed top-4 right-4 z-50 p-mobile rounded-xl shadow-lg transition-all duration-300 max-w-sm border-2 font-spooky";
     
     switch (type) {
       case 'success':

@@ -490,9 +490,7 @@ const AdminPanel = ({ onBack }) => {
           <div className="text-center mt-8">
             <button
               onClick={onBack}
-              className="bg-gray-600 hover:bg-gray-500 
-                       text-white font-bold py-3 px-6 rounded-lg 
-                       transition-all duration-200"
+              className="btn-secondary"
             >
               Vissza a főoldalra
             </button>

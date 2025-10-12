@@ -579,11 +579,7 @@ function App() {
                 <button
                   onClick={() => setShowExitDialog(true)}
                   disabled={loading}
-                  className="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-500 hover:to-gray-600 disabled:from-gray-700 disabled:to-gray-800
-                           text-white px-3 py-2 rounded-xl text-xs sm:text-sm font-bold
-                           transition-all duration-200 disabled:cursor-not-allowed
-                           flex items-center justify-center gap-1 transform hover:scale-105
-                           shadow-md hover:shadow-gray-400/40 font-spooky"
+                  className="btn-secondary text-xs sm:text-sm"
                 >
                   <span className="text-sm">🚪</span>
                   <span>Kilépés</span>
@@ -610,7 +606,7 @@ function App() {
             {error}
             <button 
               onClick={() => setError('')}
-              className="ml-4 underline"
+              className="btn-small ml-4"
             >
               Bezárás
             </button>

@@ -74,9 +74,7 @@ button {
   transition: all 0.25s ease;
 }
 
-button:hover {
-  border-color: #fb923c; /* Halloween orange */
-}
+/* Globális gomb hover eltávolítva - Tailwind CSS osztályok kezelik */
 
 button:focus,
 button:focus-visible {
@@ -130,9 +128,7 @@ input:focus, textarea:focus, select:focus {
     color: #213547;
   }
   
-  button:hover {
-    border-color: #ea580c;
-  }
+  /* Globális gomb hover eltávolítva - Tailwind CSS osztályok kezelik */
 }
 
 /* UTILITY CLASSES - Tailwind kiegészítés */
