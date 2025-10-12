@@ -53,7 +53,7 @@ git push -u origin main
 4. **Environment**: `Python 3`
 5. **Build Command**:
    ```bash
-   cd ../frontend && npm install && npm run build && cd ../backend && pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate
+   cd ../frontend && npm install && npm run build && cd ../backend && pip install -r requirements.txt && python manage.py collectstatic --noinput --verbosity=2 && python manage.py migrate
    ```
 6. **Start Command**:
    ```bash
@@ -288,11 +288,17 @@ curl https://treasurehunt-game.onrender.com/admin/
    - Ellenőrizd, hogy a Start Command NEM tartalmazza a `cd backend`-et
    - Start Command: `gunicorn --config gunicorn.conf.py config.wsgi:application`
 
+9. **"Not Found: /static/assets/index.css" Error**: 
+   - Ellenőrizd, hogy a `backend/config/urls.py` tartalmazza a statikus fájlok routing-ot
+   - Győződj meg róla, hogy a `collectstatic` sikeresen lefutott
+   - Ellenőrizd a `STATIC_ROOT` és `STATIC_URL` beállításokat
+   - **Megoldás**: `urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)` minden módban
+
 ### Gyors Javítások:
 
 #### **Build Command (Render Dashboard):**
 ```bash
-cd ../frontend && npm install && npm run build && cd ../backend && pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate
+cd ../frontend && npm install && npm run build && cd ../backend && pip install -r requirements.txt && python manage.py collectstatic --noinput --verbosity=2 && python manage.py migrate
 ```
 
 #### **Start Command (Render Dashboard):**

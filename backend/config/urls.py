@@ -27,6 +27,5 @@ urlpatterns = [
     path('', TemplateView.as_view(template_name='index.html')),
 ]
 
-# Statikus fájlok szolgáltatása fejlesztési módban
-if settings.DEBUG:
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+# Statikus fájlok szolgáltatása minden módban (production és development)
+urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

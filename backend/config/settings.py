@@ -158,6 +158,30 @@ STATICFILES_DIRS = [
     BASE_DIR / 'static',                      # Saját statikus fájlok
 ]
 
+# Debug információ statikus fájlokhoz
+print(f"🔍 STATIC_URL: {STATIC_URL}")
+print(f"🔍 STATIC_ROOT: {STATIC_ROOT}")
+print(f"🔍 STATICFILES_DIRS: {STATICFILES_DIRS}")
+print(f"🔍 DEBUG: {DEBUG}")
+
+# Statikus fájlok ellenőrzése
+import os
+static_root_exists = os.path.exists(STATIC_ROOT)
+static_dir_exists = os.path.exists(BASE_DIR / 'static')
+print(f"🔍 STATIC_ROOT exists: {static_root_exists}")
+print(f"🔍 STATIC_DIR exists: {static_dir_exists}")
+
+if static_dir_exists:
+    static_files = os.listdir(BASE_DIR / 'static')
+    print(f"🔍 STATIC_DIR files: {static_files}")
+    
+    assets_dir = BASE_DIR / 'static' / 'assets'
+    if os.path.exists(assets_dir):
+        assets_files = os.listdir(assets_dir)
+        print(f"🔍 ASSETS_DIR files: {assets_files}")
+    else:
+        print("🔍 ASSETS_DIR does not exist!")
+
 # =====================================================
 # Alapértelmezett ID típus
 # =====================================================
