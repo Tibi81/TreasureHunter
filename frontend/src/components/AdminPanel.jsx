@@ -24,38 +24,47 @@ const AdminPanel = ({ onBack }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredGames, setFilteredGames] = useState([]);
 
-  // Játékok betöltése
-  const loadGames = useCallback(async () => {
+  // Játékok betöltése - debounced verzió
+  const loadGames = useCallback(async (force = false) => {
+    // Ha már loading van és nem force, ne fusson le újra
+    if (loading && !force) {
+      console.log('⏳ loadGames már fut, kihagyva...');
+      return;
+    }
+    
     setLoading(true);
     setError('');
     try {
+      console.log('🔄 Játékok betöltése...');
       const response = await gameAPI.listGames();
       setGames(response.games || []);
+      console.log('✅ Játékok betöltve:', response.games?.length || 0);
     } catch (err) {
+      console.error('❌ Hiba a játékok betöltésében:', err.message);
       setError(err.message || 'Hiba a játékok betöltésében');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [loading]);
 
   // Játékok betöltése komponens mount-kor
   useEffect(() => {
     loadGames();
   }, [loadGames]);
 
-  // Globális frissítés a játékok listájához (5 másodpercenként)
-  useEffect(() => {
-    const interval = setInterval(async () => {
-      try {
-        const response = await gameAPI.listGames();
-        setGames(response.games || []);
-      } catch (error) {
-        console.error('Hiba a játékok listájának frissítésében:', error.message);
-      }
-    }, 5000); // 5 másodperc - gyors frissítés a játékok listájához
-    
-    return () => clearInterval(interval);
-  }, []);
+  // Automatikus frissítés kikapcsolva - csak manuális frissítés
+  // useEffect(() => {
+  //   const interval = setInterval(async () => {
+  //     try {
+  //       const response = await gameAPI.listGames();
+  //       setGames(response.games || []);
+  //     } catch (error) {
+  //       console.error('Hiba a játékok listájának frissítésében:', error.message);
+  //     }
+  //   }, 5000); // 5 másodperc - gyors frissítés a játékok listájához
+  //   
+  //   return () => clearInterval(interval);
+  // }, []);
 
   // Keresés szűrése
   useEffect(() => {
@@ -126,13 +135,22 @@ const AdminPanel = ({ onBack }) => {
     setError('');
     try {
       await gameAPI.deleteGame(gameId);
-      await loadGames(); // Frissítsük a játékok listáját
+      
+      // Kis késleltetés a cache frissítéshez
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      await loadGames(true); // Force refresh a játékok listáját
+      
       if (currentGame && currentGame.id === gameId) {
         setCurrentGame(null);
         setView('list');
       }
+      
+      // Toast hozzáadása
+      addToast('Játék sikeresen törölve!', 'success');
     } catch (err) {
       setError(err.message || 'Hiba a játék törlésében');
+      addToast('Hiba történt a játék törlésekor', 'error');
     } finally {
       setLoading(false);
     }
@@ -144,9 +162,17 @@ const AdminPanel = ({ onBack }) => {
     setError('');
     try {
       await gameAPI.stopGame(gameId);
-      await loadGames(); // Frissítsük a játékok listáját
+      
+      // Kis késleltetés a cache frissítéshez
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      await loadGames(true); // Force refresh a játékok listáját
+      
+      // Toast hozzáadása
+      addToast('Játék sikeresen leállítva!', 'success');
     } catch (err) {
       setError(err.message || 'Hiba a játék leállításában');
+      addToast('Hiba történt a játék leállításakor', 'error');
     } finally {
       setLoading(false);
     }
