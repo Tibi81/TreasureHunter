@@ -264,6 +264,9 @@ def delete_game(request, game_id):
     """Játék törlése (Admin)"""
     game = get_object_or_404(Game, id=game_id)
     
+    # Cache invalidálása a törlés előtt
+    GameStateService.invalidate_game_cache(game.id)
+    
     # Játék törlése (a kapcsolódó adatok automatikusan törlődnek CASCADE miatt)
     game.delete()
     
@@ -283,6 +286,9 @@ def stop_game(request, game_id):
     # Játék leállítása - finished állapotba állítjuk
     game.status = 'finished'
     game.save()
+    
+    # Cache invalidálása
+    GameStateService.invalidate_game_cache(game.id)
     
     # Visszaadjuk a frissített játék adatokat
     data = {

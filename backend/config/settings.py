@@ -224,6 +224,23 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
 ]
 
+# CORS preflight requests támogatása
+CORS_PREFLIGHT_MAX_AGE = 86400  # 24 óra
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+
+# Debug CORS beállítások
+print(f"🔍 CORS_ALLOWED_ORIGINS: {CORS_ALLOWED_ORIGINS}")
+print(f"🔍 CORS_ALLOW_CREDENTIALS: {CORS_ALLOW_CREDENTIALS}")
+print(f"🔍 CORS_ALLOW_METHODS: {CORS_ALLOW_METHODS}")
+print(f"🔍 CORS_ALLOW_HEADERS: {CORS_ALLOW_HEADERS}")
+
 # =====================================================
 # Redis Cache és Session Storage
 # =====================================================
