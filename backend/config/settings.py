@@ -200,10 +200,9 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5176",
     "http://127.0.0.1:5176",
     "http://192.168.50.195:5173",  # Helyi hálózatos React fejlesztés
-    "https://treasurehunt-game.onrender.com",  # Render.com domain
-    "https://treasurehunter-mz1x.onrender.com",  # Aktuális Render.com domain
-    "https://treasurehunter-frontend.onrender.com",  # Frontend service
-    "https://*.onrender.com",  # Minden Render.com subdomain
+    "https://treasurehunter-1.onrender.com",
+    "https://treasurehunter-mz1x.onrender.com",  # backend saját domain
+    "https://*.onrender.com",
 ]
 
 # Production CORS beállítások
