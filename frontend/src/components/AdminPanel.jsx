@@ -24,14 +24,8 @@ const AdminPanel = ({ onBack }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredGames, setFilteredGames] = useState([]);
 
-  // Játékok betöltése - debounced verzió
-  const loadGames = useCallback(async (force = false) => {
-    // Ha már loading van és nem force, ne fusson le újra
-    if (loading && !force) {
-      console.log('⏳ loadGames már fut, kihagyva...');
-      return;
-    }
-    
+  // Játékok betöltése - egyszerű verzió
+  const loadGames = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
@@ -45,12 +39,12 @@ const AdminPanel = ({ onBack }) => {
     } finally {
       setLoading(false);
     }
-  }, [loading]);
+  }, []); // Üres dependency array!
 
-  // Játékok betöltése komponens mount-kor
+  // Játékok betöltése komponens mount-kor - csak egyszer!
   useEffect(() => {
     loadGames();
-  }, [loadGames]);
+  }, []); // Üres dependency array - csak mount-kor fut le!
 
   // Automatikus frissítés kikapcsolva - csak manuális frissítés
   // useEffect(() => {
@@ -139,7 +133,7 @@ const AdminPanel = ({ onBack }) => {
       // Kis késleltetés a cache frissítéshez
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      await loadGames(true); // Force refresh a játékok listáját
+      await loadGames(); // Frissítsük a játékok listáját
       
       if (currentGame && currentGame.id === gameId) {
         setCurrentGame(null);
@@ -166,7 +160,7 @@ const AdminPanel = ({ onBack }) => {
       // Kis késleltetés a cache frissítéshez
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      await loadGames(true); // Force refresh a játékok listáját
+      await loadGames(); // Frissítsük a játékok listáját
       
       // Toast hozzáadása
       addToast('Játék sikeresen leállítva!', 'success');
