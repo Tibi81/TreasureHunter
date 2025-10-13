@@ -1,11 +1,23 @@
 // services/api.js
-// Dinamikus API URL - statikus beágyazáshoz
+// ---------------------------
+// Dinamikus API URL kezelés a frontend számára
+// ---------------------------
+
 const getApiBaseUrl = () => {
-  // Mindig használd a jelenlegi domain-t (build módban)
-  return window.location.origin;
+  // Fejlesztési környezet (helyi szerver)
+  if (import.meta.env.MODE === "development") {
+    return "http://127.0.0.1:8000";
+  }
+
+  // Éles környezet (Render backend domain)
+  return "https://treasurehunter-mz1x.onrender.com";
 };
 
-const API_BASE_URL = getApiBaseUrl();
+export const API_BASE_URL = getApiBaseUrl();
+
+// Használat példa:
+// fetch(`${API_BASE_URL}/api/game/find/?format=json`)
+
 
 
 class APIError extends Error {
