@@ -17,6 +17,10 @@ export default defineConfig({
       }
     }
   },
+  define: {
+    // Environment változók beállítása build időben
+    'import.meta.env.VITE_BACKEND_URL': JSON.stringify(process.env.VITE_BACKEND_URL || 'https://treasurehunter-mz1x.onrender.com')
+  },
   server: {
     host: 'localhost',
     port: 5173,

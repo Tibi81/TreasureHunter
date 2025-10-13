@@ -202,6 +202,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://192.168.50.195:5173",  # Helyi hálózatos React fejlesztés
     "https://treasurehunter-1.onrender.com",
     "https://treasurehunter-mz1x.onrender.com",  # backend saját domain
+    "https://treasurehunter-frontend.onrender.com",  # frontend domain
     "https://*.onrender.com",
 ]
 

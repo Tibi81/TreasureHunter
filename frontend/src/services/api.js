@@ -3,22 +3,34 @@
 // Dinamikus API URL kezelés a frontend számára
 // ---------------------------
 
-const getApiBaseUrl = () => {
-  // Fejlesztési környezet (helyi szerver)
-  if (import.meta.env.MODE === "development") {
-    return "http://127.0.0.1:8000";
-  }
+// BACKEND URL KONSTANSOK
+const PROD_BACKEND_URL = "https://treasurehunter-mz1x.onrender.com";
+const DEV_BACKEND_URL = "http://127.0.0.1:8000";
 
-  // Éles környezet (Render backend domain)
-  return "https://treasurehunter-mz1x.onrender.com";
+// Egyszerű és megbízható API URL kezelés
+const getApiUrl = () => {
+  // Ha a frontend localhost-on fut, használjuk a dev backend-et
+  const isLocalhost = window.location.hostname === "localhost" || 
+                      window.location.hostname === "127.0.0.1";
+  
+  if (isLocalhost) {
+    console.log('🔍 Development mode detected');
+    return DEV_BACKEND_URL;
+  }
+  
+  // Minden más esetben használjuk a production backend-et
+  console.log('🔍 Production mode detected');
+  return PROD_BACKEND_URL;
 };
 
-export const API_BASE_URL = getApiBaseUrl();
+// Debug log
+const API_URL = getApiUrl();
+console.log('🔍 API_BASE_URL:', API_URL);
+console.log('🔍 Current hostname:', window.location.hostname);
 
-// Használat példa:
-// fetch(`${API_BASE_URL}/api/game/find/?format=json`)
-
-
+// Export konstansok (ha máshol is szükség van rájuk)
+export const BACKEND_URL = PROD_BACKEND_URL;
+export const API_BASE_URL = API_URL;
 
 class APIError extends Error {
   constructor(message, status) {
@@ -34,22 +46,19 @@ let csrfTokenPromise = null;
 
 // CSRF token lekérdezése
 const getCSRFToken = async () => {
-  // Ha már van folyamatban lévő kérés, várjuk meg azt
   if (csrfTokenPromise) {
     return await csrfTokenPromise;
   }
   
-  // Ha már van token, használjuk azt
   if (csrfToken) {
     return csrfToken;
   }
   
-  // Új token lekérdezése
   csrfTokenPromise = (async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/csrf-token/`, {
+      const response = await fetch(`${API_URL}/api/csrf-token/`, {
         method: 'GET',
-        credentials: 'include' // Cookie-k küldése
+        credentials: 'include'
       });
       
       if (!response.ok) {
@@ -58,9 +67,10 @@ const getCSRFToken = async () => {
       
       const data = await response.json();
       csrfToken = data.csrf_token;
+      console.log('✅ CSRF token sikeresen lekérve');
       return csrfToken;
     } catch (error) {
-      console.error('CSRF token lekérdezési hiba:', error);
+      console.error('❌ CSRF token lekérdezési hiba:', error);
       throw new APIError('CSRF token lekérdezési hiba', 0);
     } finally {
       csrfTokenPromise = null;
@@ -72,7 +82,7 @@ const getCSRFToken = async () => {
 
 const apiRequest = async (endpoint, options = {}) => {
   try {
-    const url = `${API_BASE_URL}${endpoint}`;
+    const url = `${API_URL}${endpoint}`;
     
     // CSRF token hozzáadása POST, PUT, DELETE, PATCH kérésekhez
     const needsCSRF = ['POST', 'PUT', 'DELETE', 'PATCH'].includes(options.method || 'GET');
@@ -81,9 +91,8 @@ const apiRequest = async (endpoint, options = {}) => {
     if (needsCSRF) {
       try {
         csrfToken = await getCSRFToken();
-        console.log('CSRF token lekérdezve:', csrfToken);
       } catch (error) {
-        console.error('CSRF token lekérdezési hiba:', error);
+        console.error('❌ CSRF token hiba:', error);
         throw new APIError('CSRF token lekérdezési hiba', 0);
       }
     }
@@ -94,7 +103,7 @@ const apiRequest = async (endpoint, options = {}) => {
         ...(csrfToken && { 'X-CSRFToken': csrfToken }),
         ...options.headers,
       },
-      credentials: 'include', // Cookie-k küldése
+      credentials: 'include',
       ...options,
     };
 
@@ -102,24 +111,26 @@ const apiRequest = async (endpoint, options = {}) => {
       config.body = JSON.stringify(config.body);
     }
 
-    console.log('API kérés:', url, config);
+    console.log(`📡 API ${options.method || 'GET'} kérés:`, url);
     const response = await fetch(url, config);
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.error('API hiba:', response.status, errorData);
+      console.error('❌ API hiba:', response.status, errorData);
       throw new APIError(
         errorData.error || `HTTP error! status: ${response.status}`,
         response.status
       );
     }
 
-    return await response.json();
+    const data = await response.json();
+    console.log('✅ API válasz:', data);
+    return data;
   } catch (error) {
     if (error instanceof APIError) {
       throw error;
     }
-    console.error('API kérés hiba:', error);
+    console.error('❌ API kérés hiba:', error);
     throw new APIError('Hálózati hiba', 0);
   }
 };
@@ -129,7 +140,6 @@ export const gameAPI = {
   findGameByCode: async (gameCode) => {
     return apiRequest(`/api/game/code/${gameCode.toUpperCase()}/`);
   },
-
 
   // Új játék létrehozása (Admin)
   createGame: async (gameName = 'Halloween Kincskereső', adminName = 'Admin', maxPlayers = 4, teamCount = 2) => {
