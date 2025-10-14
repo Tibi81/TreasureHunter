@@ -161,6 +161,8 @@ STATICFILES_DIRS = [
     BASE_DIR / 'static',                      # Saját statikus fájlok
 ]
 
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
 # Debug információ statikus fájlokhoz
 print(f"🔍 STATIC_URL: {STATIC_URL}")
 print(f"🔍 STATIC_ROOT: {STATIC_ROOT}")
