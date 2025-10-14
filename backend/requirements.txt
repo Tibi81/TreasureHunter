@@ -21,3 +21,7 @@ gunicorn==21.2.0
 asgiref==3.10.0
 sqlparse==0.5.3
 tzdata==2025.2
+
+# Django Admin felület megjelenítése éles környezetben
+whitenoise==6.6.0
+
