@@ -58,6 +58,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',  # CORS middleware a legelső helyen
+    'whitenoise.middleware.WhiteNoiseMiddleware', # Django Admin oldal megjelenítése éles környezetben
     'treasurehunt.middleware.RateLimitMiddleware',  # Rate limiting middleware
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
