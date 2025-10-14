@@ -198,7 +198,7 @@ describe('PlayerRegistration Component', () => {
       />
     )
     
-    const backButton = screen.getByText('← Vissza')
+    const backButton = screen.getByText('Vissza')
     fireEvent.click(backButton)
     
     expect(mockOnBack).toHaveBeenCalled()
@@ -234,7 +234,8 @@ describe('PlayerRegistration Component', () => {
       />
     )
     
-    expect(screen.getByText('2/2 játékos (TELE)')).toBeInTheDocument()
+    expect(screen.getByText('2/2 játékos')).toBeInTheDocument()
+    expect(screen.getByText('TELE')).toBeInTheDocument()
     expect(screen.getByText('0/2 játékos')).toBeInTheDocument()
   })
 
@@ -248,7 +249,7 @@ describe('PlayerRegistration Component', () => {
     )
     
     const nameInput = screen.getByPlaceholderText('Írd be a neved...')
-    const pumpkinTeam = screen.getByLabelText('🎃 Tök Csapat')
+    const pumpkinTeam = screen.getByText('Tök Csapat')
     const submitButton = screen.getByText('Csatlakozás!')
     
     // First submit without name to show error
@@ -289,7 +290,7 @@ describe('PlayerRegistration Component', () => {
       />
     )
     
-    expect(screen.getByText('🎃 Tök Csapat')).toBeInTheDocument()
+    expect(screen.getByText('Tök Csapat')).toBeInTheDocument()
     expect(screen.getByText('0/2 játékos')).toBeInTheDocument()
   })
 })

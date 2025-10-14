@@ -1,6 +1,8 @@
 /* eslint-disable no-unused-vars */
 // App.js
 import React, { useState, useEffect, useCallback } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import Welcome from './components/Welcome';
 import PlayerRegistration from './components/PlayerRegistration';
 import AdminPanel from './components/AdminPanel';
@@ -9,8 +11,21 @@ import ChallengePanel from './components/ChallengePanel';
 import GameResults from './components/GameResults';
 import GameExitDialog from './components/GameExitDialog';
 import Toast from './components/Toast';
+import ErrorBoundary from './components/ErrorBoundary';
 import { gameAPI } from './services/api';
 import './App.css';
+
+// React Query client konfigurálása
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 perc
+      cacheTime: 10 * 60 * 1000, // 10 perc
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 function App() {
   const [appState, setAppState] = useState('welcome'); // welcome, registration, admin, game, finished
@@ -488,7 +503,11 @@ function App() {
         );
       
       case 'admin':
-        return <AdminPanel onBack={handleBackToWelcome} />;
+        return (
+          <ErrorBoundary>
+            <AdminPanel onBack={handleBackToWelcome} />
+          </ErrorBoundary>
+        );
       
       case 'game':
         // Ha a játék befejeződött
@@ -619,4 +638,14 @@ function App() {
   );
 }
 
-export default App;
+// Fő App komponens QueryClientProvider-rel
+function AppWithQueryClient() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <App />
+      {process.env.NODE_ENV === 'development' && <ReactQueryDevtools initialIsOpen={false} />}
+    </QueryClientProvider>
+  );
+}
+
+export default AppWithQueryClient;

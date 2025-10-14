@@ -8,6 +8,8 @@ describe('API Service', () => {
   beforeEach(() => {
     fetch.mockClear()
     localStorage.clear()
+    // Reset fetch mock to default behavior
+    fetch.mockImplementation(() => Promise.reject(new Error('Network error')))
   })
 
   describe('gameAPI', () => {

@@ -9,7 +9,6 @@ const GameList = ({
   loading, 
   searchTerm, 
   setSearchTerm, 
-  loadGames, 
   handleSelectGame, 
   setEditingGame, 
   handleStopGame, 
@@ -32,7 +31,7 @@ const GameList = ({
               className="input-primary w-full sm:w-auto"
             />
             <button
-              onClick={loadGames}
+              onClick={() => window.location.reload()}
               disabled={loading}
               className="btn-admin"
             >
@@ -160,7 +159,6 @@ GameList.propTypes = {
   loading: PropTypes.bool,
   searchTerm: PropTypes.string.isRequired,
   setSearchTerm: PropTypes.func.isRequired,
-  loadGames: PropTypes.func.isRequired,
   handleSelectGame: PropTypes.func.isRequired,
   setEditingGame: PropTypes.func.isRequired,
   handleStopGame: PropTypes.func.isRequired,

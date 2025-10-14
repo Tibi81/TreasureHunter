@@ -1,121 +1,111 @@
 // components/AdminPanel.jsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { gameAPI } from '../services/api';
+import { useQueryClient } from '@tanstack/react-query';
+import { 
+  useGames, 
+  useCreateGame, 
+  useDeleteGame, 
+  useStopGame, 
+  useStartGame, 
+  useResetGame,
+  useAddPlayer,
+  useRemovePlayer,
+  useMovePlayer,
+  useUpdateGame
+} from '../hooks/useGameAPI';
 import GameList from './admin/GameList';
 import GameCreate from './admin/GameCreate';
 import GameManage from './admin/GameManage';
 import GameEditModal from './admin/GameEditModal';
 import PlayerAddModal from './admin/PlayerAddModal';
-import ProgressDisplay from './ProgressDisplay';
 
 const AdminPanel = ({ onBack }) => {
+  const queryClient = useQueryClient();
+  
   const [adminName, setAdminName] = useState('');
   const [gameName, setGameName] = useState('Halloween Kincskereső');
   const [currentGame, setCurrentGame] = useState(null);
-  const [games, setGames] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [view, setView] = useState('list'); // 'list', 'create', 'manage'
+  const [view, setView] = useState('list');
   const [editingGame, setEditingGame] = useState(null);
   const [addingPlayer, setAddingPlayer] = useState(false);
   const [newPlayerName, setNewPlayerName] = useState('');
   const [newPlayerTeam, setNewPlayerTeam] = useState('pumpkin');
   const [searchTerm, setSearchTerm] = useState('');
-  const [filteredGames, setFilteredGames] = useState([]);
 
-  // Játékok betöltése - egyszerű verzió
-  const loadGames = useCallback(async () => {
-    setLoading(true);
-    setError('');
+  // React Query hooks
+  const { data: games = [], isLoading: gamesLoading, error: gamesError } = useGames();
+  const createGameMutation = useCreateGame();
+  const deleteGameMutation = useDeleteGame();
+  const stopGameMutation = useStopGame();
+  const startGameMutation = useStartGame();
+  const resetGameMutation = useResetGame();
+  const addPlayerMutation = useAddPlayer();
+  const removePlayerMutation = useRemovePlayer();
+  const movePlayerMutation = useMovePlayer();
+  const updateGameMutation = useUpdateGame();
+
+  // Szűrt játékok
+  const filteredGames = games.filter(game => 
+    !searchTerm.trim() || 
+    game.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    game.game_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    game.created_by?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Hiba kezelése
+  useEffect(() => {
+    if (gamesError) {
+      setError(gamesError.message || 'Hiba a játékok betöltésében');
+    }
+  }, [gamesError]);
+
+  // Manuális cache frissítés függvény
+  const refreshGames = () => {
     try {
-      console.log('🔄 Játékok betöltése...');
-      const response = await gameAPI.listGames();
-      setGames(response.games || []);
-      console.log('✅ Játékok betöltve:', response.games?.length || 0);
+      queryClient.invalidateQueries({ queryKey: ['games'] });
     } catch (err) {
-      console.error('❌ Hiba a játékok betöltésében:', err.message);
-      setError(err.message || 'Hiba a játékok betöltésében');
-    } finally {
-      setLoading(false);
+      console.error('Hiba a frissítésben:', err);
+      setError('Hiba történt a frissítés során');
     }
-  }, []); // Üres dependency array!
-
-  // Játékok betöltése komponens mount-kor - csak egyszer!
-  useEffect(() => {
-    loadGames();
-  }, []); // Üres dependency array - csak mount-kor fut le!
-
-  // Automatikus frissítés kikapcsolva - csak manuális frissítés
-  // useEffect(() => {
-  //   const interval = setInterval(async () => {
-  //     try {
-  //       const response = await gameAPI.listGames();
-  //       setGames(response.games || []);
-  //     } catch (error) {
-  //       console.error('Hiba a játékok listájának frissítésében:', error.message);
-  //     }
-  //   }, 5000); // 5 másodperc - gyors frissítés a játékok listájához
-  //   
-  //   return () => clearInterval(interval);
-  // }, []);
-
-  // Keresés szűrése
-  useEffect(() => {
-    if (!searchTerm.trim()) {
-      setFilteredGames(games);
-    } else {
-      const filtered = games.filter(game => 
-        game.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        game.game_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        game.created_by?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      setFilteredGames(filtered);
-    }
-  }, [games, searchTerm]);
+  };
 
   // Játék létrehozása
   const handleCreateGame = async (e, gameConfig = null) => {
     e.preventDefault();
     
-    // Alapvető frontend validáció (a részletes validáció a backend-ben történik)
     if (!adminName.trim()) {
       setError('Add meg az admin nevét!');
       return;
     }
 
-    setLoading(true);
     setError('');
 
     try {
-      const response = await gameAPI.createGame(
-        gameName, 
-        adminName.trim(),
-        gameConfig?.maxPlayers || 4,
-        gameConfig?.teamCount || 2
-      );
+      const response = await createGameMutation.mutateAsync({
+        gameName,
+        adminName: adminName.trim(),
+        maxPlayers: gameConfig?.maxPlayers || 4,
+        teamCount: gameConfig?.teamCount || 2
+      });
       setCurrentGame(response);
       setView('manage');
-      await loadGames(); // Frissítsük a játékok listáját
     } catch (err) {
+      console.error('Játék létrehozási hiba:', err);
       setError(err.message || 'Hiba a játék létrehozásakor');
-    } finally {
-      setLoading(false);
     }
   };
 
   // Játék szerkesztése
   const handleEditGame = async (gameId, gameData) => {
-    setLoading(true);
     setError('');
     try {
-      await gameAPI.updateGame(gameId, gameData);
-      await loadGames(); // Frissítsük a játékok listáját
+      await updateGameMutation.mutateAsync({ gameId, gameData });
       setEditingGame(null);
     } catch (err) {
+      console.error('Játék szerkesztési hiba:', err);
       setError(err.message || 'Hiba a játék szerkesztésében');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -125,102 +115,96 @@ const AdminPanel = ({ onBack }) => {
       return;
     }
 
-    setLoading(true);
     setError('');
+
     try {
-      await gameAPI.deleteGame(gameId);
-      
-      // Kis késleltetés a cache frissítéshez
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      await loadGames(); // Frissítsük a játékok listáját
+      await deleteGameMutation.mutateAsync(gameId);
       
       if (currentGame && currentGame.id === gameId) {
         setCurrentGame(null);
         setView('list');
       }
       
-      // Toast hozzáadása
-      addToast('Játék sikeresen törölve!', 'success');
+      console.log('Játék sikeresen törölve!');
     } catch (err) {
-      setError(err.message || 'Hiba a játék törlésében');
-      addToast('Hiba történt a játék törlésekor', 'error');
-    } finally {
-      setLoading(false);
+      // Ha 404 hiba, akkor a játék már nem létezik
+      if (err.status === 404) {
+        console.log('Játék már nem létezik, frissítjük a listát');
+        setError('');
+        if (currentGame && currentGame.id === gameId) {
+          setCurrentGame(null);
+          setView('list');
+        }
+      } else {
+        console.error('Játék törlési hiba:', err);
+        setError(err.message || 'Hiba a játék törlésében');
+      }
     }
   };
 
   // Játék leállítása
   const handleStopGame = async (gameId) => {
-    setLoading(true);
     setError('');
+
     try {
-      await gameAPI.stopGame(gameId);
-      
-      // Kis késleltetés a cache frissítéshez
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      await loadGames(); // Frissítsük a játékok listáját
-      
-      // Toast hozzáadása
-      addToast('Játék sikeresen leállítva!', 'success');
+      await stopGameMutation.mutateAsync(gameId);
+      console.log('Játék sikeresen leállítva!');
     } catch (err) {
+      console.error('Játék leállítási hiba:', err);
       setError(err.message || 'Hiba a játék leállításában');
-      addToast('Hiba történt a játék leállításakor', 'error');
-    } finally {
-      setLoading(false);
     }
   };
 
   // Játék kiválasztása kezeléshez
   const handleSelectGame = (game) => {
-    setCurrentGame(game);
-    setView('manage');
+    try {
+      setCurrentGame(game);
+      setView('manage');
+    } catch (err) {
+      console.error('Játék kiválasztási hiba:', err);
+      setError('Hiba a játék kiválasztásában');
+    }
   };
 
-  // Játékos eltávolítása - javított verzió
+  // Játékos eltávolítása
   const handleRemovePlayer = async (gameId, playerId) => {
     if (!window.confirm('Biztosan eltávolítod ezt a játékost?')) {
       return;
     }
 
-    setLoading(true);
     setError('');
+
     try {
-      const response = await gameAPI.removePlayer(gameId, playerId);
+      const response = await removePlayerMutation.mutateAsync({ gameId, playerId });
       
-      // A response már tartalmazza a frissített játék adatokat
       if (response.game) {
         setCurrentGame(response.game);
       }
       
-      // Frissítsük a játékok listáját is
-      await loadGames();
-      
       console.log(response.message || 'Játékos eltávolítva!');
     } catch (err) {
+      console.error('Játékos eltávolítási hiba:', err);
       setError(err.message || 'Hiba a játékos eltávolításában');
-    } finally {
-      setLoading(false);
     }
   };
 
   // Játékos áthelyezése
   const handleMovePlayer = async (gameId, playerId, newTeam) => {
-    setLoading(true);
     setError('');
+
     try {
-      await gameAPI.movePlayer(gameId, playerId, newTeam);
-      await loadGames(); // Frissítsük a játékok listáját
-      // Frissítsük a jelenlegi játékot is
+      await movePlayerMutation.mutateAsync({ gameId, playerId, newTeam });
+      
+      // Frissítsük a jelenlegi játékot
       if (currentGame && currentGame.id === gameId) {
-        const response = await gameAPI.getGameStatus(gameId);
-        setCurrentGame(response.game);
+        const updatedGame = games.find(g => g.id === gameId);
+        if (updatedGame) {
+          setCurrentGame(updatedGame);
+        }
       }
     } catch (err) {
+      console.error('Játékos áthelyezési hiba:', err);
       setError(err.message || 'Hiba a játékos áthelyezésében');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -231,22 +215,27 @@ const AdminPanel = ({ onBack }) => {
       return;
     }
 
-    setLoading(true);
     setError('');
+
     try {
-      await gameAPI.addPlayer(gameId, newPlayerName.trim(), newPlayerTeam);
+      await addPlayerMutation.mutateAsync({ 
+        gameId, 
+        playerName: newPlayerName.trim(), 
+        teamName: newPlayerTeam 
+      });
       setNewPlayerName('');
       setAddingPlayer(false);
-      await loadGames(); // Frissítsük a játékok listáját
-      // Frissítsük a jelenlegi játékot is
+      
+      // Frissítsük a jelenlegi játékot
       if (currentGame && currentGame.id === gameId) {
-        const response = await gameAPI.getGameStatus(gameId);
-        setCurrentGame(response.game);
+        const updatedGame = games.find(g => g.id === gameId);
+        if (updatedGame) {
+          setCurrentGame(updatedGame);
+        }
       }
     } catch (err) {
+      console.error('Játékos hozzáadási hiba:', err);
       setError(err.message || 'Hiba a játékos hozzáadásában');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -254,7 +243,6 @@ const AdminPanel = ({ onBack }) => {
   const handleStartGame = async () => {
     if (!currentGame) return;
 
-    setLoading(true);
     setError('');
 
     try {
@@ -264,15 +252,16 @@ const AdminPanel = ({ onBack }) => {
         return;
       }
       
-      await gameAPI.startGame(gameId);
+      await startGameMutation.mutateAsync(gameId);
+      
       // Frissítsük a játék állapotot
-      const response = await gameAPI.getGameStatus(gameId);
-      setCurrentGame(response.game);
-      await loadGames(); // Frissítsük a játékok listáját
+      const updatedGame = games.find(g => g.id === gameId);
+      if (updatedGame) {
+        setCurrentGame(updatedGame);
+      }
     } catch (err) {
+      console.error('Játék indítási hiba:', err);
       setError(err.message || 'Hiba a játék indításakor');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -280,7 +269,6 @@ const AdminPanel = ({ onBack }) => {
   const handleResetGame = async () => {
     if (!currentGame) return;
 
-    setLoading(true);
     setError('');
 
     try {
@@ -290,62 +278,25 @@ const AdminPanel = ({ onBack }) => {
         return;
       }
       
-      const response = await gameAPI.resetGame(gameId);
+      const response = await resetGameMutation.mutateAsync(gameId);
       setCurrentGame(response.game);
-      await loadGames(); // Frissítsük a játékok listáját
     } catch (err) {
+      console.error('Játék visszaállítási hiba:', err);
       setError(err.message || 'Hiba a játék visszaállításakor');
-    } finally {
-      setLoading(false);
     }
   };
 
-  // Játék állapot frissítése - javított verzió (villogás nélkül)
-  const updateGameStatus = useCallback(async () => {
-    if (!currentGame) return;
-
-    try {
-      const gameId = currentGame.id || currentGame.game?.id;
-      if (!gameId) return;
-      
-      const response = await gameAPI.getGameStatus(gameId);
-      
-      if (response.game) {
-        setCurrentGame({
-          ...response,
-          id: response.game.id,
-          game: response.game
-        });
-      }
-    } catch (err) {
-      console.error('Hiba a játék állapot frissítésében:', err);
-    }
-  }, [currentGame]);
-
-  // Automatikus frissítés - gyorsabb verzió (3 másodperces intervallum, villogás nélkül)
-  useEffect(() => {
-    if (!currentGame) return;
-    
-    const gameId = currentGame.id || currentGame.game?.id;
-    if (!gameId) return;
-    
-    const interval = setInterval(async () => {
-      try {
-        await updateGameStatus();
-        // Csak a játékok listáját frissítjük, ha szükséges
-        const updatedGames = await gameAPI.listGames();
-        const updatedCurrentGame = updatedGames.games?.find(g => g.id === gameId);
-        if (updatedCurrentGame && JSON.stringify(updatedCurrentGame) !== JSON.stringify(currentGame)) {
-          setCurrentGame(updatedCurrentGame);
-        }
-      } catch (error) {
-        console.error('Hiba a játék állapot frissítésében:', error.message);
-      }
-    }, 3000); // 3 másodperc - gyorsabb frissítés, de nem villog
-    
-    return () => clearInterval(interval);
-  }, [currentGame, updateGameStatus]);
-
+  // Loading állapot összesítése
+  const loading = gamesLoading || 
+    createGameMutation.isPending || 
+    deleteGameMutation.isPending || 
+    stopGameMutation.isPending || 
+    startGameMutation.isPending || 
+    resetGameMutation.isPending || 
+    addPlayerMutation.isPending || 
+    removePlayerMutation.isPending || 
+    movePlayerMutation.isPending ||
+    updateGameMutation.isPending;
 
   return (
     <div className="text-white overflow-x-hidden">
@@ -360,86 +311,86 @@ const AdminPanel = ({ onBack }) => {
               Játékok kezelése és létrehozása
             </p>
             
-            {/* Navigációs gombok 2x2 grid elrendezésben - függőleges kártyák */}
+            {/* Navigációs gombok */}
             <div className="grid grid-cols-2 gap-3 sm:gap-6 mb-6">
-            {/* Frissítés gomb */}
-            <button
-              onClick={loadGames}
-              disabled={loading}
-              className="flex flex-col items-center justify-center gap-2 min-h-[120px] sm:min-h-[140px] w-full p-3 sm:p-4 rounded-lg font-semibold transition-all duration-200 shadow-md hover:shadow-lg disabled:cursor-not-allowed bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 disabled:from-gray-600 disabled:to-gray-500 text-white"
-            >
-              {loading ? (
-                <>
-                  <svg className="animate-spin h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  <span className="text-xs">Frissítés...</span>
-                </>
-              ) : (
-                <>
-                  <span className="text-xl">🔄</span>
-                  <span className="text-xs">Frissítés</span>
-                </>
-              )}
-            </button>
+              {/* Frissítés gomb */}
+              <button
+                onClick={refreshGames}
+                disabled={loading}
+                className="flex flex-col items-center justify-center gap-2 min-h-[120px] sm:min-h-[140px] w-full p-3 sm:p-4 rounded-lg font-semibold transition-all duration-200 shadow-md hover:shadow-lg disabled:cursor-not-allowed bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 disabled:from-gray-600 disabled:to-gray-500 text-white"
+              >
+                {loading ? (
+                  <>
+                    <svg className="animate-spin h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span className="text-xs">Frissítés...</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-xl">🔄</span>
+                    <span className="text-xs">Frissítés</span>
+                  </>
+                )}
+              </button>
 
-            {/* Játékok listája gomb */}
-            <button
-              onClick={() => setView('list')}
-              className={`flex flex-col items-center justify-center gap-2 min-h-[120px] sm:min-h-[140px] w-full p-3 sm:p-4 rounded-lg font-semibold transition-all duration-200 shadow-md hover:shadow-lg disabled:cursor-not-allowed ${
-                view === 'list' 
-                  ? 'bg-gradient-to-r from-orange-500 to-orange-400 text-white' 
-                  : 'bg-gradient-to-r from-gray-600 to-gray-500 hover:from-gray-500 hover:to-gray-400 text-white'
-              }`}
-            >
-              <span className="text-xl">📋</span>
-              <span className="text-xs">Játékok listája</span>
-            </button>
+              {/* Játékok listája gomb */}
+              <button
+                onClick={() => setView('list')}
+                className={`flex flex-col items-center justify-center gap-2 min-h-[120px] sm:min-h-[140px] w-full p-3 sm:p-4 rounded-lg font-semibold transition-all duration-200 shadow-md hover:shadow-lg ${
+                  view === 'list' 
+                    ? 'bg-gradient-to-r from-orange-500 to-orange-400 text-white' 
+                    : 'bg-gradient-to-r from-gray-600 to-gray-500 hover:from-gray-500 hover:to-gray-400 text-white'
+                }`}
+              >
+                <span className="text-xl">📋</span>
+                <span className="text-xs">Játékok listája</span>
+              </button>
 
-            {/* Új játék gomb */}
-            <button
-              onClick={() => setView('create')}
-              className={`flex flex-col items-center justify-center gap-2 min-h-[120px] sm:min-h-[140px] w-full p-3 sm:p-4 rounded-lg font-semibold transition-all duration-200 shadow-md hover:shadow-lg disabled:cursor-not-allowed ${
-                view === 'create' 
-                  ? 'bg-gradient-to-r from-orange-500 to-orange-400 text-white' 
-                  : 'bg-gradient-to-r from-gray-600 to-gray-500 hover:from-gray-500 hover:to-gray-400 text-white'
-              }`}
-            >
-              <span className="text-xl">➕</span>
-              <span className="text-xs">Új játék</span>
-            </button>
+              {/* Új játék gomb */}
+              <button
+                onClick={() => setView('create')}
+                className={`flex flex-col items-center justify-center gap-2 min-h-[120px] sm:min-h-[140px] w-full p-3 sm:p-4 rounded-lg font-semibold transition-all duration-200 shadow-md hover:shadow-lg ${
+                  view === 'create' 
+                    ? 'bg-gradient-to-r from-orange-500 to-orange-400 text-white' 
+                    : 'bg-gradient-to-r from-gray-600 to-gray-500 hover:from-gray-500 hover:to-gray-400 text-white'
+                }`}
+              >
+                <span className="text-xl">➕</span>
+                <span className="text-xs">Új játék</span>
+              </button>
 
-            {/* Játékok kezelése gomb */}
-            <button
-              onClick={() => setView('manage')}
-              disabled={!currentGame}
-              className={`flex flex-col items-center justify-center gap-2 min-h-[120px] sm:min-h-[140px] w-full p-3 sm:p-4 rounded-lg font-semibold transition-all duration-200 shadow-md hover:shadow-lg disabled:cursor-not-allowed ${
-                view === 'manage' && currentGame
-                  ? 'bg-gradient-to-r from-orange-500 to-orange-400 text-white' 
-                  : currentGame
-                    ? 'bg-gradient-to-r from-gray-600 to-gray-500 hover:from-gray-500 hover:to-gray-400 text-white'
-                    : 'bg-gradient-to-r from-gray-700 to-gray-600 text-gray-400 cursor-not-allowed'
-              }`}
-            >
-              <span className="text-xl">⚙️</span>
-              <span className="text-xs">Játékok kezelése</span>
-            </button>
+              {/* Játékok kezelése gomb */}
+              <button
+                onClick={() => setView('manage')}
+                disabled={!currentGame}
+                className={`flex flex-col items-center justify-center gap-2 min-h-[120px] sm:min-h-[140px] w-full p-3 sm:p-4 rounded-lg font-semibold transition-all duration-200 shadow-md hover:shadow-lg disabled:cursor-not-allowed ${
+                  view === 'manage' && currentGame
+                    ? 'bg-gradient-to-r from-orange-500 to-orange-400 text-white' 
+                    : currentGame
+                      ? 'bg-gradient-to-r from-gray-600 to-gray-500 hover:from-gray-500 hover:to-gray-400 text-white'
+                      : 'bg-gradient-to-r from-gray-700 to-gray-600 text-gray-400 cursor-not-allowed'
+                }`}
+              >
+                <span className="text-xl">⚙️</span>
+                <span className="text-xs">Játékok kezelése</span>
+              </button>
+            </div>
           </div>
-        </div>
 
-        {/* Hibaüzenet */}
-        {error && (
-          <div className="bg-red-600 text-white p-4 rounded-lg mb-6 text-center max-w-md mx-auto">
-            {error}
-            <button 
-              onClick={() => setError('')}
-              className="ml-4 underline"
-            >
-              Bezárás
-            </button>
-          </div>
-        )}
+          {/* Hibaüzenet */}
+          {error && (
+            <div className="bg-red-600 text-white p-4 rounded-lg mb-6 text-center max-w-md mx-auto">
+              {error}
+              <button 
+                onClick={() => setError('')}
+                className="ml-4 underline hover:text-gray-200"
+              >
+                Bezárás
+              </button>
+            </div>
+          )}
 
           {/* Játékok listája */}
           {view === 'list' && (
@@ -449,7 +400,6 @@ const AdminPanel = ({ onBack }) => {
               loading={loading}
               searchTerm={searchTerm}
               setSearchTerm={setSearchTerm}
-              loadGames={loadGames}
               handleSelectGame={handleSelectGame}
               setEditingGame={setEditingGame}
               handleStopGame={handleStopGame}
