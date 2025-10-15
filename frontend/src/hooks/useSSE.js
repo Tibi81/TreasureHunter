@@ -10,7 +10,7 @@ export const useSSE = (url, options = {}) => {
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState(null);
   const eventSourceRef = useRef(null);
-  const reconnectAttemptsRef = useRef(0); // ✅ ref helyett state
+  const reconnectAttemptsRef = useRef(0); // ✅ ref használata
   const reconnectTimeoutRef = useRef(null); // ✅ timeout referencia
   const queryClient = useQueryClient();
   
@@ -145,7 +145,7 @@ export const useSSE = (url, options = {}) => {
     return () => {
       disconnect();
     };
-  }, [enabled, url, connect, disconnect]);
+  }, [enabled, url]); // ✅ Eltávolítottam connect és disconnect dependency-ket
 
   return {
     isConnected,
