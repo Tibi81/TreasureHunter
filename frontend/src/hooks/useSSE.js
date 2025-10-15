@@ -10,7 +10,7 @@ export const useSSE = (url, options = {}) => {
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState(null);
   const eventSourceRef = useRef(null);
-  const reconnectAttemptsRef = useRef(0); // ✅ ref használata
+  const reconnectAttemptsRef = useRef(0); // ✅ ref helyett state
   const reconnectTimeoutRef = useRef(null); // ✅ timeout referencia
   const queryClient = useQueryClient();
   
@@ -118,6 +118,10 @@ export const useSSE = (url, options = {}) => {
   }, [url, enabled, onMessage, onError, onOpen, onClose, queryClient, queryKeys, maxReconnectAttempts]);
 
   const disconnect = useCallback(() => {
+    // ✅ Debug: honnan hívódik meg?
+    console.log('🔌 SSE kapcsolat megszakítása');
+    console.trace('📍 disconnect() hívási stack:'); // ⚠️ FONTOS: mutatja honnan hívódott
+    
     // ✅ Töröljük a függőben lévő újracsatlakozást
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
@@ -125,7 +129,6 @@ export const useSSE = (url, options = {}) => {
     }
     
     if (eventSourceRef.current) {
-      console.log('🔌 SSE kapcsolat megszakítása');
       eventSourceRef.current.close();
       eventSourceRef.current = null;
       setIsConnected(false);
@@ -135,17 +138,16 @@ export const useSSE = (url, options = {}) => {
     reconnectAttemptsRef.current = 0;
   }, []);
 
+  // ✅ Csak enabled és url változásakor csatlakozunk
   useEffect(() => {
     if (enabled && url) {
       connect();
-    } else {
-      disconnect();
     }
 
     return () => {
       disconnect();
     };
-  }, [enabled, url]); // ✅ Eltávolítottam connect és disconnect dependency-ket
+  }, [enabled, url]); // ❌ NE legyen benne connect és disconnect!
 
   return {
     isConnected,
@@ -248,15 +250,6 @@ export const useGeneralSSE = (options = {}) => {
         // console.log('💓 SSE heartbeat:', data.count, data.message);
         break;
         
-      case 'reconnect':
-        console.log('🔄 SSE újracsatlakozás szükséges:', data.message);
-        // Automatikus újracsatlakozás
-        setTimeout(() => {
-          console.log('🔄 SSE automatikus újracsatlakozás...');
-          connect();
-        }, 1000);
-        break;
-        
       case 'game_update':
         if (data.data && data.game_id) {
           queryClient.setQueryData(['game', data.game_id], data.data);
@@ -302,8 +295,13 @@ export const useGeneralSSE = (options = {}) => {
     }
   }, [queryClient]);
 
-  return useSSE(sseUrl, {
+  const sse = useSSE(sseUrl, {
     ...options,
     onMessage: handleMessage,
   });
+  
+  // ✅ SSE hook referencia tárolása
+  sseRef.current = sse;
+  
+  return sse;
 };
