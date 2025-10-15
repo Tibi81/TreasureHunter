@@ -119,9 +119,9 @@ class AdminGameCreationValidator(serializers.Serializer):
         if re.search(r'<[^>]*>', value):
             raise serializers.ValidationError("Az admin neve nem tartalmazhat HTML kódot!")
         
-        # SQL injection védelem - csak biztonságos karakterek
-        if not re.match(r'^[a-zA-Z0-9\s\-_áéíóöőúüűÁÉÍÓÖŐÚÜŰ]+$', value):
-            raise serializers.ValidationError("Az admin neve csak betűket, számokat, szóközöket, kötőjeleket és aláhúzásokat tartalmazhat!")
+        # SQL injection védelem - csak biztonságos karakterek (relaxált)
+        if not re.match(r'^[a-zA-Z0-9\s\-_áéíóöőúüűÁÉÍÓÖŐÚÜŰ.,!?()]+$', value):
+            raise serializers.ValidationError("Az admin neve csak betűket, számokat, szóközöket, kötőjeleket, aláhúzásokat és alapvető írásjeleket tartalmazhat!")
         
         return value
     

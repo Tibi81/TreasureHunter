@@ -14,7 +14,7 @@ import {
   useMovePlayer,
   useUpdateGame
 } from '../hooks/useGameAPI';
-import { useGeneralSSE } from '../hooks/useSSE'; // Általános SSE hook importálása
+// import { useGeneralSSE } from '../hooks/useSSE'; // IDEIGLENESEN KIKAPCSOLVA
 import GameList from './admin/GameList';
 import GameCreate from './admin/GameCreate';
 import GameManage from './admin/GameManage';
