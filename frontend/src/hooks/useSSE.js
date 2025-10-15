@@ -9,8 +9,9 @@ import { getApiBaseUrl } from '../config/api';
 export const useSSE = (url, options = {}) => {
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState(null);
-  const [reconnectAttempts, setReconnectAttempts] = useState(0);
   const eventSourceRef = useRef(null);
+  const reconnectAttemptsRef = useRef(0); // ✅ ref helyett state
+  const reconnectTimeoutRef = useRef(null); // ✅ timeout referencia
   const queryClient = useQueryClient();
   
   const {
@@ -19,17 +20,24 @@ export const useSSE = (url, options = {}) => {
     onOpen = () => {},
     onClose = () => {},
     enabled = true,
-    queryKeys = [], // React Query kulcsok amiket frissíteni kell
-    maxReconnectAttempts = 5, // Maximum újracsatlakozási kísérletek
+    queryKeys = [],
+    maxReconnectAttempts = 5,
   } = options;
 
   const connect = useCallback(() => {
     if (!enabled || !url) return;
     
+    // Töröljük a függőben lévő újracsatlakozást
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+    
     try {
       // Megszakítjuk a korábbi kapcsolatot
       if (eventSourceRef.current) {
         eventSourceRef.current.close();
+        eventSourceRef.current = null;
       }
 
       console.log('🔌 SSE kapcsolat létrehozása:', url);
@@ -41,7 +49,7 @@ export const useSSE = (url, options = {}) => {
         console.log('✅ SSE kapcsolat létrejött');
         setIsConnected(true);
         setError(null);
-        setReconnectAttempts(0); // Reset újracsatlakozási számláló
+        reconnectAttemptsRef.current = 0; // ✅ Reset
         onOpen(event);
       };
 
@@ -68,16 +76,26 @@ export const useSSE = (url, options = {}) => {
       eventSource.onerror = (event) => {
         console.error('❌ SSE kapcsolat hiba:', event);
         setIsConnected(false);
-        setError('SSE kapcsolat hiba');
+        
+        // ✅ Bezárjuk a hibás kapcsolatot
+        if (eventSourceRef.current) {
+          eventSourceRef.current.close();
+          eventSourceRef.current = null;
+        }
+        
         onError(event);
         
-        // Intelligens újracsatlakozás
-        if (reconnectAttempts < maxReconnectAttempts) {
-          const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000); // Exponential backoff, max 30s
-          console.log(`🔄 SSE újracsatlakozás ${reconnectAttempts + 1}/${maxReconnectAttempts} (${delay}ms késéssel)...`);
+        // ✅ Intelligens újracsatlakozás ref-fel
+        const currentAttempts = reconnectAttemptsRef.current;
+        
+        if (currentAttempts < maxReconnectAttempts) {
+          const delay = Math.min(1000 * Math.pow(2, currentAttempts), 30000);
+          console.log(`🔄 SSE újracsatlakozás ${currentAttempts + 1}/${maxReconnectAttempts} (${delay}ms késéssel)...`);
           
-          setTimeout(() => {
-            setReconnectAttempts(prev => prev + 1);
+          reconnectAttemptsRef.current += 1;
+          setError(`Újracsatlakozás... (${currentAttempts + 1}/${maxReconnectAttempts})`);
+          
+          reconnectTimeoutRef.current = setTimeout(() => {
             connect();
           }, delay);
         } else {
@@ -86,6 +104,7 @@ export const useSSE = (url, options = {}) => {
         }
       };
 
+      // ✅ Custom event listener a clean close-hoz
       eventSource.addEventListener('close', () => {
         console.log('🔌 SSE kapcsolat bezárva');
         setIsConnected(false);
@@ -96,15 +115,24 @@ export const useSSE = (url, options = {}) => {
       console.error('❌ SSE kapcsolat létrehozási hiba:', err);
       setError(err.message);
     }
-  }, [url, enabled, onMessage, onError, onOpen, onClose, queryClient, queryKeys]);
+  }, [url, enabled, onMessage, onError, onOpen, onClose, queryClient, queryKeys, maxReconnectAttempts]);
 
   const disconnect = useCallback(() => {
+    // ✅ Töröljük a függőben lévő újracsatlakozást
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+    
     if (eventSourceRef.current) {
       console.log('🔌 SSE kapcsolat megszakítása');
       eventSourceRef.current.close();
       eventSourceRef.current = null;
       setIsConnected(false);
     }
+    
+    // ✅ Reset számlálók
+    reconnectAttemptsRef.current = 0;
   }, []);
 
   useEffect(() => {
@@ -122,6 +150,7 @@ export const useSSE = (url, options = {}) => {
   return {
     isConnected,
     error,
+    reconnectAttempts: reconnectAttemptsRef.current,
     connect,
     disconnect,
   };
@@ -131,7 +160,6 @@ export const useSSE = (url, options = {}) => {
  * Játék-specifikus SSE hook
  */
 export const useGameSSE = (gameId, options = {}) => {
-  // Központosított API URL használata
   const baseUrl = getApiBaseUrl();
   const sseUrl = gameId ? `${baseUrl}/api/sse/game/${gameId}/` : null;
   
@@ -142,7 +170,6 @@ export const useGameSSE = (gameId, options = {}) => {
     
     switch (data.type) {
       case 'game_update':
-        // Játék adatok frissítése
         if (data.data) {
           queryClient.setQueryData(['game', gameId], data.data);
           queryClient.setQueryData(['games'], (old) => {
@@ -155,12 +182,10 @@ export const useGameSSE = (gameId, options = {}) => {
         break;
         
       case 'game_event':
-        // Esemény-alapú frissítés
         if (data.event) {
           const eventType = data.event.type;
           console.log(`🎯 Játék esemény: ${eventType}`, data.event);
           
-          // Cache invalidálás esemény típus alapján
           switch (eventType) {
             case 'player_joined':
             case 'player_left':
@@ -201,9 +226,8 @@ export const useGameSSE = (gameId, options = {}) => {
  * Általános SSE hook minden játékhoz
  */
 export const useGeneralSSE = (options = {}) => {
-  // Központosított API URL használata
   const baseUrl = getApiBaseUrl();
-  const sseUrl = `${baseUrl}/api/sse/general/`; // Általános SSE endpoint
+  const sseUrl = `${baseUrl}/api/sse/general/`;
   
   const queryClient = useQueryClient();
   
@@ -220,11 +244,11 @@ export const useGeneralSSE = (options = {}) => {
         break;
         
       case 'heartbeat':
-        console.log('💓 SSE heartbeat:', data.count, data.message);
+        // ✅ Ne loggoljuk túl gyakran a heartbeat-et
+        // console.log('💓 SSE heartbeat:', data.count, data.message);
         break;
         
       case 'game_update':
-        // Játék adatok frissítése
         if (data.data && data.game_id) {
           queryClient.setQueryData(['game', data.game_id], data.data);
           queryClient.setQueryData(['games'], (old) => {
@@ -237,12 +261,10 @@ export const useGeneralSSE = (options = {}) => {
         break;
         
       case 'game_event':
-        // Esemény-alapú frissítés
         if (data.event) {
           const eventType = data.event.type;
           console.log(`🎯 Általános esemény: ${eventType}`, data.event);
           
-          // Cache invalidálás esemény típus alapján
           switch (eventType) {
             case 'player_joined':
             case 'player_left':
