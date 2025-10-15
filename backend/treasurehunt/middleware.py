@@ -60,6 +60,11 @@ class RateLimitMiddleware(MiddlewareMixin):
         if not request.path_info.startswith('/api/'):
             return None
         
+        # SSE endpoint-okhoz külön rate limiting - IDEIGLENESEN KIKAPCSOLVA
+        if request.path_info.startswith('/api/sse/'):
+            # return self.process_sse_rate_limit(request)  # IDEIGLENESEN KIKAPCSOLVA
+            return None  # SSE rate limiting kikapcsolva fejlesztéshez
+        
         try:
             # IP cím lekérdezése
             ip = self.get_client_ip(request)
@@ -93,6 +98,28 @@ class RateLimitMiddleware(MiddlewareMixin):
         
         return None
     
+    def process_sse_rate_limit(self, request):
+        """
+        SSE endpoint-okhoz specifikus rate limiting
+        """
+        try:
+            ip = self.get_client_ip(request)
+            sse_key = f"rate_limit_sse_{ip}"
+            
+            # SSE rate limiting - 100 kérés/óra (fejlesztéshez növelve)
+            sse_count = cache.get(sse_key, 0)
+            if sse_count >= 100:
+                logger.warning(f"SSE rate limit exceeded for IP {ip}")
+                return self.rate_limit_response("SSE kapcsolatok limitje túllépve")
+            
+            # Számláló növelése
+            cache.set(sse_key, sse_count + 1, 3600)  # 1 óra
+            
+        except Exception as e:
+            logger.warning(f"SSE rate limiting cache error, skipping: {e}")
+        
+        return None
+    
     def get_client_ip(self, request):
         """
         Kliens IP cím lekérdezése proxy támogatással
@@ -108,13 +135,21 @@ class RateLimitMiddleware(MiddlewareMixin):
         """
         Endpoint specifikus limit meghatározása
         """
-        # QR kód validálás - szigorúbb limit
+        # QR kód validálás - növelt limit
         if '/validate/' in path_info:
-            return 20
-        
-        # Játék műveletek - közepes limit
-        if any(x in path_info for x in ['/join/', '/start/', '/stop/', '/reset/']):
             return 50
+        
+        # Admin műveletek - magasabb limit
+        if '/admin/' in path_info:
+            return 200
+        
+        # Játék műveletek - növelt limit
+        if any(x in path_info for x in ['/join/', '/start/', '/stop/', '/reset/']):
+            return 100
+        
+        # SSE endpoint-ok - fejlesztéshez növelt limit
+        if '/sse/' in path_info:
+            return 100
         
         # Általános API végpontok - alapértelmezett limit
         return 200

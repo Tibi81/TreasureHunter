@@ -1,8 +1,58 @@
 // components/ProgressDisplay.jsx
 import React from 'react';
 import PropTypes from 'prop-types';
+import { useGame } from '../hooks/useGameAPI';
 
-const ProgressDisplay = ({ currentPlayer, teams, gameStatus, gameInfo, gameName, showAllTeams = false }) => {
+const ProgressDisplay = ({ gameId, showAllTeams = false }) => {
+  // React Query hook
+  const { data: gameData, isLoading, error } = useGame(gameId);
+
+  // Loading állapot
+  if (isLoading) {
+    return (
+      <div className="bg-gradient-to-b from-purple-900/90 to-gray-800/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 mb-6 border border-orange-500/20 relative overflow-x-hidden">
+        <div className="text-center">
+          <div className="text-4xl mb-4 animate-spin">⏳</div>
+          <h2 className="text-xl sm:text-2xl font-bold text-orange-400 mb-2 font-spooky">
+            Haladás betöltése...
+          </h2>
+          <p className="text-gray-200 font-spooky">
+            Kérjük várjon, amíg betöltjük a játék adatait.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error állapot
+  if (error) {
+    return (
+      <div className="bg-gradient-to-b from-purple-900/90 to-gray-800/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 mb-6 border border-orange-500/20 relative overflow-x-hidden">
+        <div className="text-center">
+          <div className="text-4xl mb-4">❌</div>
+          <h2 className="text-xl sm:text-2xl font-bold text-red-400 mb-2 font-spooky">
+            Hiba történt
+          </h2>
+          <p className="text-gray-200 font-spooky">
+            {error.message || 'Hiba a játék adatok betöltésében'}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Ha nincs gameData
+  if (!gameData) {
+    return null;
+  }
+
+  // Adatok kinyerése a gameData-ból
+  const { game, teams, players, game_info } = gameData;
+  const currentPlayer = gameData.current_player;
+  const gameStatus = game.status;
+  const gameName = game.name;
+  const gameInfo = game_info;
+
   // Jelenlegi csapat állapotának lekérdezése
   const getCurrentTeamStatus = () => {
     if (!currentPlayer) return null;
@@ -370,38 +420,7 @@ const ProgressDisplay = ({ currentPlayer, teams, gameStatus, gameInfo, gameName,
 };
 
 ProgressDisplay.propTypes = {
-  currentPlayer: PropTypes.shape({
-    name: PropTypes.string,
-    team_name: PropTypes.string,
-    team: PropTypes.string,
-  }),
-  teams: PropTypes.arrayOf(
-    PropTypes.shape({
-      name: PropTypes.string.isRequired,
-      display_name: PropTypes.string,
-      current_station: PropTypes.number,
-      completed_at: PropTypes.string,
-      attempts: PropTypes.number,
-      help_used: PropTypes.bool,
-      separate_phase_save_used: PropTypes.bool,
-      together_phase_save_used: PropTypes.bool,
-      players: PropTypes.arrayOf(
-        PropTypes.shape({
-          name: PropTypes.string.isRequired,
-        })
-      ),
-      player_count: PropTypes.number,
-      max_players: PropTypes.number,
-      available_slots: PropTypes.number,
-    })
-  ),
-  gameStatus: PropTypes.string,
-  gameInfo: PropTypes.shape({
-    total_players: PropTypes.number,
-    max_players: PropTypes.number,
-    available_slots: PropTypes.number,
-  }),
-  gameName: PropTypes.string,
+  gameId: PropTypes.number.isRequired,
   showAllTeams: PropTypes.bool,
 };
 

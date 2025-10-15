@@ -14,6 +14,7 @@ import {
   useMovePlayer,
   useUpdateGame
 } from '../hooks/useGameAPI';
+import { useGeneralSSE } from '../hooks/useSSE'; // Általános SSE hook importálása
 import GameList from './admin/GameList';
 import GameCreate from './admin/GameCreate';
 import GameManage from './admin/GameManage';
@@ -46,6 +47,15 @@ const AdminPanel = ({ onBack }) => {
   const movePlayerMutation = useMovePlayer();
   const updateGameMutation = useUpdateGame();
 
+  // SSE kapcsolat azonnali frissítésekhez - minden játékhoz
+  const { isConnected: sseConnected } = useGeneralSSE({
+    enabled: true, // Mindig engedélyezett
+    onMessage: (data) => {
+      console.log('🎮 AdminPanel SSE üzenet:', data);
+      // Az SSE hook automatikusan frissíti a cache-t
+    }
+  });
+
   // Szűrt játékok
   const filteredGames = games.filter(game => 
     !searchTerm.trim() || 
@@ -53,6 +63,25 @@ const AdminPanel = ({ onBack }) => {
     game.game_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
     game.created_by?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // ✅ currentGame szinkronizálása a games listával - AZONNAL
+  useEffect(() => {
+    if (currentGame && games.length > 0) {
+      const updatedGame = games.find(g => g.id === currentGame.id);
+      if (updatedGame) {
+        // Csak akkor frissítjük, ha ténylegesen változott
+        if (JSON.stringify(updatedGame) !== JSON.stringify(currentGame)) {
+          setCurrentGame(updatedGame);
+        }
+      } else {
+        // Ha a játék már nem létezik a listában
+        setCurrentGame(null);
+        if (view === 'manage') {
+          setView('list');
+        }
+      }
+    }
+  }, [games]);
 
   // Hiba kezelése
   useEffect(() => {
@@ -127,16 +156,16 @@ const AdminPanel = ({ onBack }) => {
       
       console.log('Játék sikeresen törölve!');
     } catch (err) {
-      // Ha 404 hiba, akkor a játék már nem létezik
+      console.error('Játék törlési hiba:', err);
+      // Ha 404 hiba, a játék már nem létezik
       if (err.status === 404) {
-        console.log('Játék már nem létezik, frissítjük a listát');
+        console.log('Játék már nem létezik');
         setError('');
         if (currentGame && currentGame.id === gameId) {
           setCurrentGame(null);
           setView('list');
         }
       } else {
-        console.error('Játék törlési hiba:', err);
         setError(err.message || 'Hiba a játék törlésében');
       }
     }
@@ -175,13 +204,8 @@ const AdminPanel = ({ onBack }) => {
     setError('');
 
     try {
-      const response = await removePlayerMutation.mutateAsync({ gameId, playerId });
-      
-      if (response.game) {
-        setCurrentGame(response.game);
-      }
-      
-      console.log(response.message || 'Játékos eltávolítva!');
+      await removePlayerMutation.mutateAsync({ gameId, playerId });
+      console.log('Játékos sikeresen eltávolítva!');
     } catch (err) {
       console.error('Játékos eltávolítási hiba:', err);
       setError(err.message || 'Hiba a játékos eltávolításában');
@@ -194,14 +218,7 @@ const AdminPanel = ({ onBack }) => {
 
     try {
       await movePlayerMutation.mutateAsync({ gameId, playerId, newTeam });
-      
-      // Frissítsük a jelenlegi játékot
-      if (currentGame && currentGame.id === gameId) {
-        const updatedGame = games.find(g => g.id === gameId);
-        if (updatedGame) {
-          setCurrentGame(updatedGame);
-        }
-      }
+      console.log('Játékos sikeresen áthelyezve!');
     } catch (err) {
       console.error('Játékos áthelyezési hiba:', err);
       setError(err.message || 'Hiba a játékos áthelyezésében');
@@ -225,14 +242,7 @@ const AdminPanel = ({ onBack }) => {
       });
       setNewPlayerName('');
       setAddingPlayer(false);
-      
-      // Frissítsük a jelenlegi játékot
-      if (currentGame && currentGame.id === gameId) {
-        const updatedGame = games.find(g => g.id === gameId);
-        if (updatedGame) {
-          setCurrentGame(updatedGame);
-        }
-      }
+      console.log('Játékos sikeresen hozzáadva!');
     } catch (err) {
       console.error('Játékos hozzáadási hiba:', err);
       setError(err.message || 'Hiba a játékos hozzáadásában');
@@ -253,12 +263,7 @@ const AdminPanel = ({ onBack }) => {
       }
       
       await startGameMutation.mutateAsync(gameId);
-      
-      // Frissítsük a játék állapotot
-      const updatedGame = games.find(g => g.id === gameId);
-      if (updatedGame) {
-        setCurrentGame(updatedGame);
-      }
+      console.log('Játék sikeresen elindítva!');
     } catch (err) {
       console.error('Játék indítási hiba:', err);
       setError(err.message || 'Hiba a játék indításakor');
@@ -307,9 +312,17 @@ const AdminPanel = ({ onBack }) => {
             <h1 className="text-4xl font-bold text-orange-400 mb-2">
               🛠️ Admin Felület
             </h1>
-            <p className="text-xl text-gray-300 mb-6">
+            <p className="text-xl text-gray-300 mb-2">
               Játékok kezelése és létrehozása
             </p>
+            
+            {/* SSE kapcsolat indikátor */}
+            <div className="flex items-center justify-center gap-2 mb-6">
+              <div className={`w-3 h-3 rounded-full ${sseConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+              <span className="text-sm text-gray-400">
+                {sseConnected ? 'Valós idejű frissítés aktív' : 'Valós idejű frissítés inaktív'}
+              </span>
+            </div>
             
             {/* Navigációs gombok */}
             <div className="grid grid-cols-2 gap-3 sm:gap-6 mb-6">

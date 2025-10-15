@@ -17,8 +17,7 @@ DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
-    'treasurehunt-game.onrender.com',  # Render.com domain
-    'treasurehunter-mz1x.onrender.com',  # Aktuális Render.com domain
+    'treasurehunter-mz1x.onrender.com',  # Backend domain
     '.onrender.com',  # Minden Render.com subdomain
 ]
 
@@ -27,8 +26,8 @@ CSRF_TRUSTED_ORIGINS = [
     'http://127.0.0.1:5173',
     'http://localhost:5176',
     'http://127.0.0.1:5176',
-    'https://treasurehunt-game.onrender.com',  # Render.com domain
-    'https://treasurehunter-mz1x.onrender.com',  # Aktuális Render.com domain
+    'https://treasurehunter-mz1x.onrender.com',  # Backend domain
+    'https://treasurehunter-frontend.onrender.com',  # Frontend domain
     'https://*.onrender.com',  # Minden Render.com subdomain
 ]
 
@@ -99,12 +98,10 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 # Production PostgreSQL, Development SQLite
 DATABASE_URL = os.environ.get('DATABASE_URL')
-print(f"🔍 DATABASE_URL: {DATABASE_URL}")
 
 if DATABASE_URL and DATABASE_URL.strip() and not DATABASE_URL.startswith('://'):
     try:
         import dj_database_url
-        print("✅ PostgreSQL adatbázis használata")
         db_config = dj_database_url.parse(DATABASE_URL)
         # SSL beállítások hozzáadása
         db_config['OPTIONS'] = {
@@ -114,8 +111,6 @@ if DATABASE_URL and DATABASE_URL.strip() and not DATABASE_URL.startswith('://'):
             'default': db_config
         }
     except Exception as e:
-        print(f"❌ DATABASE_URL parse hiba: {e}")
-        print("⚠️ SQLite adatbázis használata (fallback)")
         DATABASES = {
             'default': {
                 'ENGINE': 'django.db.backends.sqlite3',
@@ -123,7 +118,6 @@ if DATABASE_URL and DATABASE_URL.strip() and not DATABASE_URL.startswith('://'):
             }
         }
 else:
-    print("⚠️ SQLite adatbázis használata (DATABASE_URL hiányzik, üres vagy hibás)")
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -152,7 +146,7 @@ USE_I18N = True
 USE_TZ = True
 
 # =====================================================
-# Statikus fájlok (Django + React + Tailwind)
+# Statikus fájlok (Django)
 # =====================================================
 
 STATIC_URL = '/static/'
@@ -162,30 +156,6 @@ STATICFILES_DIRS = [
 ]
 
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-
-# Debug információ statikus fájlokhoz
-print(f"🔍 STATIC_URL: {STATIC_URL}")
-print(f"🔍 STATIC_ROOT: {STATIC_ROOT}")
-print(f"🔍 STATICFILES_DIRS: {STATICFILES_DIRS}")
-print(f"🔍 DEBUG: {DEBUG}")
-
-# Statikus fájlok ellenőrzése
-import os
-static_root_exists = os.path.exists(STATIC_ROOT)
-static_dir_exists = os.path.exists(BASE_DIR / 'static')
-print(f"🔍 STATIC_ROOT exists: {static_root_exists}")
-print(f"🔍 STATIC_DIR exists: {static_dir_exists}")
-
-if static_dir_exists:
-    static_files = os.listdir(BASE_DIR / 'static')
-    print(f"🔍 STATIC_DIR files: {static_files}")
-    
-    assets_dir = BASE_DIR / 'static' / 'assets'
-    if os.path.exists(assets_dir):
-        assets_files = os.listdir(assets_dir)
-        print(f"🔍 ASSETS_DIR files: {assets_files}")
-    else:
-        print("🔍 ASSETS_DIR does not exist!")
 
 # =====================================================
 # Alapértelmezett ID típus
@@ -200,18 +170,21 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-    "http://localhost:5176",
-    "http://127.0.0.1:5176",
-    "http://192.168.50.195:5173",  # Helyi hálózatos React fejlesztés
-    "https://treasurehunter-1.onrender.com",
-    "https://treasurehunter-mz1x.onrender.com",  # backend saját domain
-    "https://treasurehunter-frontend.onrender.com",  # frontend domain
+    "http://localhost:3000",  # Alternatív port
+    "http://127.0.0.1:3000",  # Alternatív port
+    "https://treasurehunter-mz1x.onrender.com",  # Backend domain
+    "https://treasurehunter-frontend.onrender.com",  # Frontend domain
     "https://*.onrender.com",
 ]
 
 # Production CORS beállítások
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_ALL_ORIGINS = False
+
+# Fejlesztési CORS beállítások
+if DEBUG:
+    CORS_ALLOW_ALL_ORIGINS = True
+    CORS_ALLOW_CREDENTIALS = True
 
 # CORS headers a cookie támogatáshoz
 CORS_EXPOSE_HEADERS = ['Content-Type', 'X-CSRFToken']
@@ -238,11 +211,6 @@ CORS_ALLOW_METHODS = [
     'PUT',
 ]
 
-# Debug CORS beállítások
-print(f"🔍 CORS_ALLOWED_ORIGINS: {CORS_ALLOWED_ORIGINS}")
-print(f"🔍 CORS_ALLOW_CREDENTIALS: {CORS_ALLOW_CREDENTIALS}")
-print(f"🔍 CORS_ALLOW_METHODS: {CORS_ALLOW_METHODS}")
-print(f"🔍 CORS_ALLOW_HEADERS: {CORS_ALLOW_HEADERS}")
 
 # =====================================================
 # Redis Cache és Session Storage
@@ -260,7 +228,6 @@ try:
     r = redis.from_url(REDIS_URL)
     r.ping()
     REDIS_AVAILABLE = True
-    print("✅ Redis elérhető - Redis cache használata")
     
     CACHES = {
         'default': {
@@ -283,7 +250,6 @@ try:
 except Exception as e:
     # Fallback: memóriában tárolt cache
     REDIS_AVAILABLE = False
-    print(f"⚠️ Redis nem elérhető - memóriában tárolt cache használata: {e}")
     
     CACHES = {
         'default': {
@@ -313,13 +279,15 @@ REST_FRAMEWORK = {
         'rest_framework.throttling.UserRateThrottle',
         'treasurehunt.middleware.CustomRateThrottle',  # Saját rate limiter
     ],
-           'DEFAULT_THROTTLE_RATES': {
-               'anon': '1000/hour',     # Névtelen felhasználók (fejlesztéshez jelentősen növelve)
-               'user': '5000/hour',     # Bejelentkezett felhasználók (fejlesztéshez jelentősen növelve)
-               'api': '2000/hour',      # API végpontok (fejlesztéshez jelentősen növelve)
-               'game': '500/hour',      # Játék műveletek (fejlesztéshez jelentősen növelve)
-               'qr': '200/hour',        # QR kód validálás (fejlesztéshez jelentősen növelve)
-           }
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '1000/hour',     # Névtelen felhasználók
+        'user': '5000/hour',     # Bejelentkezett felhasználók
+        'api': '2000/hour',      # API végpontok
+        'game': '1000/hour',     # Játék műveletek (növelve)
+        'qr': '500/hour',        # QR kód validálás (növelve)
+        'sse': '1000/hour',      # SSE endpoint-ok (fejlesztéshez növelve)
+        'admin': '2000/hour',    # Admin műveletek (új)
+    }
 }
 
 # =====================================================
@@ -400,8 +368,3 @@ CSRF_COOKIE_SAMESITE = 'None' if not DEBUG else 'Lax'
 
 # Windows-on Gunicorn nem működik (fcntl modul hiányzik)
 # Django development szerver használata optimalizált beállításokkal
-if os.name == 'nt':  # Windows
-    print("🪟 Windows észlelve - Django development szerver használata")
-    print("💡 Production-ben Linux/Gunicorn ajánlott")
-else:
-    print("🐧 Linux/Mac észlelve - Gunicorn használható")

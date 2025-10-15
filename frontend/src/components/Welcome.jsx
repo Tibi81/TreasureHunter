@@ -1,10 +1,18 @@
 // components/Welcome.jsx
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
+import { useFindGameByCodeOptimized } from '../hooks/useGameAPI';
 
 const Welcome = ({ onGameCodeSubmit }) => {
   const [gameCode, setGameCode] = useState('');
   const [error, setError] = useState('');
+  const [shouldSearch, setShouldSearch] = useState(false);
+
+  // React Query hook - csak akkor keressünk, ha a felhasználó megadta a kódot
+  const { data: gameData, isLoading, error: gameError } = useFindGameByCodeOptimized(
+    gameCode, 
+    { enabled: shouldSearch && gameCode.length >= 3 }
+  );
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -15,8 +23,31 @@ const Welcome = ({ onGameCodeSubmit }) => {
       return;
     }
 
-    onGameCodeSubmit(gameCode.trim().toUpperCase());
+    // Ha ADMIN kódot adtak meg, azonnal átirányítjuk
+    if (gameCode.trim().toUpperCase() === 'ADMIN') {
+      onGameCodeSubmit('ADMIN');
+      return;
+    }
+
+    // Egyébként keresünk a kóddal
+    setShouldSearch(true);
   };
+
+  // Ha sikeresen megtaláltuk a játékot, átirányítjuk
+  React.useEffect(() => {
+    if (gameData && shouldSearch) {
+      onGameCodeSubmit(gameCode.trim().toUpperCase());
+      setShouldSearch(false);
+    }
+  }, [gameData, shouldSearch, gameCode, onGameCodeSubmit]);
+
+  // Ha hiba történt a keresés során
+  React.useEffect(() => {
+    if (gameError && shouldSearch) {
+      setError(gameError.message || 'Nem található játék ezzel a kóddal');
+      setShouldSearch(false);
+    }
+  }, [gameError, shouldSearch]);
 
   return (    
     <div className="min-h-screen container-mobile">
@@ -71,9 +102,20 @@ const Welcome = ({ onGameCodeSubmit }) => {
                 />
                 <button
                   type="submit"
+                  disabled={isLoading}
                   className="btn-primary"
                 >
-                  Csatlakozás a játékhoz! 🎮
+                  {isLoading ? (
+                    <span className="flex items-center justify-center">
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Keresés...
+                    </span>
+                  ) : (
+                    'Csatlakozás a játékhoz! 🎮'
+                  )}
                 </button>
                 {error && (
                 <div className="error-message text-center">

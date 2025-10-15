@@ -1,5 +1,6 @@
 from django.urls import path
 from .api import game_views, player_views, challenge_views, admin_views
+from .sse_views import GameSSEView, GameEventsSSEView, GeneralSSEView
 
 urlpatterns = [
     # Játék keresés
@@ -36,5 +37,10 @@ urlpatterns = [
     
     # CSRF token
     path('csrf-token/', player_views.get_csrf_token, name='get_csrf_token'),
+    
+    # Server-Sent Events (SSE) endpoints
+    path('sse/general/', GeneralSSEView.as_view(), name='general_sse'),
+    path('sse/game/<uuid:game_id>/', GameSSEView.as_view(), name='game_sse'),
+    path('sse/game/<uuid:game_id>/events/', GameEventsSSEView.as_view(), name='game_events_sse'),
 
 ]

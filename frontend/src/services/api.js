@@ -3,33 +3,14 @@
 // Dinamikus API URL kezelés a frontend számára
 // ---------------------------
 
-// BACKEND URL KONSTANSOK
-const PROD_BACKEND_URL = "https://treasurehunter-mz1x.onrender.com";
-const DEV_BACKEND_URL = "http://127.0.0.1:8000";
+import { getApiBaseUrl } from '../config/api';
 
-// Egyszerű és megbízható API URL kezelés
-const getApiUrl = () => {
-  // Ha a frontend localhost-on fut, használjuk a dev backend-et
-  const isLocalhost = window.location.hostname === "localhost" || 
-                      window.location.hostname === "127.0.0.1";
-  
-  if (isLocalhost) {
-    console.log('🔍 Development mode detected');
-    return DEV_BACKEND_URL;
-  }
-  
-  // Minden más esetben használjuk a production backend-et
-  console.log('🔍 Production mode detected');
-  return PROD_BACKEND_URL;
-};
-
-// Debug log
-const API_URL = getApiUrl();
+// API URL lekérdezése a központosított konfigurációból
+const API_URL = getApiBaseUrl();
 console.log('🔍 API_BASE_URL:', API_URL);
 console.log('🔍 Current hostname:', window.location.hostname);
 
-// Export konstansok (ha máshol is szükség van rájuk)
-export const BACKEND_URL = PROD_BACKEND_URL;
+// Export konstansok
 export const API_BASE_URL = API_URL;
 
 class APIError extends Error {
@@ -117,10 +98,20 @@ const apiRequest = async (endpoint, options = {}) => {
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       console.error('❌ API hiba:', response.status, errorData);
-      throw new APIError(
-        errorData.error || `HTTP error! status: ${response.status}`,
-        response.status
-      );
+      
+      // Részletesebb hibaüzenet a backend validáció alapján
+      let errorMessage = errorData.error || `HTTP error! status: ${response.status}`;
+      
+      // Ha van részletesebb hibaüzenet a backend-től
+      if (errorData.detail) {
+        errorMessage = errorData.detail;
+      } else if (errorData.message) {
+        errorMessage = errorData.message;
+      } else if (errorData.non_field_errors && errorData.non_field_errors.length > 0) {
+        errorMessage = errorData.non_field_errors[0];
+      }
+      
+      throw new APIError(errorMessage, response.status);
     }
 
     const data = await response.json();

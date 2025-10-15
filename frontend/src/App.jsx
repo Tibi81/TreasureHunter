@@ -15,14 +15,20 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { gameAPI } from './services/api';
 import './App.css';
 
-// React Query client konfigurálása
+// React Query client konfigurálása - OPTIMALIZÁLT azonnali frissítéshez
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000, // 5 perc
-      cacheTime: 10 * 60 * 1000, // 10 perc
-      refetchOnWindowFocus: false,
+      staleTime: 1000, // 1 másodperc - gyors frissítés
+      cacheTime: 2 * 60 * 1000, // 2 perc cache
+      refetchOnWindowFocus: true, // ✅ Frissítés ablak fókuszban
+      refetchOnMount: 'always', // ✅ Mindig friss adat
+      refetchInterval: 1000, // ✅ 1 másodperc polling - AZONNALI frissítés
+      refetchIntervalInBackground: true, // ✅ Háttérben is frissít
       retry: 1,
+    },
+    mutations: {
+      retry: 0, // ✅ Mutation-ök ne próbálkozzanak újra
     },
   },
 });
@@ -30,7 +36,7 @@ const queryClient = new QueryClient({
 function App() {
   const [appState, setAppState] = useState('welcome'); // welcome, registration, admin, game, finished
   const [playerName, setPlayerName] = useState('');
-  const [gameData, setGameData] = useState(null);
+  const [gameCode, setGameCode] = useState('');
   const [toasts, setToasts] = useState([]);
   const [gameState, setGameState] = useState({
     gameId: null,
@@ -42,7 +48,6 @@ function App() {
     gameInfo: null
   });
 
-  const [currentChallenge, setCurrentChallenge] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showExitDialog, setShowExitDialog] = useState(false);
@@ -134,51 +139,6 @@ function App() {
     }
   }, [gameState.gameId]);
 
-  // Aktuális feladat betöltése - javított verzió
-  const loadCurrentChallenge = useCallback(async () => {
-    // Csak akkor próbáljunk feladatot betölteni, ha a játék aktív
-    if (!gameState.gameId || !gameState.currentPlayer || 
-        gameState.status !== 'separate' && gameState.status !== 'together') {
-      setCurrentChallenge(null);
-      return;
-    }
-    
-    try {
-      const response = await gameAPI.getCurrentChallenge(
-        gameState.gameId, 
-        gameState.currentPlayer.team_name || gameState.currentPlayer.team
-      );
-      
-      // Ha reset szükséges, frissítsük a játék állapotát
-      if (response.reset_required) {
-        await updateGameStatus();
-        // Próbáljuk újra betölteni a feladatot
-        const newResponse = await gameAPI.getCurrentChallenge(
-          gameState.gameId, 
-          gameState.currentPlayer.team_name || gameState.currentPlayer.team
-        );
-        setCurrentChallenge(newResponse);
-      } else {
-        setCurrentChallenge(response);
-      }
-    } catch (err) {
-      // Ha a játék még nem indult el, ne jelezzük hibaként
-      if (err.status === 400) {
-        setCurrentChallenge(null);
-      } else {
-        console.error('Hiba a feladat betöltésében:', err.message);
-        setCurrentChallenge(null);
-      }
-    }
-  }, [gameState.gameId, gameState.currentPlayer, gameState.status, updateGameStatus]);
-
-  // Feladat betöltés próbálása amikor a játék állapot változik
-  useEffect(() => {
-    if (gameState.gameId && gameState.currentPlayer && 
-        (gameState.status === 'separate' || gameState.status === 'together')) {
-      loadCurrentChallenge();
-    }
-  }, [gameState.status, gameState.gameId, gameState.currentPlayer, loadCurrentChallenge]);
 
   // Automatikus frissítés - csak játék indítás után - optimalizált verzió
   useEffect(() => {
@@ -187,7 +147,6 @@ function App() {
       const interval = setInterval(async () => {
         try {
           await updateGameStatus();
-          await loadCurrentChallenge();
         } catch (error) {
           console.error('Hiba a játék frissítésében:', error.message);
           // Ne dobj tovább a hibát, hanem logold csak
@@ -196,7 +155,7 @@ function App() {
 
       return () => clearInterval(interval);
     }
-  }, [gameState.gameId, gameState.status, gameState.currentPlayer, updateGameStatus, loadCurrentChallenge]);
+  }, [gameState.gameId, gameState.status, updateGameStatus]);
 
   // Setup állapot kezelése - csak játék állapot frissítés - optimalizált verzió
   useEffect(() => {
@@ -214,7 +173,7 @@ function App() {
     }
   }, [gameState.gameId, gameState.status, updateGameStatus]);
 
-  // Játék kód megadása kezelése
+  // Játék kód megadása kezelése - egyszerűsített verzió
   const handleGameCodeSubmit = async (gameCode) => {
     console.log('handleGameCodeSubmit called with:', gameCode);
     
@@ -223,57 +182,45 @@ function App() {
       return;
     }
 
-    setLoading(true);
     setError('');
 
-    try {
-      console.log('Calling findGameByCode with:', gameCode);
-      const response = await gameAPI.findGameByCode(gameCode);
-      console.log('Game response:', response);
-      
-      // Ellenőrizzük, hogy van-e session token ehhez a játékhoz
-      const sessionToken = localStorage.getItem('session_token');
-      console.log('Session token from localStorage:', sessionToken);
-      if (sessionToken) {
-        try {
-          const restoreResponse = await gameAPI.restoreSession(sessionToken);
-          console.log('Restore response:', restoreResponse);
-          if (restoreResponse.player && restoreResponse.game && restoreResponse.game.id === response.game.id) {
-            // Ha van érvényes session token ehhez a játékhoz, visszacsatlakozunk
-            setGameState(prev => ({
-              ...prev,
-              gameId: restoreResponse.game.id,
-              gameName: restoreResponse.game.name,
-              status: restoreResponse.game.status,
-              teams: restoreResponse.teams,
-              players: restoreResponse.players,
-              gameInfo: restoreResponse.game_info,
-              currentPlayer: restoreResponse.player
-            }));
-            setAppState('game');
-            setPlayerName(restoreResponse.player.name);
-            addToast('Üdvözöllek újra a játékban!', 'success');
-            setLoading(false);
-            return;
-          } else {
-            console.log('Session token nem ehhez a játékhoz tartozik');
-            localStorage.removeItem('session_token');
-          }
-        } catch (restoreError) {
-          console.log('Session token érvénytelen:', restoreError.message);
-          // Ha a token érvénytelen, töröljük a localStorage-ból
+    // Ellenőrizzük, hogy van-e session token ehhez a játékhoz
+    const sessionToken = localStorage.getItem('session_token');
+    console.log('Session token from localStorage:', sessionToken);
+    if (sessionToken) {
+      try {
+        const restoreResponse = await gameAPI.restoreSession(sessionToken);
+        console.log('Restore response:', restoreResponse);
+        if (restoreResponse.player && restoreResponse.game) {
+          // Ha van érvényes session token, visszacsatlakozunk
+          setGameState(prev => ({
+            ...prev,
+            gameId: restoreResponse.game.id,
+            gameName: restoreResponse.game.name,
+            status: restoreResponse.game.status,
+            teams: restoreResponse.teams,
+            players: restoreResponse.players,
+            gameInfo: restoreResponse.game_info,
+            currentPlayer: restoreResponse.player
+          }));
+          setAppState('game');
+          setPlayerName(restoreResponse.player.name);
+          addToast('Üdvözöllek újra a játékban!', 'success');
+          return;
+        } else {
+          console.log('Session token nem ehhez a játékhoz tartozik');
           localStorage.removeItem('session_token');
         }
+      } catch (restoreError) {
+        console.log('Session token érvénytelen:', restoreError.message);
+        // Ha a token érvénytelen, töröljük a localStorage-ból
+        localStorage.removeItem('session_token');
       }
-      
-      // Ha nincs érvényes session token, folytatjuk a regisztrációval
-      setGameData(response);
-      setAppState('registration');
-    } catch (err) {
-      setError(err.message || 'Nem található játék ezzel a kóddal');
-    } finally {
-      setLoading(false);
     }
+    
+    // Ha nincs érvényes session token, folytatjuk a regisztrációval
+    setGameCode(gameCode);
+    setAppState('registration');
   };
 
   // Játékos regisztráció - teljesen optimalizált verzió
@@ -323,7 +270,7 @@ function App() {
   const handleBackToWelcome = () => {
     setAppState('welcome');
     setPlayerName('');
-    setGameData(null);
+    setGameCode('');
     setGameState({
       gameId: null,
       status: 'setup',
@@ -331,80 +278,11 @@ function App() {
       teams: [],
       players: []
     });
-    setCurrentChallenge(null);
     setError('');
     // Toast-ok törlése
     setToasts([]);
   };
 
-  // QR kód validálás
-  const handleQRValidation = async (qrCode) => {
-    if (!gameState.gameId || !gameState.currentPlayer) return;
-
-    setLoading(true);
-    try {
-      const response = await gameAPI.validateQR(
-        gameState.gameId,
-        gameState.currentPlayer.team_name || gameState.currentPlayer.team,
-        qrCode
-      );
-
-      if (response.success) {
-        // Siker esetén frissítsük az állapotot
-        await updateGameStatus();
-        // Csak akkor töltjük be a challenge-et, ha a játék már elindult
-        if (gameState.status === 'separate' || gameState.status === 'together') {
-          await loadCurrentChallenge();
-        }
-        
-        return {
-          success: true,
-          message: response.message,
-          bonus: response.bonus || false,
-          gameFinished: response.game_finished || false
-        };
-      } else {
-        // Ha újrakezdés szükséges, frissítsük a játék állapotát
-        if (response.reset) {
-          await updateGameStatus();
-          await loadCurrentChallenge();
-        }
-        
-        return {
-          success: false,
-          message: response.message,
-          reset: response.reset || false
-        };
-      }
-    } catch (err) {
-      return {
-        success: false,
-        message: 'Hiba a QR kód ellenőrzésekor'
-      };
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Segítség kérése
-  const handleGetHelp = async () => {
-    if (!gameState.gameId || !gameState.currentPlayer) return;
-
-    try {
-      const response = await gameAPI.getHelp(
-        gameState.gameId,
-        gameState.currentPlayer.team_name || gameState.currentPlayer.team
-      );
-      return response;
-    } catch (err) {
-      console.error('Segítség kérés hiba:', err);
-      return {
-        success: false,
-        message: 'Hiba a segítség kérésekor',
-        error: true
-      };
-    }
-  };
 
   // Játék visszaállítása
   const handleGameReset = async () => {
@@ -425,7 +303,6 @@ function App() {
         currentPlayer: null // Kijelentkeztetjük a jelenlegi játékost
       }));
 
-      setCurrentChallenge(null);
       setError('');
       addToast('Játék sikeresen visszaállítva!', 'success');
     } catch (err) {
@@ -464,7 +341,6 @@ function App() {
         teams: [],
         players: []
       });
-      setCurrentChallenge(null);
       setError('');
       
     } catch (err) {
@@ -480,7 +356,6 @@ function App() {
         teams: [],
         players: []
       });
-      setCurrentChallenge(null);
       setError('');
     } finally {
       setLoading(false);
@@ -496,7 +371,7 @@ function App() {
       case 'registration':
         return (
           <PlayerRegistration 
-            gameData={gameData}
+            gameCode={gameCode}
             onJoinGame={handlePlayerJoin}
             onBack={handleBackToWelcome}
           />
@@ -514,8 +389,7 @@ function App() {
         if (gameState.status === 'finished') {
           return (
             <GameResults 
-              teams={gameState.teams}
-              players={gameState.players}
+              gameId={gameState.gameId}
               onRestart={handleBackToWelcome}
             />
           );
@@ -525,19 +399,13 @@ function App() {
         return (
           <div className="game-container">
             <ProgressDisplay 
-              currentPlayer={gameState.currentPlayer}
-              teams={gameState.teams}
-              gameStatus={gameState.status}
-              gameInfo={gameState.gameInfo}
-              gameName={gameState.gameName}
+              gameId={gameState.gameId}
               showAllTeams={true}
             />
             
             <ChallengePanel
-              challenge={currentChallenge}
-              onQRScan={handleQRValidation}
-              onGetHelp={handleGetHelp}
-              loading={loading}
+              gameId={gameState.gameId}
+              teamName={gameState.currentPlayer?.team_name || gameState.currentPlayer?.team}
               gameStatus={gameState.status}
             />
           </div>

@@ -1,15 +1,26 @@
 // components/PlayerRegistration.jsx
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
+import { useFindGameByCodeOptimized, useJoinGame } from '../hooks/useGameAPI';
 
-const PlayerRegistration = ({ gameData, onJoinGame, onBack }) => {
+const PlayerRegistration = ({ gameCode, onJoinGame, onBack }) => {
   const [playerName, setPlayerName] = useState('');
   const [selectedTeam, setSelectedTeam] = useState('');
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e) => {
+  // React Query hooks
+  const { data: gameData, isLoading, error: gameError } = useFindGameByCodeOptimized(gameCode);
+  const joinGameMutation = useJoinGame();
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    // Duplikált kérés megelőzése
+    if (isSubmitting || joinGameMutation.isPending) {
+      return;
+    }
 
     // Alapvető frontend validáció (a részletes validáció a backend-ben történik)
     if (!playerName.trim()) {
@@ -22,8 +33,102 @@ const PlayerRegistration = ({ gameData, onJoinGame, onBack }) => {
       return;
     }
 
-    onJoinGame(gameData.game.id, playerName.trim(), selectedTeam);
+    setIsSubmitting(true);
+
+    try {
+      console.log('🎮 Csatlakozás próbálkozás:', {
+        gameId: gameData.game.id,
+        playerName: playerName.trim(),
+        teamName: selectedTeam
+      });
+      
+      const result = await joinGameMutation.mutateAsync({
+        gameId: gameData.game.id,
+        playerName: playerName.trim(),
+        teamName: selectedTeam
+      });
+      
+      console.log('✅ Sikeres csatlakozás:', result);
+      
+      // Sikeres csatlakozás után visszahívjuk a szülő komponens függvényét
+      // De csak a React Query mutation sikeres volt
+      onJoinGame(gameData.game.id, playerName.trim(), selectedTeam);
+    } catch (err) {
+      console.error('❌ Csatlakozás hiba:', err);
+      setError(err.message || 'Hiba a csatlakozáskor');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  // Loading állapot
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center container-mobile">
+        <div className="max-w-md mx-auto w-full">
+          <div className="bg-gradient-to-b from-purple-900/90 to-gray-800/90 backdrop-blur-sm rounded-2xl shadow-lg p-mobile border border-orange-500/20 text-center">
+            <div className="text-4xl mb-4 animate-spin">⏳</div>
+            <h2 className="text-xl font-bold text-orange-400 mb-2 font-spooky">
+              Játék betöltése...
+            </h2>
+            <p className="text-gray-200 font-spooky">
+              Kérjük várjon, amíg betöltjük a játék adatait.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error állapot
+  if (gameError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center container-mobile">
+        <div className="max-w-md mx-auto w-full">
+          <div className="bg-gradient-to-b from-purple-900/90 to-gray-800/90 backdrop-blur-sm rounded-2xl shadow-lg p-mobile border border-orange-500/20 text-center">
+            <div className="text-4xl mb-4">❌</div>
+            <h2 className="text-xl font-bold text-red-400 mb-2 font-spooky">
+              Hiba történt
+            </h2>
+            <p className="text-gray-200 font-spooky mb-4">
+              {gameError.message || 'Nem található játék ezzel a kóddal'}
+            </p>
+            <button
+              onClick={onBack}
+              className="btn-secondary"
+            >
+              Vissza
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Ha nincs gameData
+  if (!gameData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center container-mobile">
+        <div className="max-w-md mx-auto w-full">
+          <div className="bg-gradient-to-b from-purple-900/90 to-gray-800/90 backdrop-blur-sm rounded-2xl shadow-lg p-mobile border border-orange-500/20 text-center">
+            <div className="text-4xl mb-4">🎮</div>
+            <h2 className="text-xl font-bold text-orange-400 mb-2 font-spooky">
+              Játék nem található
+            </h2>
+            <p className="text-gray-200 font-spooky mb-4">
+              Ellenőrizze a játék kódot és próbálja újra.
+            </p>
+            <button
+              onClick={onBack}
+              className="btn-secondary"
+            >
+              Vissza
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const getTeamStatus = (teamName) => {
     const team = gameData.teams.find(t => t.name === teamName);
@@ -164,9 +269,20 @@ const PlayerRegistration = ({ gameData, onJoinGame, onBack }) => {
               <div className="form-container">
                 <button
                   type="submit"
+                  disabled={joinGameMutation.isPending || isSubmitting}
                   className="btn-primary"
                 >
-                  Csatlakozás! 🎮
+                  {(joinGameMutation.isPending || isSubmitting) ? (
+                    <span className="flex items-center justify-center">
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Csatlakozás...
+                    </span>
+                  ) : (
+                    'Csatlakozás! 🎮'
+                  )}
                 </button>
                 <button
                   type="button"
@@ -204,31 +320,7 @@ const PlayerRegistration = ({ gameData, onJoinGame, onBack }) => {
 };
 
 PlayerRegistration.propTypes = {
-  gameData: PropTypes.shape({
-    game: PropTypes.shape({
-      id: PropTypes.number.isRequired,
-      name: PropTypes.string.isRequired,
-      game_code: PropTypes.string.isRequired,
-      status: PropTypes.string.isRequired,
-      max_players: PropTypes.number,
-    }).isRequired,
-    teams: PropTypes.arrayOf(
-      PropTypes.shape({
-        name: PropTypes.string.isRequired,
-        display_name: PropTypes.string,
-        max_players: PropTypes.number.isRequired,
-        players: PropTypes.arrayOf(
-          PropTypes.shape({
-            name: PropTypes.string.isRequired,
-          })
-        ).isRequired,
-      })
-    ).isRequired,
-    game_info: PropTypes.shape({
-      total_players: PropTypes.number,
-      max_players: PropTypes.number,
-    }),
-  }).isRequired,
+  gameCode: PropTypes.string.isRequired,
   onJoinGame: PropTypes.func.isRequired,
   onBack: PropTypes.func.isRequired,
 };

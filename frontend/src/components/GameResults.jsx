@@ -1,9 +1,67 @@
 // components/GameResults.jsx
 import React from 'react';
 import PropTypes from 'prop-types';
+import { useGame } from '../hooks/useGameAPI';
 import { utils } from '../services/api';
 
-const GameResults = ({ teams, players, onRestart }) => {
+const GameResults = ({ gameId, onRestart }) => {
+  // React Query hook
+  const { data: gameData, isLoading, error } = useGame(gameId);
+
+  // Loading állapot
+  if (isLoading) {
+    return (
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center py-8">
+          <div className="text-4xl mb-4 animate-spin">⏳</div>
+          <h1 className="text-2xl font-bold text-orange-400 mb-2 font-spooky">
+            Eredmények betöltése...
+          </h1>
+          <p className="text-gray-200 font-spooky">
+            Kérjük várjon, amíg betöltjük a játék eredményeit.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error állapot
+  if (error) {
+    return (
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center py-8">
+          <div className="text-4xl mb-4">❌</div>
+          <h1 className="text-2xl font-bold text-red-400 mb-2 font-spooky">
+            Hiba történt
+          </h1>
+          <p className="text-gray-200 font-spooky">
+            {error.message || 'Hiba a játék eredmények betöltésében'}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Ha nincs gameData
+  if (!gameData) {
+    return (
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center py-8">
+          <div className="text-4xl mb-4">🎮</div>
+          <h1 className="text-2xl font-bold text-orange-400 mb-2 font-spooky">
+            Nincs játék adat
+          </h1>
+          <p className="text-gray-200 font-spooky">
+            Nem találhatók játék eredmények.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Adatok kinyerése a gameData-ból
+  const { teams, players } = gameData;
+
   // Csapatok rendezése eredmény szerint
   const sortedTeams = [...teams].sort((a, b) => {
     // Először a befejezési idő szerint
@@ -214,26 +272,7 @@ const GameResults = ({ teams, players, onRestart }) => {
 };
 
 GameResults.propTypes = {
-  teams: PropTypes.arrayOf(
-    PropTypes.shape({
-      name: PropTypes.string.isRequired,
-      completed_at: PropTypes.string,
-      current_station: PropTypes.number,
-      attempts: PropTypes.number,
-      help_used: PropTypes.bool,
-      players: PropTypes.arrayOf(
-        PropTypes.shape({
-          name: PropTypes.string.isRequired,
-          joined_at: PropTypes.string.isRequired,
-        })
-      ),
-    })
-  ).isRequired,
-  players: PropTypes.arrayOf(
-    PropTypes.shape({
-      name: PropTypes.string.isRequired,
-    })
-  ).isRequired,
+  gameId: PropTypes.number.isRequired,
   onRestart: PropTypes.func.isRequired,
 };
 

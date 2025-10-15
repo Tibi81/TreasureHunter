@@ -2,13 +2,25 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import QRScanner from './QRScanner';
+import { useCurrentChallenge, useValidateQR, useGetHelp } from '../hooks/useGameAPI';
 
-const ChallengePanel = ({ challenge, onQRScan, onGetHelp, loading, gameStatus }) => {
+const ChallengePanel = ({ gameId, teamName, gameStatus }) => {
   const [qrCode, setQrCode] = useState('');
   const [showHelp, setShowHelp] = useState(false);
   const [helpText, setHelpText] = useState('');
   const [scanResult, setScanResult] = useState(null);
   const [showQRScanner, setShowQRScanner] = useState(false);
+
+  // React Query hooks
+  const { data: challenge, isLoading: challengeLoading, error: challengeError } = useCurrentChallenge(
+    gameId, 
+    teamName,
+    { 
+      enabled: !!gameId && !!teamName && (gameStatus === 'separate' || gameStatus === 'together')
+    }
+  );
+  const validateQRMutation = useValidateQR();
+  const getHelpMutation = useGetHelp();
 
   // QR kód beküldése
   const handleQRSubmit = async (e) => {
@@ -16,12 +28,30 @@ const ChallengePanel = ({ challenge, onQRScan, onGetHelp, loading, gameStatus })
     if (!qrCode.trim()) return;
 
     setScanResult(null);
-    const result = await onQRScan(qrCode.trim());
-    setScanResult(result);
-    
-    // QR kód mező törlése sikeres validálás vagy reset esetén
-    if (result.success || result.reset) {
-      setQrCode('');
+    try {
+      const result = await validateQRMutation.mutateAsync({
+        gameId,
+        teamName,
+        qrCode: qrCode.trim()
+      });
+      
+      setScanResult({
+        success: result.success,
+        message: result.message,
+        bonus: result.bonus,
+        gameFinished: result.game_finished,
+        reset: result.reset
+      });
+      
+      // QR kód mező törlése sikeres validálás vagy reset esetén
+      if (result.success || result.reset) {
+        setQrCode('');
+      }
+    } catch (err) {
+      setScanResult({
+        success: false,
+        message: err.message || 'Hiba a QR kód ellenőrzésekor'
+      });
     }
   };
 
@@ -32,18 +62,40 @@ const ChallengePanel = ({ challenge, onQRScan, onGetHelp, loading, gameStatus })
     
     // Automatikusan beküldjük a beolvasott kódot
     setScanResult(null);
-    const result = await onQRScan(scannedCode);
-    setScanResult(result);
-    
-    if (result.success || result.reset) {
-      setQrCode('');
+    try {
+      const result = await validateQRMutation.mutateAsync({
+        gameId,
+        teamName,
+        qrCode: scannedCode
+      });
+      
+      setScanResult({
+        success: result.success,
+        message: result.message,
+        bonus: result.bonus,
+        gameFinished: result.game_finished,
+        reset: result.reset
+      });
+      
+      if (result.success || result.reset) {
+        setQrCode('');
+      }
+    } catch (err) {
+      setScanResult({
+        success: false,
+        message: err.message || 'Hiba a QR kód ellenőrzésekor'
+      });
     }
   };
 
   // Segítség kérése
   const handleGetHelpClick = async () => {
     try {
-      const helpData = await onGetHelp();
+      const helpData = await getHelpMutation.mutateAsync({
+        gameId,
+        teamName
+      });
+      
       if (helpData && helpData.success !== false) {
         setHelpText(helpData.help_text || '');
         setShowHelp(true);
@@ -54,6 +106,36 @@ const ChallengePanel = ({ challenge, onQRScan, onGetHelp, loading, gameStatus })
       console.error('Hiba a segítség kérésekor:', error);
     }
   };
+
+  // Loading állapot
+  if (challengeLoading) {
+    return (
+      <div className="bg-gradient-to-b from-purple-900/90 to-gray-800/90 backdrop-blur-sm rounded-2xl shadow-lg p-mobile text-center border border-orange-500/20">
+        <div className="text-3xl sm:text-4xl mb-4 animate-spin">⏳</div>
+        <h3 className="text-xl sm:text-2xl font-bold text-orange-400 mb-2 font-spooky drop-shadow-glow-orange">
+          Feladat betöltése...
+        </h3>
+        <p className="text-gray-200 font-spooky leading-relaxed text-sm sm:text-base">
+          Kérjük várjon, amíg betöltjük a feladatot.
+        </p>
+      </div>
+    );
+  }
+
+  // Error állapot
+  if (challengeError) {
+    return (
+      <div className="bg-gradient-to-b from-purple-900/90 to-gray-800/90 backdrop-blur-sm rounded-2xl shadow-lg p-mobile text-center border border-orange-500/20">
+        <div className="text-3xl sm:text-4xl mb-4">❌</div>
+        <h3 className="text-xl sm:text-2xl font-bold text-red-400 mb-2 font-spooky drop-shadow-glow-orange">
+          Hiba történt
+        </h3>
+        <p className="text-gray-200 font-spooky leading-relaxed text-sm sm:text-base">
+          {challengeError.message || 'Hiba a feladat betöltésében'}
+        </p>
+      </div>
+    );
+  }
 
   // Ha nincs aktív feladat
   if (!challenge) {
@@ -134,16 +216,16 @@ const ChallengePanel = ({ challenge, onQRScan, onGetHelp, loading, gameStatus })
               onChange={(e) => setQrCode(e.target.value)}
               placeholder="Írd be vagy olvasd be a QR kódot..."
               className="input-primary text-center"
-              disabled={loading}
+              disabled={validateQRMutation.isPending}
             />
           </div>
           <div className="flex-mobile-row">
             <button
               type="submit"
-              disabled={loading || !qrCode.trim()}
+              disabled={validateQRMutation.isPending || !qrCode.trim()}
               className="btn-primary flex-1"
             >
-              {loading ? (
+              {validateQRMutation.isPending ? (
                 <span className="flex items-center justify-center">
                   <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -158,7 +240,7 @@ const ChallengePanel = ({ challenge, onQRScan, onGetHelp, loading, gameStatus })
             <button
               type="button"
               onClick={() => setShowQRScanner(true)}
-              disabled={loading}
+              disabled={validateQRMutation.isPending}
               className="btn-small"
               title="QR kód beolvasása kamerával"
             >
@@ -207,10 +289,10 @@ const ChallengePanel = ({ challenge, onQRScan, onGetHelp, loading, gameStatus })
           </h3>
           <button
             onClick={handleGetHelpClick}
-            disabled={loading}
+            disabled={getHelpMutation.isPending}
             className="btn-small"
           >
-            Segítség kérése
+            {getHelpMutation.isPending ? 'Kérés...' : 'Segítség kérése'}
           </button>
         </div>
         
@@ -257,23 +339,8 @@ const ChallengePanel = ({ challenge, onQRScan, onGetHelp, loading, gameStatus })
 };
 
 ChallengePanel.propTypes = {
-  challenge: PropTypes.shape({
-    station: PropTypes.shape({
-      icon: PropTypes.string,
-      name: PropTypes.string,
-    }),
-    challenge: PropTypes.shape({
-      title: PropTypes.string,
-      description: PropTypes.string,
-    }),
-    title: PropTypes.string,
-    description: PropTypes.string,
-    is_save: PropTypes.bool,
-    team_type: PropTypes.string,
-  }),
-  onQRScan: PropTypes.func.isRequired,
-  onGetHelp: PropTypes.func.isRequired,
-  loading: PropTypes.bool,
+  gameId: PropTypes.number.isRequired,
+  teamName: PropTypes.string.isRequired,
   gameStatus: PropTypes.string,
 };
 
