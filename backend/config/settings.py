@@ -28,6 +28,7 @@ CSRF_TRUSTED_ORIGINS = [
     'http://127.0.0.1:5176',
     'https://treasurehunter-mz1x.onrender.com',  # Backend domain
     'https://treasurehunter-frontend.onrender.com',  # Frontend domain
+    'https://treasurehunter-1.onrender.com',  # Aktuális frontend domain
     'https://*.onrender.com',  # Minden Render.com subdomain
 ]
 
@@ -174,6 +175,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",  # Alternatív port
     "https://treasurehunter-mz1x.onrender.com",  # Backend domain
     "https://treasurehunter-frontend.onrender.com",  # Frontend domain
+    "https://treasurehunter-1.onrender.com",  # Aktuális frontend domain
     "https://*.onrender.com",
 ]
 
