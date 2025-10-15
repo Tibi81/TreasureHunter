@@ -103,7 +103,7 @@ class GeneralSSEView(View):
                 # Korlátozott ciklus valós idejű frissítésekhez (Render.com kompatibilis)
                 import time
                 count = 0
-                max_iterations = 100  # Maximum 100 iteráció (1000 másodperc = ~16 perc)
+                max_iterations = 300  # Maximum 300 iteráció (3000 másodperc = ~50 perc)
                 
                 while count < max_iterations:
                     # Ellenőrizzük, hogy a kliens még kapcsolódva van-e
@@ -155,7 +155,7 @@ class GameEventsSSEView(View):
             events_key = f"game_events_{game_id}"
             last_event_id = 0
             
-            max_iterations = 200  # Maximum 200 iteráció (100 másodperc)
+            max_iterations = 600  # Maximum 600 iteráció (300 másodperc = 5 perc)
             iteration_count = 0
             
             while iteration_count < max_iterations:

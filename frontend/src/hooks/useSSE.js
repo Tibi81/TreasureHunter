@@ -248,6 +248,15 @@ export const useGeneralSSE = (options = {}) => {
         // console.log('💓 SSE heartbeat:', data.count, data.message);
         break;
         
+      case 'reconnect':
+        console.log('🔄 SSE újracsatlakozás szükséges:', data.message);
+        // Automatikus újracsatlakozás
+        setTimeout(() => {
+          console.log('🔄 SSE automatikus újracsatlakozás...');
+          connect();
+        }, 1000);
+        break;
+        
       case 'game_update':
         if (data.data && data.game_id) {
           queryClient.setQueryData(['game', data.game_id], data.data);
