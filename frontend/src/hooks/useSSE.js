@@ -306,13 +306,8 @@ export const useGeneralSSE = (options = {}) => {
     }
   }, [queryClient]);
 
-  const sse = useSSE(sseUrl, {
+  return useSSE(sseUrl, {
     ...options,
     onMessage: handleMessage,
   });
-  
-  // ✅ SSE hook referencia tárolása
-  sseRef.current = sse;
-  
-  return sse;
 };
