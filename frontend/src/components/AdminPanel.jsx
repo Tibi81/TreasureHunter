@@ -47,14 +47,27 @@ const AdminPanel = ({ onBack }) => {
   const movePlayerMutation = useMovePlayer();
   const updateGameMutation = useUpdateGame();
 
-  // SSE kapcsolat azonnali frissítésekhez - minden játékhoz
-  const { isConnected: sseConnected } = useGeneralSSE({
-    enabled: true, // Mindig engedélyezett
-    onMessage: (data) => {
-      console.log('🎮 AdminPanel SSE üzenet:', data);
-      // Az SSE hook automatikusan frissíti a cache-t
-    }
-  });
+  // SSE kapcsolat azonnali frissítésekhez - IDEIGLENESEN KIKAPCSOLVA
+  // const { isConnected: sseConnected } = useGeneralSSE({
+  //   enabled: false, // IDEIGLENESEN KIKAPCSOLVA
+  //   onMessage: (data) => {
+  //     console.log('🎮 AdminPanel SSE üzenet:', data);
+  //     // Az SSE hook automatikusan frissíti a cache-t
+  //   }
+  // });
+  
+  // IDEIGLENES: SSE helyett polling használata
+  const [sseConnected] = useState(false);
+  
+  // Polling a játékok frissítéséhez (SSE helyett)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // React Query automatikusan refetch-eli a games query-t
+      queryClient.invalidateQueries({ queryKey: ['games'] });
+    }, 5000); // 5 másodpercenként frissítés
+    
+    return () => clearInterval(interval);
+  }, [queryClient]);
 
   // Szűrt játékok
   const filteredGames = games.filter(game => 
