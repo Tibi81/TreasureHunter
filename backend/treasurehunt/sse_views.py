@@ -103,7 +103,7 @@ class GeneralSSEView(View):
                 # Korlátozott ciklus valós idejű frissítésekhez (Render.com kompatibilis)
                 import time
                 count = 0
-                max_iterations = 300  # Maximum 300 iteráció (3000 másodperc = ~50 perc)
+                max_iterations = 60  # Maximum 60 iteráció (600 másodperc = 10 perc)
                 
                 while count < max_iterations:
                     # Ellenőrizzük, hogy a kliens még kapcsolódva van-e
@@ -112,7 +112,7 @@ class GeneralSSEView(View):
                         break
                     
                     count += 1
-                    time.sleep(10)  # 10 másodpercenként heartbeat
+                    time.sleep(30)  # 30 másodpercenként heartbeat (kevesebb terhelés)
                     yield f"data: {{\"type\": \"heartbeat\", \"count\": {count}, \"message\": \"Általános heartbeat\", \"timestamp\": {time.time()}}}\n\n"
                 
                 # Ha elértük a maximum iterációt, küldjünk egy újracsatlakozási üzenetet
@@ -155,7 +155,7 @@ class GameEventsSSEView(View):
             events_key = f"game_events_{game_id}"
             last_event_id = 0
             
-            max_iterations = 600  # Maximum 600 iteráció (300 másodperc = 5 perc)
+            max_iterations = 120  # Maximum 120 iteráció (60 másodperc = 1 perc)
             iteration_count = 0
             
             while iteration_count < max_iterations:
@@ -175,7 +175,7 @@ class GameEventsSSEView(View):
                     last_event_id = len(events)
                     iteration_count += 1
                     
-                    time.sleep(0.5)  # 500ms polling eseményekhez
+                    time.sleep(2)  # 2 másodperc polling eseményekhez (kevesebb terhelés)
                     
                 except Exception as e:
                     logger.error(f"Events SSE stream error: {e}")
