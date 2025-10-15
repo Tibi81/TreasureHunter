@@ -19,14 +19,17 @@ class GameSSEView(View):
     Server-Sent Events endpoint for real-time game updates
     """
     
+    @method_decorator(csrf_exempt)
     @method_decorator(require_http_methods(["GET", "OPTIONS"]))
     def dispatch(self, request, *args, **kwargs):
         if request.method == 'OPTIONS':
             response = HttpResponse()
-            response['Access-Control-Allow-Origin'] = request.headers.get('Origin', '*')
+            origin = request.headers.get('Origin', '*')
+            response['Access-Control-Allow-Origin'] = origin
             response['Access-Control-Allow-Headers'] = 'Cache-Control, Accept, Accept-Encoding, Accept-Language, Connection, Host, Origin, Referer, User-Agent, X-CSRFToken'
             response['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
             response['Access-Control-Allow-Credentials'] = 'true'
+            response['Access-Control-Max-Age'] = '86400'  # 24 óra cache
             return response
         return super().dispatch(request, *args, **kwargs)
     
@@ -60,10 +63,12 @@ class GameSSEView(View):
         # SSE headers
         response['Cache-Control'] = 'no-cache'
         # response['Connection'] = 'keep-alive'  # WSGI nem támogatja
-        response['Access-Control-Allow-Origin'] = request.headers.get('Origin', '*')
+        origin = request.headers.get('Origin', '*')
+        response['Access-Control-Allow-Origin'] = origin
         response['Access-Control-Allow-Headers'] = 'Cache-Control, Accept, Accept-Encoding, Accept-Language, Connection, Host, Origin, Referer, User-Agent, X-CSRFToken'
         response['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
         response['Access-Control-Allow-Credentials'] = 'true'
+        response['Access-Control-Max-Age'] = '86400'  # 24 óra cache
         
         return response
 
@@ -72,6 +77,7 @@ class GeneralSSEView(View):
     Általános SSE endpoint minden játékhoz
     """
     
+    @method_decorator(csrf_exempt)
     @method_decorator(require_http_methods(["GET", "OPTIONS"]))
     def dispatch(self, request, *args, **kwargs):
         if request.method == 'OPTIONS':
@@ -120,10 +126,12 @@ class GeneralSSEView(View):
         # SSE headers
         response['Cache-Control'] = 'no-cache'
         # response['Connection'] = 'keep-alive'  # WSGI nem támogatja
-        response['Access-Control-Allow-Origin'] = request.headers.get('Origin', '*')
+        origin = request.headers.get('Origin', '*')
+        response['Access-Control-Allow-Origin'] = origin
         response['Access-Control-Allow-Headers'] = 'Cache-Control, Accept, Accept-Encoding, Accept-Language, Connection, Host, Origin, Referer, User-Agent, X-CSRFToken'
         response['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
         response['Access-Control-Allow-Credentials'] = 'true'
+        response['Access-Control-Max-Age'] = '86400'  # 24 óra cache
         
         return response
 
