@@ -67,7 +67,7 @@ export const useSSE = (url, options = {}) => {
             });
           }
           
-          onMessage(data, event);
+          onMessage(data, event, connect); // ✅ Connect függvény átadása
         } catch (err) {
           console.error('❌ SSE üzenet feldolgozási hiba:', err);
         }
@@ -167,7 +167,7 @@ export const useGameSSE = (gameId, options = {}) => {
   
   const queryClient = useQueryClient();
   
-  const handleMessage = useCallback((data, event) => {
+  const handleMessage = useCallback((data, event, connect) => {
     console.log('🎮 Játék SSE üzenet:', data);
     
     switch (data.type) {
@@ -233,7 +233,7 @@ export const useGeneralSSE = (options = {}) => {
   
   const queryClient = useQueryClient();
   
-  const handleMessage = useCallback((data, event) => {
+  const handleMessage = useCallback((data, event, connect) => {
     console.log('🌐 Általános SSE üzenet:', data);
     
     switch (data.type) {
@@ -248,6 +248,17 @@ export const useGeneralSSE = (options = {}) => {
       case 'heartbeat':
         // ✅ Ne loggoljuk túl gyakran a heartbeat-et
         // console.log('💓 SSE heartbeat:', data.count, data.message);
+        break;
+        
+      case 'reconnect':
+        console.log('🔄 SSE újracsatlakozás szükséges:', data.message);
+        // Automatikus újracsatlakozás
+        if (connect) {
+          setTimeout(() => {
+            console.log('🔄 SSE automatikus újracsatlakozás...');
+            connect();
+          }, 1000);
+        }
         break;
         
       case 'game_update':
