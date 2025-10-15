@@ -11,7 +11,8 @@ html, body {
     url('/Halloween.png');
   background-repeat: no-repeat;
   background-size: cover;
-  background-position: center;
+  background-position: center center;
+  background-attachment: fixed;
   margin: 0;
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
 }
@@ -482,6 +483,12 @@ html, body {
 
 /* Extra kis képernyők (320px-480px) */
 @media (max-width: 480px) {
+  html, body {
+    background-size: cover;
+    background-position: center center;
+    background-attachment: scroll; /* Mobil eszközökön scroll */
+  }
+  
   #root {
     padding: 0.5rem;
   }
