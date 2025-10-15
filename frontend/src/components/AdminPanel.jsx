@@ -64,7 +64,7 @@ const AdminPanel = ({ onBack }) => {
     const interval = setInterval(() => {
       // React Query automatikusan refetch-eli a games query-t
       queryClient.invalidateQueries({ queryKey: ['games'] });
-    }, 5000); // 5 másodpercenként frissítés
+    }, 3000); // 3 másodpercenként frissítés
     
     return () => clearInterval(interval);
   }, [queryClient]);
