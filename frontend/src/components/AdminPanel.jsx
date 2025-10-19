@@ -121,12 +121,9 @@ const AdminPanel = ({ onBack }) => {
           setCurrentGame(updatedGame);
         }
       } else {
-        // Ha a játék már nem létezik a listában (törölve lett)
-        console.log('Játék már nem létezik a listában, visszatérés a listához');
-        setCurrentGame(null);
-        if (view === 'manage') {
-          setView('list');
-        }
+        // Ha átmenetileg nincs a listában (pl. hálózati/szerver késés), ne pattanjunk vissza
+        console.log('Játék átmenetileg nincs a listában – várakozás frissítésre');
+        // Nem állítjuk vissza a nézetet és nem nullázzuk a currentGame-et; kivárjuk a következő frissítést
       }
     }
   }, [games, currentGame?.id, view]); // ✅ JAVÍTOTT: currentGame.id helyett currentGame
@@ -171,10 +168,13 @@ const AdminPanel = ({ onBack }) => {
       
       console.log('🎉 Játék létrehozva, response:', response);
       
-      // ✅ EGYSZERŰSÍTETT: Azonnal beállítjuk a currentGame-et
-      // A useCreateGame hook már frissíti a cache-t, nem kell várni
-      setCurrentGame(response.game);
+      // Frissítjük a listát és kiválasztjuk az új játékot a cache-ből
+      const createdId = response?.game?.id || response?.id;
       setView('manage');
+      await queryClient.refetchQueries({ queryKey: gameKeys.lists() });
+      const updatedGames = queryClient.getQueryData(gameKeys.lists()) || [];
+      const newlyCreated = updatedGames.find(g => g.id === createdId);
+      setCurrentGame(newlyCreated || response.game || response);
       
     } catch (err) {
       console.error('Játék létrehozási hiba:', err);
@@ -320,6 +320,7 @@ const AdminPanel = ({ onBack }) => {
     if (!currentGame) return;
 
     setError('');
+    const prevStatus = currentGame.status || currentGame.game?.status;
 
     try {
       const gameId = currentGame.id || currentGame.game?.id;
@@ -328,9 +329,13 @@ const AdminPanel = ({ onBack }) => {
         return;
       }
       
+      // ⚡ Optimista helyi státusz frissítés a gyors vizuális visszajelzéshez
+      setCurrentGame(prev => prev ? { ...prev, status: 'separate' } : prev);
       await startGameMutation.mutateAsync(gameId);
       console.log('Játék sikeresen elindítva!');
     } catch (err) {
+      // 🔁 Rollback helyi státusz hiba esetén
+      setCurrentGame(prev => prev ? { ...prev, status: prevStatus || 'waiting' } : prev);
       console.error('Játék indítási hiba:', err);
       setError(err.message || 'Hiba a játék indításakor');
     }

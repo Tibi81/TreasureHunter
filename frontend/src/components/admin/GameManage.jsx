@@ -3,6 +3,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { getStatusColor, getStatusText } from '../../utils/gameUtils';
 import ProgressDisplay from '../ProgressDisplay';
+import { useGame } from '../../hooks/useGameAPI';
 
 const GameManage = ({ 
   currentGame, 
@@ -15,16 +16,35 @@ const GameManage = ({
 }) => {
   // Debug: Ellenőrizzük a currentGame adatokat
   console.log('🔍 GameManage - currentGame:', currentGame);
-  console.log('🔍 GameManage - teams:', currentGame?.teams || currentGame?.game?.teams);
+
+  // Részletes játékadatok (gyors refetch miatt ez frissül a leggyorsabban)
+  const gameId = currentGame.id || currentGame.game?.id;
+  const { data: detailData } = useGame(gameId);
+  const effectiveTeams = detailData?.teams || currentGame?.teams || currentGame?.game?.teams || [];
+  console.log('🔍 GameManage - effectiveTeams:', effectiveTeams);
   
   // Debug: Ellenőrizzük a játékosokat
-  const pumpkinTeam = (currentGame?.teams || currentGame?.game?.teams || []).find(t => t.name === 'pumpkin');
-  const ghostTeam = (currentGame?.teams || currentGame?.game?.teams || []).find(t => t.name === 'ghost');
+  const pumpkinTeam = effectiveTeams.find(t => t.name === 'pumpkin');
+  const ghostTeam = effectiveTeams.find(t => t.name === 'ghost');
   console.log('🔍 GameManage - pumpkinTeam:', pumpkinTeam);
   console.log('🔍 GameManage - ghostTeam:', ghostTeam);
   console.log('🔍 GameManage - pumpkinPlayers:', pumpkinTeam?.players);
   console.log('🔍 GameManage - ghostPlayers:', ghostTeam?.players);
   
+  // Indíthatóság számítása backend logika szerint
+  const status = currentGame.status || currentGame.game?.status;
+  const teams = effectiveTeams;
+  const teamCount = currentGame.team_count || currentGame.game?.team_count || 2;
+  const pumpkinCount = teams.find(t => t.name === 'pumpkin')?.players?.length || 0;
+  const ghostCount = teams.find(t => t.name === 'ghost')?.players?.length || 0;
+  const totalPlayers = (currentGame.total_players || currentGame.game?.total_players || (pumpkinCount + ghostCount));
+  const canStart = (
+    (status === 'waiting' || status === 'setup') && (
+      (teamCount === 1 && totalPlayers >= 1) ||
+      (teamCount >= 2 && pumpkinCount >= 1 && ghostCount >= 1)
+    )
+  );
+
   return (
     <div className="space-y-6">
       {/* Csapatok haladása - csak ha a játék fut */}
@@ -86,7 +106,7 @@ const GameManage = ({
               🎃 Tök Csapat
             </h4>
             <div className="space-y-2">
-              {(currentGame.teams || currentGame.game?.teams || [])
+              {effectiveTeams
                 .find(t => t.name === 'pumpkin')?.players?.map((player, index) => (
                 <div key={index} className="bg-orange-800 bg-opacity-30 rounded p-2 flex justify-between items-center">
                   <span>{player.name}</span>
@@ -114,7 +134,7 @@ const GameManage = ({
                   </div>
                 </div>
               )) || []}
-              {!((currentGame.teams || currentGame.game?.teams || [])
+              {!((effectiveTeams)
                 .find(t => t.name === 'pumpkin')?.players?.length) && (
                 <div className="text-gray-400 text-center py-2">
                   Nincs játékos
@@ -129,7 +149,7 @@ const GameManage = ({
               👻 Szellem Csapat
             </h4>
             <div className="space-y-2">
-              {(currentGame.teams || currentGame.game?.teams || [])
+              {effectiveTeams
                 .find(t => t.name === 'ghost')?.players?.map((player, index) => (
                 <div key={index} className="bg-purple-800 bg-opacity-30 rounded p-2 flex justify-between items-center">
                   <span>{player.name}</span>
@@ -157,7 +177,7 @@ const GameManage = ({
                   </div>
                 </div>
               )) || []}
-              {!((currentGame.teams || currentGame.game?.teams || [])
+              {!((effectiveTeams)
                 .find(t => t.name === 'ghost')?.players?.length) && (
                 <div className="text-gray-400 text-center py-2">
                   Nincs játékos
@@ -174,9 +194,8 @@ const GameManage = ({
           Admin műveletek
         </h3>
         <div className="flex flex-wrap gap-4 justify-center">
-          {/* Játék indítás gomb - waiting állapotban ÉS vannak játékosok */}
-          {(currentGame.status || currentGame.game?.status) === 'waiting' && 
-           (currentGame.total_players || currentGame.game?.total_players || 0) > 0 && (
+          {/* Játék indítás gomb a pontos feltételek szerint */}
+          {canStart ? (
             <button
               onClick={handleStartGame}
               disabled={loading}
@@ -189,20 +208,17 @@ const GameManage = ({
             >
               {loading ? 'Indítás...' : '🚀 Játék indítása'}
             </button>
-          )}
-          
-          {/* Játék indítás gomb - waiting állapotban DE nincsenek játékosok */}
-          {(currentGame.status || currentGame.game?.status) === 'waiting' && 
-           (currentGame.total_players || currentGame.game?.total_players || 0) === 0 && (
-            <button
-              disabled={true}
-              className="bg-gradient-to-r from-gray-600 to-gray-500 
-                       text-gray-300 font-bold py-3 px-6 rounded-lg 
-                       transition-all duration-200 cursor-not-allowed
-                       min-w-32 sm:min-w-56"
-            >
-              ⏳ Várj játékosokra... ({(currentGame.total_players || currentGame.game?.total_players || 0)}/2)
-            </button>
+          ) : (
+            status === 'waiting' || status === 'setup' ? (
+              <div className="bg-gradient-to-r from-gray-600 to-gray-500 
+                          text-gray-200 font-bold py-3 px-6 rounded-lg 
+                          transition-all duration-200 min-w-32 sm:min-w-56 text-center">
+                ⏳ Indításhoz szükséges: {teamCount >= 2 ? 'mindkét csapatból legalább 1 játékos' : 'legalább 1 játékos'}
+                <div className="text-xs mt-1">
+                  🎃 {pumpkinCount} játékos • 👻 {ghostCount} játékos
+                </div>
+              </div>
+            ) : null
           )}
           
           {/* Játék állapot megjelenítése */}

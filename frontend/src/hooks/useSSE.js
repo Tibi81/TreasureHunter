@@ -46,7 +46,8 @@ export const useSSE = (url, options = {}) => {
       eventSourceRef.current = eventSource;
 
       eventSource.onopen = (event) => {
-        console.log('✅ SSE kapcsolat létrejött');
+        console.log('✅ SSE kapcsolat létrejött:', url);
+        console.log('✅ SSE readyState:', eventSource.readyState);
         setIsConnected(true);
         setError(null);
         reconnectAttemptsRef.current = 0; // ✅ Reset
@@ -75,6 +76,13 @@ export const useSSE = (url, options = {}) => {
 
       eventSource.onerror = (event) => {
         console.error('❌ SSE kapcsolat hiba:', event);
+        console.error('❌ SSE readyState:', eventSource.readyState);
+        console.error('❌ SSE URL:', url);
+        console.error('❌ Event details:', {
+          type: event.type,
+          target: event.target,
+          readyState: event.target?.readyState
+        });
         setIsConnected(false);
         
         // ✅ Bezárjuk a hibás kapcsolatot
@@ -232,6 +240,8 @@ export const useGeneralSSE = (options = {}) => {
   const sseUrl = `${baseUrl}/api/sse/general/`;
   
   const queryClient = useQueryClient();
+  // Felhasználói onMessage callback kompozícióhoz
+  const userOnMessage = options?.onMessage;
   
   const handleMessage = useCallback((data, event, connect) => {
     console.log('🌐 Általános SSE üzenet:', data);
@@ -302,22 +312,65 @@ export const useGeneralSSE = (options = {}) => {
       case 'game_started':
         console.log('🚀 Játék elindult!', data);
         if (data.data?.game_id) {
-          // ✅ JAVÍTOTT: Invalidate helyett refetch a teljes adatokért
-          queryClient.refetchQueries({ queryKey: ['game', data.data.game_id] });
+          const gid2 = data.data.game_id;
+          const newStatus = data.data?.status || 'separate';
+          // ⚡ Optimista frissítés: részletek és lista
+          queryClient.setQueryData(['game', gid2], (old) => old ? { ...old, status: newStatus } : old);
+          queryClient.setQueryData(['games'], (old) => {
+            if (!Array.isArray(old)) return old;
+            return old.map(g => g.id === gid2 ? { ...g, status: newStatus } : g);
+          });
+          // 🔄 Részletek refetch
+          queryClient.refetchQueries({ queryKey: ['game', gid2] });
+          // 🔄 Összes csapat aktuális feladata ennek a játéknak
+          queryClient.refetchQueries({
+            predicate: (q) => Array.isArray(q.queryKey)
+              && q.queryKey[0] === 'challenge'
+              && q.queryKey[1] === gid2
+          });
         }
+        // 🔄 Lista refetch
         queryClient.refetchQueries({ queryKey: ['games'] });
         break;
         
       case 'player_joined':
         console.log('👥 Játékos csatlakozott!', data);
-        console.log('🔍 Player joined - game_id:', data.data?.game_id);
-        if (data.data?.game_id) {
-          // ✅ JAVÍTOTT: Invalidate helyett refetch a teljes adatokért
-          console.log('🔄 Refetching game and games queries...');
-          queryClient.refetchQueries({ queryKey: ['game', data.data.game_id] });
+        const gid = data.data?.game_id;
+        const pid = data.data?.player_id;
+        const pname = data.data?.player_name;
+        const team = data.data?.team;
+        if (gid) {
+          // ⚡ Optimista frissítés: játéklista
+          queryClient.setQueryData(['games'], (old) => {
+            if (!Array.isArray(old)) return old;
+            return old.map(g => {
+              if (g.id !== gid) return g;
+              const teams = Array.isArray(g.teams) ? g.teams.map(t => {
+                if (t.name !== team) return t;
+                const exists = (t.players || []).some(p => p.id === pid);
+                return exists ? t : { ...t, players: [...(t.players || []), { id: pid, name: pname }] };
+              }) : g.teams;
+              const alreadyCounted = Array.isArray(g.teams)
+                ? ((g.teams.find(t => t.name === team)?.players || []).some(p => p.id === pid))
+                : false;
+              const total_players = (g.total_players || 0) + (alreadyCounted ? 0 : 1);
+              return { ...g, teams, total_players };
+            });
+          });
+          // ⚡ Optimista frissítés: játék részletek
+          queryClient.setQueryData(['game', gid], (old) => {
+            if (!old) return old;
+            const teams = Array.isArray(old.teams) ? old.teams.map(t => {
+              if (t.name !== team) return t;
+              const exists = (t.players || []).some(p => p.id === pid);
+              return exists ? t : { ...t, players: [...(t.players || []), { id: pid, name: pname }] };
+            }) : old.teams;
+            return { ...old, teams };
+          });
+          // 🔄 Háttér refetch a konzisztenciáért
+          queryClient.refetchQueries({ queryKey: ['game', gid] });
         }
         queryClient.refetchQueries({ queryKey: ['games'] });
-        console.log('✅ Player joined - queries refetched');
         break;
         
       case 'player_updated':
@@ -332,9 +385,19 @@ export const useGeneralSSE = (options = {}) => {
       case 'game_updated':
         console.log('🎮 Játék frissítve!', data);
         if (data.data?.game_id) {
-          queryClient.invalidateQueries({ queryKey: ['game', data.data.game_id] });
+          // ✅ Azonnali újra lekérés a részletekre
+          queryClient.refetchQueries({ queryKey: ['game', data.data.game_id] });
+          // ✅ Ha a státusz futó fázisra váltott, a csapatfeladatok is frissüljenek
+          if (data.data?.status === 'separate' || data.data?.status === 'together') {
+            queryClient.refetchQueries({
+              predicate: (q) => Array.isArray(q.queryKey)
+                && q.queryKey[0] === 'challenge'
+                && q.queryKey[1] === data.data.game_id
+            });
+          }
         }
-        queryClient.invalidateQueries({ queryKey: ['games'] });
+        // ✅ Azonnali újra lekérés a lista adatokra
+        queryClient.refetchQueries({ queryKey: ['games'] });
         break;
         
       case 'game_created':
@@ -352,7 +415,15 @@ export const useGeneralSSE = (options = {}) => {
       default:
         console.log('📨 Ismeretlen SSE üzenet típus:', data.type);
     }
-  }, [queryClient]);
+    // Hívó által megadott onMessage callback meghívása a belső feldolgozás után
+    if (typeof userOnMessage === 'function') {
+      try {
+        userOnMessage(data, event, connect);
+      } catch (e) {
+        console.error('❌ Hiba a felhasználói onMessage callbackben:', e);
+      }
+    }
+  }, [queryClient, userOnMessage]);
 
   return useSSE(sseUrl, {
     ...options,

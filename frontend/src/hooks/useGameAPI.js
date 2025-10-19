@@ -5,10 +5,12 @@ import { gameAPI } from '../services/api.js';
 // Query keys - TELJES STRUKTÚRA
 export const gameKeys = {
   all: ['games'],
-  lists: () => [...gameKeys.all, 'list'],
-  detail: (id) => [...gameKeys.all, 'detail', id],
+  // Lista lekérdezésekhez egységes kulcs (SSE-kompatibilis)
+  lists: () => ['games'],
+  // Részlet kulcs egységesítése az SSE-vel
+  detail: (id) => ['game', id],
   status: (id) => [...gameKeys.detail(id), 'status'],
-  gameCode: (code) => [...gameKeys.all, 'code', code],
+  gameCode: (code) => ['game', 'code', code],
   challenge: (gameId, teamName) => ['challenge', gameId, teamName],
   simple: {
     games: ['games'],
@@ -35,11 +37,14 @@ export const useGames = () => {
         throw error;
       }
     },
-    staleTime: 30 * 1000,  // ✅ 30 másodperc - NE töltse újra folyamatosan!
-    gcTime: 5 * 60 * 1000,  // 5 perc cache
-    refetchOnMount: false,  // ✅ NE töltse újra mount-kor automatikusan
-    refetchOnWindowFocus: false,  // ✅ NE töltse újra fókusznál
-    refetchOnReconnect: false,  // ✅ NE töltse újra újracsatlakozáskor
+    // Gyorsabb admin frissítés és SSE-kompatibilis cache stratégia
+    staleTime: 5 * 1000,
+    gcTime: 5 * 60 * 1000,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
+    refetchInterval: 2000,
+    refetchIntervalInBackground: true,
   });
 };
 
@@ -49,11 +54,13 @@ export const useGame = (gameId) => {
     queryKey: gameKeys.detail(gameId),
     queryFn: () => gameAPI.getGameStatus(gameId),
     enabled: !!gameId,
-    staleTime: 30 * 1000, // ✅ 30 másodperc - stabil cache
-    gcTime: 5 * 60 * 1000, // 5 perc cache
-    refetchOnMount: false, // ✅ NE töltse újra mount-kor
-    refetchOnWindowFocus: false, // ✅ NE töltse újra fókusznál
-    refetchOnReconnect: false, // ✅ NE töltse újra újracsatlakozáskor
+    staleTime: 5 * 1000,
+    gcTime: 5 * 60 * 1000,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
+    refetchInterval: 2000,
+    refetchIntervalInBackground: true,
   });
 };
 
@@ -89,58 +96,22 @@ export const useCreateGame = () => {
       return gameAPI.createGame(gameName, adminName, maxPlayers, teamCount);
     },
     onMutate: async ({ gameName, adminName, maxPlayers, teamCount }) => {
-      console.log('🔄 CREATE GAME onMutate STARTED');
-      
-      // Cancel outgoing refetches
-      await queryClient.cancelQueries({ queryKey: gameKeys.lists() });
-      
-      const previousGames = queryClient.getQueryData(gameKeys.lists());
-      
-      // Optimistic update - TELJES STRUKTÚRA
-      const tempGame = {
-        id: `temp-${Date.now()}`,
-        name: gameName,
-        game_code: `TEMP-${Date.now().toString(36).toUpperCase()}`, // Temp kód
-        created_by: adminName,
-        max_players: maxPlayers,
-        team_count: teamCount,
-        status: 'waiting',
-        total_players: 0, // Kezdetben 0 játékos
-        created_at: new Date().toISOString(), // Jelenlegi idő
-        players: []
-      };
-      
-      queryClient.setQueryData(gameKeys.lists(), (old) => {
-        if (!old) return [tempGame];
-        return [tempGame, ...old];
-      });
-      
-      console.log('✅ CREATE GAME onMutate COMPLETED - temp game added');
-      return { previousGames, tempId: tempGame.id };
+      console.log('🔄 CREATE GAME onMutate STARTED - SSE alapú frissítés');
+      // ✅ EGYSZERŰSÍTETT: Nincs optimista frissítés, csak SSE
+      // A játék létrehozása után az SSE 'game_created' esemény frissíti a cache-t
+      return {};
     },
     onError: (error, variables, context) => {
       console.log('❌ CREATE GAME onError:', error);
-      
-      // Rollback
-      if (context?.previousGames) {
-        queryClient.setQueryData(gameKeys.lists(), context.previousGames);
-      }
+      // ✅ EGYSZERŰSÍTETT: Nincs rollback, mert nincs optimista frissítés
     },
     onSuccess: (data, variables, context) => {
       console.log('🎉 CREATE GAME onSuccess STARTED:', data);
       
-      // ✅ Cseréljük le a temp game-et a valósra
-      queryClient.setQueryData(gameKeys.lists(), (old) => {
-        if (!old) return [data.game]; // API válasz: { game: {...}, teams: [...], ... }
-        return old.map(game => 
-          game && game.id === context.tempId ? data.game : game
-        );
-      });
+      // ✅ EGYSZERŰSÍTETT: Nincs manuális cache frissítés
+      // Az SSE 'game_created' esemény automatikusan frissíti a cache-t
       
-      // ✅ JAVÍTOTT: NINCS invalidate - csak optimista frissítés
-      // A setQueryData már frissíti a cache-t, az invalidate felesleges
-      
-      console.log('✅ CREATE GAME onSuccess COMPLETED');
+      console.log('✅ CREATE GAME onSuccess COMPLETED - SSE fogja frissíteni a cache-t');
       
       // ✅ VISSZAADJUK A DATA-T, HOGY A COMPONENT HASZNÁLHASSA
       return data;
@@ -439,7 +410,9 @@ export const useJoinGame = () => {
       }
     },
     onMutate: async ({ gameId, playerName, teamName }) => {
-      // ✅ Optimista update - azonnali UI feedback
+      console.log('🎮 Player joining - OPTIMISTA FRISSÍTÉS');
+      
+      // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: gameKeys.detail(gameId) });
       await queryClient.cancelQueries({ queryKey: gameKeys.lists() });
       
@@ -466,7 +439,9 @@ export const useJoinGame = () => {
       return { previousGame, previousGames };
     },
     onError: (err, variables, context) => {
-      // ✅ Rollback ha hiba van
+      console.log('❌ Player join error:', err);
+      
+      // Rollback
       if (context?.previousGame) {
         queryClient.setQueryData(gameKeys.detail(variables.gameId), context.previousGame);
       }
@@ -504,7 +479,6 @@ export const useJoinGame = () => {
         if (!old) return old;
         const updatedGames = old.map(game => {
           if (game.id === gameId) {
-            // ✅ JAVÍTOTT: Teljes játékos lista frissítése
             const newPlayer = {
               id: data.player_id || `player-${Date.now()}`,
               name: playerName,
@@ -516,9 +490,7 @@ export const useJoinGame = () => {
             const updatedGame = {
               ...game,
               total_players: (game.total_players || 0) + 1,
-              // ✅ JAVÍTOTT: Játékosok listája frissítése
               players: [...(game.players || []), newPlayer],
-              // ✅ JAVÍTOTT: Csapatok frissítése is
               teams: game.teams?.map(team => {
                 if (team.name === teamName) {
                   return {
@@ -555,8 +527,11 @@ export const useValidateQR = () => {
       console.log('🎯 QR validation successful, updating caches optimistically...');
       
       // ✅ OPTIMISTA FRISSÍTÉS - azonnali UI feedback
-      // Challenge cache törlése - új feladat betöltődik
+      // Challenge cache törlése és kis késleltetéssel újratöltés (elkerüli a régi feladat visszatöltését)
       queryClient.removeQueries({ queryKey: gameKeys.challenge(gameId, teamName) });
+      setTimeout(() => {
+        queryClient.refetchQueries({ queryKey: gameKeys.challenge(gameId, teamName) });
+      }, 200);
       
       // ✅ JAVÍTOTT: Játék állapot frissítése - csapat továbbléptetése
       queryClient.setQueryData(gameKeys.detail(gameId), (old) => {
@@ -652,11 +627,11 @@ export const useCurrentChallenge = (gameId, teamName, options = {}) => {
       }
     },
     enabled: !!gameId && !!teamName && (options.enabled !== false),
-    staleTime: 30 * 1000, // ✅ 30 másodperc - stabil cache
-    gcTime: 5 * 60 * 1000, // 5 perc cache
-    refetchOnMount: false, // ✅ NE töltse újra mount-kor
-    refetchOnWindowFocus: false, // ✅ NE töltse újra fókusznál
-    refetchOnReconnect: false, // ✅ NE töltse újra újracsatlakozáskor
+    staleTime: 5 * 1000,
+    gcTime: 5 * 60 * 1000,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
     retry: (failureCount, error) => {
       // Ha 400-as hiba, ne próbálkozzunk újra
       if (error?.status === 400) {

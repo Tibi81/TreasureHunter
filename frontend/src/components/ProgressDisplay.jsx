@@ -5,7 +5,18 @@ import { useGame } from '../hooks/useGameAPI';
 
 const ProgressDisplay = ({ gameId, showAllTeams = false }) => {
   // React Query hook
-  const { data: gameData, isLoading, error } = useGame(gameId);
+  const { data: gameData, isLoading, error, refetch } = useGame(gameId);
+
+  // Automatikus refetch a gyors frissüléshez futó/setup állapotban
+  React.useEffect(() => {
+    if (!gameId) return;
+    const status = gameData?.game?.status;
+    if (status === 'finished') return; // Befejezett játékot ne poll-ozzunk
+    const interval = setInterval(() => {
+      refetch();
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [gameId, gameData?.game?.status, refetch]);
 
   // Loading állapot
   if (isLoading) {

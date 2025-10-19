@@ -2,7 +2,7 @@
 // API konfiguráció a frontend számára
 
 // Backend URL konstansok
-const DEV_BACKEND_URL = 'http://127.0.0.1:8000';
+const DEV_BACKEND_URL = '';
 const PROD_BACKEND_URL = 'https://treasurehunter-mz1x.onrender.com';
 
 // API konfiguráció objektum

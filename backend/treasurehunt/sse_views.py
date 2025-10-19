@@ -109,11 +109,6 @@ class GeneralSSEView(View):
                 last_event_id = 0
                 
                 while count < max_iterations:
-                    # Ellenőrizzük, hogy a kliens még kapcsolódva van-e
-                    if request.META.get('HTTP_CONNECTION') == 'close':
-                        logger.info("SSE kapcsolat lezárva a kliens által")
-                        break
-                    
                     # Események lekérése és küldése
                     try:
                         # Összes játék eseményeinek lekérése
@@ -270,6 +265,7 @@ def player_saved(sender, instance, created, **kwargs):
             instance.team.game.id,
             "player_joined",
             {
+                "game_id": instance.team.game.id,
                 "player_id": instance.id,
                 "player_name": instance.name,
                 "team": instance.team.name
@@ -280,6 +276,7 @@ def player_saved(sender, instance, created, **kwargs):
             instance.team.game.id,
             "player_updated",
             {
+                "game_id": instance.team.game.id,
                 "player_id": instance.id,
                 "player_name": instance.name,
                 "team": instance.team.name
@@ -293,6 +290,7 @@ def player_deleted(sender, instance, **kwargs):
         instance.team.game.id,
         "player_left",
         {
+            "game_id": instance.team.game.id,
             "player_id": instance.id,
             "player_name": instance.name,
             "team": instance.team.name

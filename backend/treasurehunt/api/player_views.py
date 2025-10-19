@@ -62,6 +62,19 @@ def join_game(request, game_id):
         
         player = Player.objects.create(team=team, name=player_name)
         
+        # ✅ KÖZVETLEN SSE ESEMÉNY KÜLDÉS - azonnali frissítés
+        from ..sse_views import send_game_event
+        send_game_event(
+            game.id,
+            "player_joined",
+            {
+                "game_id": str(game.id),
+                "player_id": player.id,
+                "player_name": player.name,
+                "team": team.name
+            }
+        )
+        
         # Session token generálása
         session_token = SessionTokenService.generate_token(player)
         

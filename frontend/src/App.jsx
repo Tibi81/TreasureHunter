@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars */
 // App.js
 import React, { useState, useEffect, useCallback } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import Welcome from './components/Welcome';
 import PlayerRegistration from './components/PlayerRegistration';
@@ -36,6 +36,7 @@ const queryClient = new QueryClient({
 });
 
 function App() {
+  const queryClient = useQueryClient();
   const [appState, setAppState] = useState('welcome'); // welcome, registration, admin, game, finished
   const [playerName, setPlayerName] = useState('');
   const [gameCode, setGameCode] = useState('');
@@ -84,23 +85,43 @@ function App() {
       if (data.type === 'game_started') {
         console.log('🚀 Játék elindult! Frissítjük az állapotot...');
         addToast('A játék elindult! 🎮', 'success');
+        const startedGameId = data.data?.game_id || gameState.gameId;
         
-        // Játék állapot frissítése
+        // Azonnali státusz frissítés a UI-hoz
         setGameState(prev => ({
           ...prev,
           status: data.data.status || 'separate'
         }));
         
-        // Cache frissítése
-        import('./services/api').then(({ gameAPI }) => {
-          gameAPI.updateGameStatus();
-        });
+        // Játék állapot és kihívások azonnali refetch-e
+        try {
+          updateGameStatus();
+          if (startedGameId) {
+            queryClient.refetchQueries({ queryKey: ['game', startedGameId] });
+            queryClient.refetchQueries({
+              predicate: (q) => Array.isArray(q.queryKey)
+                && q.queryKey[0] === 'challenge'
+                && q.queryKey[1] === startedGameId
+            });
+          }
+        } catch (e) {
+          console.error('Hiba az azonnali állapotfrissítéskor:', e);
+        }
       }
       
       // Játékos csatlakozás üzenet kezelése
       if (data.type === 'player_joined') {
         console.log('👥 Új játékos csatlakozott:', data.data);
         addToast(`${data.data.player_name} csatlakozott a ${data.data.team} csapathoz!`, 'info');
+        // Ha a jelenlegi játékhoz érkezett, kérjük újra az állapotot
+        if (data.data?.game_id && data.data.game_id === gameState.gameId) {
+          try {
+            updateGameStatus();
+            queryClient.refetchQueries({ queryKey: ['game', gameState.gameId] });
+          } catch (e) {
+            console.error('Hiba az állapot frissítésekor (player_joined):', e);
+          }
+        }
       }
     }
   });
