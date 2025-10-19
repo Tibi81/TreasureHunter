@@ -36,28 +36,18 @@ class GameStateService:
     @staticmethod
     def get_game_summary(game):
         """
-        Játék összefoglaló lekérdezése cache-eléssel - hibakezeléssel
+        Játék összefoglaló lekérdezése CACHE NÉLKÜL - mindig friss adatbázis
         """
         try:
-            cache_key = f"game_summary_{game.id}"
-            cached_data = cache.get(cache_key)
-            
-            if cached_data:
-                logger.debug(f"Cache hit for game summary: {game.id}")
-                return cached_data
-            
-            # Cache miss - adatbázis lekérdezés
-            logger.debug(f"Cache miss for game summary: {game.id}")
+            # ✅ CACHE TELJESEN KIKAPCSOLVA - mindig friss adatbázis
+            logger.debug(f"Getting game summary from database: {game.id}")
             game_manager = GameStateManager(game)
             data = game_manager.get_game_summary()
-            
-            # Cache-be mentés (5 perc)
-            cache.set(cache_key, data, 300)
             return data
             
         except Exception as e:
             # Cache hiba esetén közvetlenül adatbázisból
-            logger.warning(f"Cache error, using database directly: {e}")
+            logger.warning(f"Database error, using fallback: {e}")
             game_manager = GameStateManager(game)
             return game_manager.get_game_summary()
     
@@ -83,11 +73,21 @@ class GameStateService:
     @staticmethod
     def start_game(game):
         game_manager = GameStateManager(game)
-        # Először setup állapotba kerüljön
-        game.status = 'setup'
-        game.save()
-        # Majd separate fázisba
+        # Közvetlenül separate fázisba kerüljön
         game_manager.start_separate_phase()
+        
+        # SSE üzenet küldése a játék indításáról
+        from .sse_views import send_game_event
+        send_game_event(
+            game.id,
+            "game_started",
+            {
+                "game_id": str(game.id),
+                "game_name": game.name,
+                "status": game.status,
+                "message": "A játék elindult! 🎮"
+            }
+        )
 
 class ChallengeService:
     """Feladat kezelési szolgáltatások"""

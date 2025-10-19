@@ -89,7 +89,7 @@ export const useSSE = (url, options = {}) => {
         const currentAttempts = reconnectAttemptsRef.current;
         
         if (currentAttempts < maxReconnectAttempts) {
-          const delay = Math.min(1000 * Math.pow(2, currentAttempts), 30000);
+          const delay = Math.min(2000 * Math.pow(2, currentAttempts), 10000); // Gyorsabb újracsatlakozás
           console.log(`🔄 SSE újracsatlakozás ${currentAttempts + 1}/${maxReconnectAttempts} (${delay}ms késéssel)...`);
           
           reconnectAttemptsRef.current += 1;
@@ -295,6 +295,43 @@ export const useGeneralSSE = (options = {}) => {
               break;
           }
         }
+        break;
+        
+      case 'game_started':
+        console.log('🚀 Játék elindult!', data);
+        if (data.data?.game_id) {
+          queryClient.invalidateQueries({ queryKey: ['game', data.data.game_id] });
+        }
+        queryClient.invalidateQueries({ queryKey: ['games'] });
+        break;
+        
+      case 'player_joined':
+        console.log('👥 Játékos csatlakozott!', data);
+        if (data.data?.game_id) {
+          queryClient.invalidateQueries({ queryKey: ['game', data.data.game_id] });
+        }
+        queryClient.invalidateQueries({ queryKey: ['games'] });
+        break;
+        
+      case 'player_updated':
+        console.log('👤 Játékos frissítve!', data);
+        if (data.data?.game_id) {
+          queryClient.invalidateQueries({ queryKey: ['game', data.data.game_id] });
+        }
+        queryClient.invalidateQueries({ queryKey: ['games'] });
+        break;
+        
+      case 'game_updated':
+        console.log('🎮 Játék frissítve!', data);
+        if (data.data?.game_id) {
+          queryClient.invalidateQueries({ queryKey: ['game', data.data.game_id] });
+        }
+        queryClient.invalidateQueries({ queryKey: ['games'] });
+        break;
+        
+      case 'game_created':
+        console.log('🎉 Új játék létrehozva!', data);
+        queryClient.invalidateQueries({ queryKey: ['games'] });
         break;
         
       case 'error':

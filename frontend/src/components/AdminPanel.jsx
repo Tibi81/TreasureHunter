@@ -12,9 +12,10 @@ import {
   useAddPlayer,
   useRemovePlayer,
   useMovePlayer,
-  useUpdateGame
+  useUpdateGame,
+  gameKeys
 } from '../hooks/useGameAPI';
-// import { useGeneralSSE } from '../hooks/useSSE'; // IDEIGLENESEN KIKAPCSOLVA
+import { useGeneralSSE } from '../hooks/useSSE';
 import GameList from './admin/GameList';
 import GameCreate from './admin/GameCreate';
 import GameManage from './admin/GameManage';
@@ -37,6 +38,58 @@ const AdminPanel = ({ onBack }) => {
 
   // React Query hooks
   const { data: games = [], isLoading: gamesLoading, error: gamesError } = useGames();
+  
+  // ✅ DEBUG: Games data logging
+  React.useEffect(() => {
+    console.log('🔍 AdminPanel - games data changed:', games);
+    console.log('🔍 AdminPanel - games length:', games.length);
+    games.forEach((game, index) => {
+      console.log(`🔍 AdminPanel - game ${index}:`, {
+        id: game.id,
+        name: game.name,
+        total_players: game.total_players,
+        players: game.players,
+        teams: game.teams
+      });
+    });
+  }, [games]);
+
+  // ✅ DEBUG: QueryClient cache monitoring
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      const cache = queryClient.getQueryData(gameKeys.lists());
+      console.log('🔍 AdminPanel - Cache check:', {
+        cacheExists: !!cache,
+        cacheLength: cache?.length || 0,
+        cacheData: cache
+      });
+    }, 2000); // Minden 2 másodpercben ellenőrizzük
+
+    return () => clearInterval(interval);
+  }, [queryClient]);
+
+  // ✅ POLLING kikapcsolva - IDEIGLENESEN KIKAPCSOLVA
+  // React.useEffect(() => {
+  //   console.log('🔄 AdminPanel - Polling started (every 1 second)');
+  //   const interval = setInterval(() => {
+  //     console.log('🔄 AdminPanel - Polling refresh triggered');
+  //     queryClient.refetchQueries({ queryKey: gameKeys.lists() });
+  //   }, 1000);
+
+  //   return () => {
+  //     console.log('🔄 AdminPanel - Polling stopped');
+  //     clearInterval(interval);
+  //   };
+  // }, [queryClient]);
+
+  // ✅ SSE kapcsolat azonnali frissítésekhez
+  const { isConnected: sseConnected } = useGeneralSSE({
+    enabled: true, // ✅ SSE VISSZAÁLLÍTVA
+    onMessage: (data) => {
+      console.log('🎮 AdminPanel SSE üzenet:', data);
+      // Az SSE hook automatikusan frissíti a cache-t
+    }
+  });
   const createGameMutation = useCreateGame();
   const deleteGameMutation = useDeleteGame();
   const stopGameMutation = useStopGame();
@@ -47,27 +100,6 @@ const AdminPanel = ({ onBack }) => {
   const movePlayerMutation = useMovePlayer();
   const updateGameMutation = useUpdateGame();
 
-  // SSE kapcsolat azonnali frissítésekhez - IDEIGLENESEN KIKAPCSOLVA
-  // const { isConnected: sseConnected } = useGeneralSSE({
-  //   enabled: false, // IDEIGLENESEN KIKAPCSOLVA
-  //   onMessage: (data) => {
-  //     console.log('🎮 AdminPanel SSE üzenet:', data);
-  //     // Az SSE hook automatikusan frissíti a cache-t
-  //   }
-  // });
-  
-  // IDEIGLENES: SSE helyett polling használata
-  const [sseConnected] = useState(false);
-  
-  // Polling a játékok frissítéséhez (SSE helyett)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      // React Query automatikusan refetch-eli a games query-t
-      queryClient.invalidateQueries({ queryKey: ['games'] });
-    }, 3000); // 3 másodpercenként frissítés
-    
-    return () => clearInterval(interval);
-  }, [queryClient]);
 
   // Szűrt játékok
   const filteredGames = games.filter(game => 
@@ -77,24 +109,26 @@ const AdminPanel = ({ onBack }) => {
     game.created_by?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // ✅ currentGame szinkronizálása a games listával - AZONNAL
+  // ✅ currentGame szinkronizálása a games listával - JAVÍTOTT
   useEffect(() => {
     if (currentGame && games.length > 0) {
       const updatedGame = games.find(g => g.id === currentGame.id);
       if (updatedGame) {
         // Csak akkor frissítjük, ha ténylegesen változott
         if (JSON.stringify(updatedGame) !== JSON.stringify(currentGame)) {
+          console.log('🔄 Updating currentGame with fresh data from games list');
           setCurrentGame(updatedGame);
         }
       } else {
-        // Ha a játék már nem létezik a listában
+        // Ha a játék már nem létezik a listában (törölve lett)
+        console.log('Játék már nem létezik a listában, visszatérés a listához');
         setCurrentGame(null);
         if (view === 'manage') {
           setView('list');
         }
       }
     }
-  }, [games]);
+  }, [games, currentGame?.id, view]); // ✅ JAVÍTOTT: currentGame.id helyett currentGame
 
   // Hiba kezelése
   useEffect(() => {
@@ -103,10 +137,12 @@ const AdminPanel = ({ onBack }) => {
     }
   }, [gamesError]);
 
-  // Manuális cache frissítés függvény
+  // Manuális cache frissítés függvény - EGYSZERŰSÍTETT
   const refreshGames = () => {
     try {
-      queryClient.invalidateQueries({ queryKey: ['games'] });
+      console.log('🔄 Manual cache refresh triggered...');
+      // ✅ JAVÍTOTT: refetchQueries azonnali API hívást indít
+      queryClient.refetchQueries({ queryKey: gameKeys.lists() });
     } catch (err) {
       console.error('Hiba a frissítésben:', err);
       setError('Hiba történt a frissítés során');
@@ -131,7 +167,9 @@ const AdminPanel = ({ onBack }) => {
         maxPlayers: gameConfig?.maxPlayers || 4,
         teamCount: gameConfig?.teamCount || 2
       });
-      setCurrentGame(response);
+      
+      // ✅ A response.game-t használjuk currentGame-ként
+      setCurrentGame(response.game);
       setView('manage');
     } catch (err) {
       console.error('Játék létrehozási hiba:', err);
@@ -193,7 +231,17 @@ const AdminPanel = ({ onBack }) => {
       console.log('Játék sikeresen leállítva!');
     } catch (err) {
       console.error('Játék leállítási hiba:', err);
-      setError(err.message || 'Hiba a játék leállításában');
+      // Ha 404 hiba, a játék már nem létezik
+      if (err.status === 404) {
+        console.log('Játék már nem létezik');
+        setError('');
+        if (currentGame && currentGame.id === gameId) {
+          setCurrentGame(null);
+          setView('list');
+        }
+      } else {
+        setError(err.message || 'Hiba a játék leállításában');
+      }
     }
   };
 
@@ -329,13 +377,13 @@ const AdminPanel = ({ onBack }) => {
               Játékok kezelése és létrehozása
             </p>
             
-            {/* SSE kapcsolat indikátor */}
-            <div className="flex items-center justify-center gap-2 mb-6">
-              <div className={`w-3 h-3 rounded-full ${sseConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
-              <span className="text-sm text-gray-400">
-                {sseConnected ? 'Valós idejű frissítés aktív' : 'Valós idejű frissítés inaktív'}
+            {/* ✅ SSE kapcsolat státusz - IDEIGLENESEN KIKAPCSOLVA */}
+            {/* <div className="flex items-center justify-center mt-2">
+              <div className={`w-3 h-3 rounded-full mr-2 ${sseConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+              <span className="text-sm text-gray-300">
+                SSE: {sseConnected ? 'Csatlakozva' : 'Kapcsolat megszakadt'}
               </span>
-            </div>
+            </div> */}
             
             {/* Navigációs gombok */}
             <div className="grid grid-cols-2 gap-3 sm:gap-6 mb-6">
@@ -481,6 +529,20 @@ const AdminPanel = ({ onBack }) => {
             handleAddPlayer={handleAddPlayer}
             currentGame={currentGame}
           />
+
+          {/* SSE kapcsolat státusza */}
+          <div className="text-center mb-4">
+            <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm ${
+              sseConnected 
+                ? 'bg-green-100 text-green-800' 
+                : 'bg-red-100 text-red-800'
+            }`}>
+              <div className={`w-2 h-2 rounded-full mr-2 ${
+                sseConnected ? 'bg-green-500' : 'bg-red-500'
+              }`}></div>
+              {sseConnected ? 'SSE Kapcsolat Aktív' : 'SSE Kapcsolat Megszakadt'}
+            </div>
+          </div>
 
           {/* Vissza gomb */}
           <div className="text-center mt-8">

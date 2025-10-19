@@ -8,6 +8,12 @@ const Welcome = ({ onGameCodeSubmit }) => {
   const [error, setError] = useState('');
   const [shouldSearch, setShouldSearch] = useState(false);
 
+  // Debug: Welcome komponens mount
+  React.useEffect(() => {
+    console.log('🔍 Welcome - Component mounted');
+    console.log('🔍 Welcome - onGameCodeSubmit function:', typeof onGameCodeSubmit);
+  }, [onGameCodeSubmit]);
+
   // React Query hook - csak akkor keressünk, ha a felhasználó megadta a kódot
   const { data: gameData, isLoading, error: gameError } = useFindGameByCodeOptimized(
     gameCode, 
@@ -18,6 +24,11 @@ const Welcome = ({ onGameCodeSubmit }) => {
     e.preventDefault();
     setError('');
 
+    console.log('🔍 Welcome - handleSubmit called');
+    console.log('🔍 Welcome - gameCode:', gameCode);
+    console.log('🔍 Welcome - gameCode.trim():', gameCode.trim());
+    console.log('🔍 Welcome - gameCode.trim().toUpperCase():', gameCode.trim().toUpperCase());
+
     if (!gameCode.trim()) {
       setError('Add meg a játék kódot!');
       return;
@@ -25,17 +36,25 @@ const Welcome = ({ onGameCodeSubmit }) => {
 
     // Ha ADMIN kódot adtak meg, azonnal átirányítjuk
     if (gameCode.trim().toUpperCase() === 'ADMIN') {
+      console.log('🔍 Welcome - ADMIN code detected, calling onGameCodeSubmit("ADMIN")');
       onGameCodeSubmit('ADMIN');
       return;
     }
 
     // Egyébként keresünk a kóddal
+    console.log('🔍 Welcome - Game code detected, setting shouldSearch to true');
     setShouldSearch(true);
   };
 
   // Ha sikeresen megtaláltuk a játékot, átirányítjuk
   React.useEffect(() => {
+    console.log('🔍 Welcome - useEffect triggered');
+    console.log('🔍 Welcome - gameData:', gameData);
+    console.log('🔍 Welcome - shouldSearch:', shouldSearch);
+    console.log('🔍 Welcome - gameCode:', gameCode);
+    
     if (gameData && shouldSearch) {
+      console.log('🔍 Welcome - Game found, calling onGameCodeSubmit with:', gameCode.trim().toUpperCase());
       onGameCodeSubmit(gameCode.trim().toUpperCase());
       setShouldSearch(false);
     }
@@ -58,7 +77,10 @@ const Welcome = ({ onGameCodeSubmit }) => {
           {/* Admin gomb */}
           <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2">
             <button
-              onClick={() => onGameCodeSubmit('ADMIN')}
+              onClick={() => {
+                console.log('🔍 Welcome - Admin button clicked, calling onGameCodeSubmit("ADMIN")');
+                onGameCodeSubmit('ADMIN');
+              }}
               className="btn-admin"
             >
               🎛️ Vezérlőpult
@@ -66,7 +88,7 @@ const Welcome = ({ onGameCodeSubmit }) => {
           </div>
 
           {/* Cím */}
-          <div className="text-center mb-mobile-lg">
+          <div className="text-center mb-mobile-lg mt-8">
             <div className="text-4xl sm:text-6xl mb-4">
               <span className="animate-float">🎃</span>
               <span className="animate-float" style={{ animationDelay: '1.5s' }}>👻</span>
@@ -142,7 +164,7 @@ const Welcome = ({ onGameCodeSubmit }) => {
             <ul className="text-gray-200 space-y-2 sm:space-y-3 font-spooky leading-relaxed text-sm sm:text-base">
               <li className="flex items-center">
                 <span className="text-orange-400 mr-2 text-base">🎯</span>
-                4 játékos, 2 csapat (2-2 fő)
+                1 vagy 2 csapat (1-8 fő)
               </li>
               <li className="flex items-center">
                 <span className="text-orange-400 mr-2 text-base">🏃</span>

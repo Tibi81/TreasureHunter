@@ -1,0 +1,335 @@
+// hooks/__tests__/cachePerformance.test.jsx
+import { renderHook, waitFor, act } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { 
+  useGames, 
+  useCreateGame, 
+  useDeleteGame, 
+  gameKeys 
+} from '../useGameAPI';
+import { gameAPI } from '../../services/api';
+
+// Mock API with realistic timing
+import { vi } from 'vitest';
+
+vi.mock('../../services/api', () => ({
+  gameAPI: {
+    listGames: vi.fn(),
+    createGame: vi.fn(),
+    deleteGame: vi.fn(),
+  },
+}));
+
+// Test wrapper with QueryClient
+const createWrapper = () => {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { 
+        retry: false,
+        staleTime: 0,
+        cacheTime: 5 * 60 * 1000,
+      },
+      mutations: { retry: false },
+    },
+  });
+  
+  return ({ children }) => (
+    <QueryClientProvider client={queryClient}>
+      {children}
+    </QueryClientProvider>
+  );
+};
+
+describe('Cache Performance Tests', () => {
+  let mockGames;
+  let queryClient;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    
+    // Mock games data
+    mockGames = [
+      { id: 'game1', name: 'Test Game 1', created_by: 'Admin1', status: 'waiting' },
+      { id: 'game2', name: 'Test Game 2', created_by: 'Admin2', status: 'waiting' },
+    ];
+
+    // Mock API responses
+    gameAPI.listGames.mockResolvedValue({ games: mockGames });
+    gameAPI.createGame.mockResolvedValue({ 
+      id: 'new-game', 
+      name: 'New Game', 
+      created_by: 'Admin',
+      status: 'waiting' 
+    });
+    gameAPI.deleteGame.mockResolvedValue({ success: true });
+  });
+
+  describe('Game Creation Performance', () => {
+    test('should update cache immediately with optimistic update', async () => {
+      const wrapper = createWrapper();
+      const { result: gamesResult } = renderHook(() => useGames(), { wrapper });
+      const { result: createResult } = renderHook(() => useCreateGame(), { wrapper });
+
+      // Wait for initial data load
+      await waitFor(() => {
+        expect(gamesResult.current.isSuccess).toBe(true);
+        expect(gamesResult.current.data).toHaveLength(2);
+      });
+
+      const startTime = Date.now();
+      
+      // Create game
+      await act(async () => {
+        await createResult.current.mutateAsync({
+          gameName: 'New Game',
+          adminName: 'Admin',
+          maxPlayers: 4,
+          teamCount: 2
+        });
+      });
+
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+
+      // Check if cache was updated immediately (optimistic update)
+      await waitFor(() => {
+        expect(gamesResult.current.data).toHaveLength(3);
+        expect(gamesResult.current.data[0].name).toBe('New Game');
+      });
+
+      // Performance assertion - should be very fast (< 100ms)
+      expect(duration).toBeLessThan(100);
+      console.log(`✅ Game creation took: ${duration}ms`);
+    });
+
+    test('should handle cache rollback on error', async () => {
+      const wrapper = createWrapper();
+      const { result: gamesResult } = renderHook(() => useGames(), { wrapper });
+      const { result: createResult } = renderHook(() => useCreateGame(), { wrapper });
+
+      // Wait for initial data load
+      await waitFor(() => {
+        expect(gamesResult.current.isSuccess).toBe(true);
+        expect(gamesResult.current.data).toHaveLength(2);
+      });
+
+      // Mock API error
+      gameAPI.createGame.mockRejectedValueOnce(new Error('API Error'));
+
+      // Try to create game (should fail)
+      await act(async () => {
+        try {
+          await createResult.current.mutateAsync({
+            gameName: 'New Game',
+            adminName: 'Admin',
+            maxPlayers: 4,
+            teamCount: 2
+          });
+        } catch (error) {
+          // Expected error
+        }
+      });
+
+      // Check if cache was rolled back
+      await waitFor(() => {
+        expect(gamesResult.current.data).toHaveLength(2);
+        expect(gamesResult.current.data.find(g => g.name === 'New Game')).toBeUndefined();
+      });
+    });
+  });
+
+  describe('Game Deletion Performance', () => {
+    test('should update cache immediately with optimistic update', async () => {
+      const wrapper = createWrapper();
+      const { result: gamesResult } = renderHook(() => useGames(), { wrapper });
+      const { result: deleteResult } = renderHook(() => useDeleteGame(), { wrapper });
+
+      // Wait for initial data load
+      await waitFor(() => {
+        expect(gamesResult.current.isSuccess).toBe(true);
+        expect(gamesResult.current.data).toHaveLength(2);
+      });
+
+      const startTime = Date.now();
+      
+      // Delete game
+      await act(async () => {
+        await deleteResult.current.mutateAsync('game1');
+      });
+
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+
+      // Check if cache was updated immediately (optimistic update)
+      await waitFor(() => {
+        expect(gamesResult.current.data).toHaveLength(1);
+        expect(gamesResult.current.data.find(g => g.id === 'game1')).toBeUndefined();
+      });
+
+      // Performance assertion - should be very fast (< 100ms)
+      expect(duration).toBeLessThan(100);
+      console.log(`✅ Game deletion took: ${duration}ms`);
+    });
+
+    test('should handle cache rollback on error', async () => {
+      const wrapper = createWrapper();
+      const { result: gamesResult } = renderHook(() => useGames(), { wrapper });
+      const { result: deleteResult } = renderHook(() => useDeleteGame(), { wrapper });
+
+      // Wait for initial data load
+      await waitFor(() => {
+        expect(gamesResult.current.isSuccess).toBe(true);
+        expect(gamesResult.current.data).toHaveLength(2);
+      });
+
+      // Mock API error
+      gameAPI.deleteGame.mockRejectedValueOnce(new Error('API Error'));
+
+      // Try to delete game (should fail)
+      await act(async () => {
+        try {
+          await deleteResult.current.mutateAsync('game1');
+        } catch (error) {
+          // Expected error
+        }
+      });
+
+      // Check if cache was rolled back
+      await waitFor(() => {
+        expect(gamesResult.current.data).toHaveLength(2);
+        expect(gamesResult.current.data.find(g => g.id === 'game1')).toBeDefined();
+      });
+    });
+  });
+
+  describe('Cache Consistency Tests', () => {
+    test('should maintain consistency between different query keys', async () => {
+      const wrapper = createWrapper();
+      const { result: gamesResult } = renderHook(() => useGames(), { wrapper });
+      const { result: createResult } = renderHook(() => useCreateGame(), { wrapper });
+
+      // Wait for initial data load
+      await waitFor(() => {
+        expect(gamesResult.current.isSuccess).toBe(true);
+      });
+
+      // Create game
+      await act(async () => {
+        await createResult.current.mutateAsync({
+          gameName: 'New Game',
+          adminName: 'Admin',
+          maxPlayers: 4,
+          teamCount: 2
+        });
+      });
+
+      // Check both query keys are updated
+      await waitFor(() => {
+        expect(gamesResult.current.data).toHaveLength(3);
+      });
+
+      // Verify the data is consistent
+      const gamesData = gamesResult.current.data;
+      expect(gamesData[0].name).toBe('New Game');
+      expect(gamesData[0].created_by).toBe('Admin');
+    });
+
+    test('should handle concurrent mutations correctly', async () => {
+      const wrapper = createWrapper();
+      const { result: gamesResult } = renderHook(() => useGames(), { wrapper });
+      const { result: createResult } = renderHook(() => useCreateGame(), { wrapper });
+      const { result: deleteResult } = renderHook(() => useDeleteGame(), { wrapper });
+
+      // Wait for initial data load
+      await waitFor(() => {
+        expect(gamesResult.current.isSuccess).toBe(true);
+        expect(gamesResult.current.data).toHaveLength(2);
+      });
+
+      // Perform concurrent operations
+      await act(async () => {
+        const promises = [
+          createResult.current.mutateAsync({
+            gameName: 'New Game 1',
+            adminName: 'Admin1',
+            maxPlayers: 4,
+            teamCount: 2
+          }),
+          createResult.current.mutateAsync({
+            gameName: 'New Game 2',
+            adminName: 'Admin2',
+            maxPlayers: 4,
+            teamCount: 2
+          }),
+          deleteResult.current.mutateAsync('game1')
+        ];
+        
+        await Promise.all(promises);
+      });
+
+      // Check final state
+      await waitFor(() => {
+        expect(gamesResult.current.data).toHaveLength(3); // 2 original - 1 deleted + 2 created
+        expect(gamesResult.current.data.find(g => g.id === 'game1')).toBeUndefined();
+        expect(gamesResult.current.data.find(g => g.name === 'New Game 1')).toBeDefined();
+        expect(gamesResult.current.data.find(g => g.name === 'New Game 2')).toBeDefined();
+      });
+    });
+  });
+
+  describe('Performance Benchmarks', () => {
+    test('should meet performance requirements', async () => {
+      const wrapper = createWrapper();
+      const { result: gamesResult } = renderHook(() => useGames(), { wrapper });
+      const { result: createResult } = renderHook(() => useCreateGame(), { wrapper });
+      const { result: deleteResult } = renderHook(() => useDeleteGame(), { wrapper });
+
+      // Wait for initial data load
+      await waitFor(() => {
+        expect(gamesResult.current.isSuccess).toBe(true);
+      });
+
+      const results = {
+        create: [],
+        delete: []
+      };
+
+      // Run multiple operations to get average performance
+      for (let i = 0; i < 5; i++) {
+        // Create game
+        const createStart = Date.now();
+        await act(async () => {
+          await createResult.current.mutateAsync({
+            gameName: `Test Game ${i}`,
+            adminName: 'Admin',
+            maxPlayers: 4,
+            teamCount: 2
+          });
+        });
+        const createEnd = Date.now();
+        results.create.push(createEnd - createStart);
+
+        // Delete game
+        const deleteStart = Date.now();
+        await act(async () => {
+          await deleteResult.current.mutateAsync(`temp-${Date.now()}`);
+        });
+        const deleteEnd = Date.now();
+        results.delete.push(deleteEnd - deleteStart);
+      }
+
+      // Calculate averages
+      const avgCreate = results.create.reduce((a, b) => a + b, 0) / results.create.length;
+      const avgDelete = results.delete.reduce((a, b) => a + b, 0) / results.delete.length;
+
+      console.log(`📊 Average create time: ${avgCreate.toFixed(2)}ms`);
+      console.log(`📊 Average delete time: ${avgDelete.toFixed(2)}ms`);
+
+      // Performance assertions
+      expect(avgCreate).toBeLessThan(100); // Should be under 100ms
+      expect(avgDelete).toBeLessThan(100); // Should be under 100ms
+    });
+  });
+});
+
+

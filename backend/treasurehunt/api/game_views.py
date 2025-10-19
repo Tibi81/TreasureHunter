@@ -39,7 +39,10 @@ def find_game_by_code(request, game_code):
         return Response(data)
         
     except Game.DoesNotExist:
-        return GameErrorHandler.handle_game_not_found(game_code)
+        return Response({
+            'error': f'Játék nem található a következő kóddal: {game_code}',
+            'error_id': 'GAME_NOT_FOUND'
+        }, status=status.HTTP_404_NOT_FOUND)
     except ValidationError as e:
         return GameErrorHandler.handle_validation_error(str(e))
     except Exception as e:
@@ -274,26 +277,33 @@ def delete_game(request, game_id):
 
 
 @api_view(['POST'])
+@api_error_handler
 def stop_game(request, game_id):
     """Játék leállítása (Admin)"""
-    game = get_object_or_404(Game, id=game_id)
-    
-    # Csak futó játékokat lehet leállítani
-    if game.status not in ['separate', 'together']:
-        return Response({'error': 'Csak futó játékokat lehet leállítani'}, 
-                       status=status.HTTP_400_BAD_REQUEST)
-    
-    # Játék leállítása - finished állapotba állítjuk
-    game.status = 'finished'
-    game.save()
-    
-    # Cache invalidálása
-    GameStateService.invalidate_game_cache(game.id)
-    
-    # Visszaadjuk a frissített játék adatokat
-    data = {
-        'game': GameSerializer(game).data,
-        'message': 'Játék sikeresen leállítva!'
-    }
-    
-    return Response(data)
+    try:
+        game = get_object_or_404(Game, id=game_id)
+        
+        # Csak futó játékokat lehet leállítani
+        if game.status not in ['separate', 'together']:
+            return GameErrorHandler.handle_game_state_error(
+                'Csak futó játékokat lehet leállítani'
+            )
+        
+        # Játék leállítása - finished állapotba állítjuk
+        game.status = 'finished'
+        game.save()
+        
+        # Cache invalidálása
+        GameStateService.invalidate_game_cache(game.id)
+        
+        # Visszaadjuk a frissített játék adatokat
+        data = GameStateService.get_game_summary(game)
+        data['message'] = 'Játék sikeresen leállítva!'
+        
+        return Response(data)
+        
+    except Game.DoesNotExist:
+        return GameErrorHandler.handle_game_not_found(game_id)
+    except Exception as e:
+        logger.error(f"Unexpected error in stop_game: {e}")
+        return GameErrorHandler.handle_game_state_error("Váratlan hiba történt a játék leállításakor")

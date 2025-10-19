@@ -103,7 +103,10 @@ class GeneralSSEView(View):
                 # Korlátozott ciklus valós idejű frissítésekhez (Render.com kompatibilis)
                 import time
                 count = 0
-                max_iterations = 60  # Maximum 60 iteráció (600 másodperc = 10 perc)
+                max_iterations = 120  # Maximum 120 iteráció (600 másodperc = 10 perc)
+                
+                # Események figyelése
+                last_event_id = 0
                 
                 while count < max_iterations:
                     # Ellenőrizzük, hogy a kliens még kapcsolódva van-e
@@ -111,8 +114,31 @@ class GeneralSSEView(View):
                         logger.info("SSE kapcsolat lezárva a kliens által")
                         break
                     
+                    # Események lekérése és küldése
+                    try:
+                        # Összes játék eseményeinek lekérése
+                        all_events = []
+                        for game_id in Game.objects.values_list('id', flat=True):
+                            events_key = f"game_events_{str(game_id)}"  # UUID -> string konvertálás
+                            events = cache.get(events_key, [])
+                            all_events.extend(events)
+                        
+                        # Új események küldése
+                        for event in all_events[last_event_id:]:
+                            sse_data = {
+                                "type": event.get("type", "unknown"),
+                                "data": event.get("data", {}),
+                                "timestamp": event.get("timestamp", time.time())
+                            }
+                            yield f"data: {json.dumps(sse_data)}\n\n"
+                            logger.info(f"SSE event sent: {event.get('type', 'unknown')}")
+                        
+                        last_event_id = len(all_events)
+                    except Exception as e:
+                        logger.error(f"Error processing events: {e}")
+                    
                     count += 1
-                    time.sleep(30)  # 30 másodpercenként heartbeat (kevesebb terhelés)
+                    time.sleep(2)  # 2 másodpercenként események ellenőrzése (gyorsabb)
                     yield f"data: {{\"type\": \"heartbeat\", \"count\": {count}, \"message\": \"Általános heartbeat\", \"timestamp\": {time.time()}}}\n\n"
                 
                 # Ha elértük a maximum iterációt, küldjünk egy újracsatlakozási üzenetet
@@ -198,12 +224,28 @@ class GameEventsSSEView(View):
 # Esemény küldő segédfüggvények
 def send_game_event(game_id, event_type, data):
     """Esemény küldése az SSE stream-nek"""
-    events_key = f"game_events_{game_id}"
+    # ✅ JAVÍTOTT: UUID -> string konvertálás
+    game_id_str = str(game_id)
+    events_key = f"game_events_{game_id_str}"
     events = cache.get(events_key, [])
+    
+    # ✅ JAVÍTOTT: Data JSON szerializálhatóvá tétele
+    def make_json_serializable(obj):
+        """Rekurzív függvény UUID objektumok string-ké alakítására"""
+        if isinstance(obj, dict):
+            return {key: make_json_serializable(value) for key, value in obj.items()}
+        elif isinstance(obj, list):
+            return [make_json_serializable(item) for item in obj]
+        elif hasattr(obj, '__str__') and 'UUID' in str(type(obj)):
+            return str(obj)
+        else:
+            return obj
+    
+    serializable_data = make_json_serializable(data)
     
     event = {
         "type": event_type,
-        "data": data,
+        "data": serializable_data,
         "timestamp": time.time()
     }
     
@@ -214,7 +256,7 @@ def send_game_event(game_id, event_type, data):
         events = events[-100:]
     
     cache.set(events_key, events, timeout=3600)  # 1 óra cache
-    logger.info(f"Game event sent: {event_type} for game {game_id}")
+    logger.info(f"Game event sent: {event_type} for game {game_id_str}")
 
 # Signal handlers az eseményekhez
 from django.db.models.signals import post_save, post_delete

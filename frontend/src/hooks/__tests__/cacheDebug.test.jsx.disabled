@@ -1,0 +1,254 @@
+// hooks/__tests__/cacheDebug.test.jsx
+import { renderHook, waitFor, act } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { 
+  useGames, 
+  useCreateGame, 
+  useDeleteGame, 
+  gameKeys 
+} from '../useGameAPI';
+import { gameAPI } from '../../services/api';
+
+// Mock API
+import { vi } from 'vitest';
+
+vi.mock('../../services/api', () => ({
+  gameAPI: {
+    listGames: vi.fn(),
+    createGame: vi.fn(),
+    deleteGame: vi.fn(),
+  },
+}));
+
+// Test wrapper
+const createWrapper = () => {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  });
+  
+  return ({ children }) => (
+    <QueryClientProvider client={queryClient}>
+      {children}
+    </QueryClientProvider>
+  );
+};
+
+describe('Cache Debug Tests - Real Performance Measurement', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    
+    // Mock realistic API responses
+    gameAPI.listGames.mockResolvedValue({ 
+      games: [
+        { id: 'game1', name: 'Test Game 1', created_by: 'Admin1' },
+        { id: 'game2', name: 'Test Game 2', created_by: 'Admin2' },
+      ]
+    });
+    
+    gameAPI.createGame.mockResolvedValue({ 
+      id: 'new-game', 
+      name: 'New Game', 
+      created_by: 'Admin' 
+    });
+    
+    gameAPI.deleteGame.mockResolvedValue({ success: true });
+  });
+
+  test('🔍 DEBUG: Game Creation Cache Update Timing', async () => {
+    const wrapper = createWrapper();
+    const { result: gamesResult } = renderHook(() => useGames(), { wrapper });
+    const { result: createResult } = renderHook(() => useCreateGame(), { wrapper });
+
+    // Wait for initial load
+    await waitFor(() => {
+      expect(gamesResult.current.isSuccess).toBe(true);
+      expect(gamesResult.current.data).toHaveLength(2);
+    });
+
+    console.log('🚀 Starting game creation test...');
+    console.log('📊 Initial games count:', gamesResult.current.data.length);
+
+    // Measure timing
+    const timings = {
+      mutationStart: 0,
+      mutationEnd: 0,
+      cacheUpdate: 0,
+      finalUpdate: 0
+    };
+
+    // Start mutation
+    timings.mutationStart = Date.now();
+    
+    let mutationPromise;
+    await act(async () => {
+      mutationPromise = createResult.current.mutateAsync({
+        gameName: 'New Game',
+        adminName: 'Admin',
+        maxPlayers: 4,
+        teamCount: 2
+      });
+    });
+
+    timings.mutationEnd = Date.now();
+    console.log(`⏱️ Mutation completed in: ${timings.mutationEnd - timings.mutationStart}ms`);
+
+    // Check cache update timing
+    await waitFor(() => {
+      if (gamesResult.current.data.length === 3) {
+        timings.cacheUpdate = Date.now();
+        console.log(`📈 Cache updated in: ${timings.cacheUpdate - timings.mutationStart}ms`);
+        console.log('📊 Games after creation:', gamesResult.current.data.length);
+        console.log('🎯 New game data:', gamesResult.current.data[0]);
+      }
+    }, { timeout: 5000 });
+
+    // Wait for final state
+    await waitFor(() => {
+      expect(gamesResult.current.data).toHaveLength(3);
+    });
+
+    timings.finalUpdate = Date.now();
+    console.log(`🏁 Final update in: ${timings.finalUpdate - timings.mutationStart}ms`);
+
+    // Performance analysis
+    const totalTime = timings.finalUpdate - timings.mutationStart;
+    const cacheTime = timings.cacheUpdate - timings.mutationStart;
+    
+    console.log('📊 PERFORMANCE ANALYSIS:');
+    console.log(`   Total time: ${totalTime}ms`);
+    console.log(`   Cache update time: ${cacheTime}ms`);
+    console.log(`   Performance: ${cacheTime < 100 ? '✅ GOOD' : '❌ SLOW'}`);
+
+    // Assertions
+    expect(totalTime).toBeLessThan(1000); // Should be under 1 second
+    expect(cacheTime).toBeLessThan(100); // Cache should update under 100ms
+  });
+
+  test('🔍 DEBUG: Game Deletion Cache Update Timing', async () => {
+    const wrapper = createWrapper();
+    const { result: gamesResult } = renderHook(() => useGames(), { wrapper });
+    const { result: deleteResult } = renderHook(() => useDeleteGame(), { wrapper });
+
+    // Wait for initial load
+    await waitFor(() => {
+      expect(gamesResult.current.isSuccess).toBe(true);
+      expect(gamesResult.current.data).toHaveLength(2);
+    });
+
+    console.log('🗑️ Starting game deletion test...');
+    console.log('📊 Initial games count:', gamesResult.current.data.length);
+
+    // Measure timing
+    const timings = {
+      mutationStart: 0,
+      mutationEnd: 0,
+      cacheUpdate: 0,
+      finalUpdate: 0
+    };
+
+    // Start mutation
+    timings.mutationStart = Date.now();
+    
+    await act(async () => {
+      await deleteResult.current.mutateAsync('game1');
+    });
+
+    timings.mutationEnd = Date.now();
+    console.log(`⏱️ Mutation completed in: ${timings.mutationEnd - timings.mutationStart}ms`);
+
+    // Check cache update timing
+    await waitFor(() => {
+      if (gamesResult.current.data.length === 1) {
+        timings.cacheUpdate = Date.now();
+        console.log(`📈 Cache updated in: ${timings.cacheUpdate - timings.mutationStart}ms`);
+        console.log('📊 Games after deletion:', gamesResult.current.data.length);
+        console.log('🎯 Remaining games:', gamesResult.current.data.map(g => g.name));
+      }
+    }, { timeout: 5000 });
+
+    // Wait for final state
+    await waitFor(() => {
+      expect(gamesResult.current.data).toHaveLength(1);
+    });
+
+    timings.finalUpdate = Date.now();
+    console.log(`🏁 Final update in: ${timings.finalUpdate - timings.mutationStart}ms`);
+
+    // Performance analysis
+    const totalTime = timings.finalUpdate - timings.mutationStart;
+    const cacheTime = timings.cacheUpdate - timings.mutationStart;
+    
+    console.log('📊 PERFORMANCE ANALYSIS:');
+    console.log(`   Total time: ${totalTime}ms`);
+    console.log(`   Cache update time: ${cacheTime}ms`);
+    console.log(`   Performance: ${cacheTime < 100 ? '✅ GOOD' : '❌ SLOW'}`);
+
+    // Assertions
+    expect(totalTime).toBeLessThan(1000); // Should be under 1 second
+    expect(cacheTime).toBeLessThan(100); // Cache should update under 100ms
+  });
+
+  test('🔍 DEBUG: Cache Key Consistency Check', async () => {
+    const wrapper = createWrapper();
+    const { result: gamesResult } = renderHook(() => useGames(), { wrapper });
+
+    await waitFor(() => {
+      expect(gamesResult.current.isSuccess).toBe(true);
+    });
+
+    console.log('🔑 Cache key consistency check...');
+    console.log('📊 Query key used:', gamesResult.current.queryKey);
+    console.log('📊 Expected key:', gameKeys.lists());
+    console.log('📊 Keys match:', JSON.stringify(gamesResult.current.queryKey) === JSON.stringify(gameKeys.lists()));
+
+    // Verify query key consistency
+    expect(gamesResult.current.queryKey).toEqual(gameKeys.lists());
+  });
+
+  test('🔍 DEBUG: Optimistic Update Verification', async () => {
+    const wrapper = createWrapper();
+    const { result: gamesResult } = renderHook(() => useGames(), { wrapper });
+    const { result: createResult } = renderHook(() => useCreateGame(), { wrapper });
+
+    await waitFor(() => {
+      expect(gamesResult.current.isSuccess).toBe(true);
+      expect(gamesResult.current.data).toHaveLength(2);
+    });
+
+    console.log('⚡ Testing optimistic update...');
+    
+    // Start mutation and immediately check cache
+    let cacheUpdatedImmediately = false;
+    
+    await act(async () => {
+      const mutationPromise = createResult.current.mutateAsync({
+        gameName: 'Optimistic Test',
+        adminName: 'Admin',
+        maxPlayers: 4,
+        teamCount: 2
+      });
+
+      // Check cache immediately (before API response)
+      setTimeout(() => {
+        if (gamesResult.current.data.length === 3) {
+          cacheUpdatedImmediately = true;
+          console.log('✅ Optimistic update working!');
+        } else {
+          console.log('❌ Optimistic update NOT working');
+        }
+      }, 10);
+
+      await mutationPromise;
+    });
+
+    console.log('📊 Optimistic update result:', cacheUpdatedImmediately ? '✅ SUCCESS' : '❌ FAILED');
+    
+    // This test helps identify if optimistic updates are working
+    expect(gamesResult.current.data).toHaveLength(3);
+  });
+});
+
+

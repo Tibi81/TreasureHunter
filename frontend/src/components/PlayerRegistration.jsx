@@ -1,7 +1,8 @@
 // components/PlayerRegistration.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { useFindGameByCodeOptimized, useJoinGame } from '../hooks/useGameAPI';
+import { gameAPI } from '../services/api';
 
 const PlayerRegistration = ({ gameCode, onJoinGame, onBack }) => {
   const [playerName, setPlayerName] = useState('');
@@ -12,6 +13,51 @@ const PlayerRegistration = ({ gameCode, onJoinGame, onBack }) => {
   // React Query hooks
   const { data: gameData, isLoading, error: gameError } = useFindGameByCodeOptimized(gameCode);
   const joinGameMutation = useJoinGame();
+
+  // Session restore logika
+  useEffect(() => {
+    const restoreSession = async () => {
+      try {
+        console.log('🔄 PlayerRegistration - Session restore próbálkozás...');
+        
+        // Session token ellenőrzése
+        const sessionToken = localStorage.getItem('session_token');
+        if (!sessionToken) {
+          console.log('🔄 PlayerRegistration - Nincs session token');
+          return;
+        }
+
+        // Session restore API hívás
+        const response = await gameAPI.restoreSession(sessionToken);
+        console.log('🔄 PlayerRegistration - Session restore válasz:', response);
+
+        if (response.player && response.game) {
+          // Ha van aktív session, automatikusan csatlakozunk
+          console.log('✅ PlayerRegistration - Aktív session találva, automatikus csatlakozás');
+          
+          // Játék állapot visszaállítása
+          setPlayerName(response.player.name);
+          setSelectedTeam(response.player.team);
+          
+          // Automatikus csatlakozás
+          onJoinGame(response.game.id, response.player.name, response.player.team);
+        }
+      } catch (err) {
+        console.log('🔄 PlayerRegistration - Session restore hiba:', err.message);
+        
+        // Ha a token érvénytelen, töröljük
+        if (err.message.includes('token') || err.message.includes('session')) {
+          localStorage.removeItem('session_token');
+          console.log('🔄 PlayerRegistration - Érvénytelen token törölve');
+        }
+      }
+    };
+
+    // Csak akkor próbáljuk meg a session restore-t, ha van gameCode
+    if (gameCode) {
+      restoreSession();
+    }
+  }, [gameCode, onJoinGame]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -49,6 +95,11 @@ const PlayerRegistration = ({ gameCode, onJoinGame, onBack }) => {
       });
       
       console.log('✅ Sikeres csatlakozás:', result);
+      
+      // Session token mentése localStorage-ba
+      if (result.session_token) {
+        localStorage.setItem('session_token', result.session_token);
+      }
       
       // Sikeres csatlakozás után visszahívjuk a szülő komponens függvényét
       // De csak a React Query mutation sikeres volt

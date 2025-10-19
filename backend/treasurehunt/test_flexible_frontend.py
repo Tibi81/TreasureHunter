@@ -282,27 +282,29 @@ class FlexibleGameAPITest(APITestCase):
         """Szélső esetek kombinációinak tesztelése"""
         edge_cases = [
             # Minimális játékosszám
-            {'max_players': 2, 'team_count': 1, 'description': 'Min players, 1 team'},
-            {'max_players': 2, 'team_count': 2, 'description': 'Min players, 2 teams'},
+            {'max_players': 2, 'team_count': 1, 'description': 'Min players 1 team'},
+            {'max_players': 2, 'team_count': 2, 'description': 'Min players 2 teams'},
             
             # Maximális játékosszám
-            {'max_players': 8, 'team_count': 1, 'description': 'Max players, 1 team'},
-            {'max_players': 8, 'team_count': 2, 'description': 'Max players, 2 teams'},
+            {'max_players': 8, 'team_count': 1, 'description': 'Max players 1 team'},
+            {'max_players': 8, 'team_count': 2, 'description': 'Max players 2 teams'},
             
             # Páratlan játékosszám
-            {'max_players': 6, 'team_count': 2, 'description': 'Odd players, 2 teams'},
+            {'max_players': 6, 'team_count': 2, 'description': 'Odd players 2 teams'},
         ]
         
         for case in edge_cases:
             with self.subTest(**case):
                 game_data = {
-                    'name': f"Edge Case: {case['description']}",
+                    'name': f"Edge Case - {case['description']}",
                     'max_players': case['max_players'],
                     'team_count': case['team_count'],
                     'admin_name': 'Test Admin'
                 }
                 
                 response = self.client.post('/api/game/create/', game_data, format='json')
+                if response.status_code != status.HTTP_201_CREATED:
+                    print(f"ERROR: {response.status_code} - {response.data}")
                 self.assertEqual(response.status_code, status.HTTP_201_CREATED)
                 
                 # Ellenőrizzük a létrehozott játékot

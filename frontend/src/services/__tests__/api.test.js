@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { gameAPI, utils } from '../api'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { gameAPI, utils, resetCSRFToken } from '../api'
 
 // Mock fetch
 global.fetch = vi.fn()
@@ -7,9 +7,14 @@ global.fetch = vi.fn()
 describe('API Service', () => {
   beforeEach(() => {
     fetch.mockClear()
+    fetch.mockReset()
+    resetCSRFToken() // Clear CSRF token cache between tests
     localStorage.clear()
-    // Reset fetch mock to default behavior
-    fetch.mockImplementation(() => Promise.reject(new Error('Network error')))
+  })
+
+  afterEach(() => {
+    fetch.mockClear()
+    fetch.mockReset()
   })
 
   describe('gameAPI', () => {
@@ -29,9 +34,10 @@ describe('API Service', () => {
         const result = await gameAPI.findGameByCode('abc123')
         
         expect(fetch).toHaveBeenCalledWith(
-          'http://127.0.0.1:8000/api/game/code/ABC123/',
+          'https://treasurehunter-mz1x.onrender.com/api/game/code/ABC123/',
           expect.objectContaining({
-            headers: { 'Content-Type': 'application/json' }
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include'
           })
         )
         expect(result).toEqual(mockResponse)
@@ -57,12 +63,21 @@ describe('API Service', () => {
     describe('createGame', () => {
       it('should create game successfully', async () => {
         const mockResponse = {
-          id: 'new-game-id',
-          name: 'New Game',
-          max_players: 4,
-          team_count: 2
+          game: { // API returns nested game object
+            id: 'new-game-id',
+            name: 'New Game',
+            max_players: 4,
+            team_count: 2
+          }
         }
         
+        // Mock CSRF token request
+        fetch.mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ csrf_token: 'test-csrf-token' })
+        })
+        
+        // Mock create game request
         fetch.mockResolvedValueOnce({
           ok: true,
           json: () => Promise.resolve(mockResponse)
@@ -71,7 +86,7 @@ describe('API Service', () => {
         const result = await gameAPI.createGame('New Game', 'Admin', 4, 2)
         
         expect(fetch).toHaveBeenCalledWith(
-          'http://127.0.0.1:8000/api/game/create/',
+          'https://treasurehunter-mz1x.onrender.com/api/game/create/',
           expect.objectContaining({
             method: 'POST',
             body: JSON.stringify({
@@ -79,7 +94,9 @@ describe('API Service', () => {
               admin_name: 'Admin',
               max_players: 4,
               team_count: 2
-            })
+            }),
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': 'test-csrf-token' },
+            credentials: 'include'
           })
         )
         expect(result).toEqual(mockResponse)
@@ -89,11 +106,19 @@ describe('API Service', () => {
     describe('joinGame', () => {
       it('should join game successfully', async () => {
         const mockResponse = {
-          player_id: 'player-id',
-          session_token: 'session-token',
-          team: 'pumpkin'
+          id: 'player-id', // API returns player ID directly
+          name: 'Player Name',
+          team_name: 'Pumpkin Team',
+          session_token: 'session-token'
         }
         
+        // Mock CSRF token request
+        fetch.mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ csrf_token: 'test-csrf-token' })
+        })
+        
+        // Mock join game request
         fetch.mockResolvedValueOnce({
           ok: true,
           json: () => Promise.resolve(mockResponse)
@@ -102,13 +127,15 @@ describe('API Service', () => {
         const result = await gameAPI.joinGame('game-id', 'Player Name', 'pumpkin')
         
         expect(fetch).toHaveBeenCalledWith(
-          'http://127.0.0.1:8000/api/game/game-id/join/',
+          'https://treasurehunter-mz1x.onrender.com/api/game/game-id/join/',
           expect.objectContaining({
             method: 'POST',
             body: JSON.stringify({
               name: 'Player Name',
               team: 'pumpkin'
-            })
+            }),
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': 'test-csrf-token' },
+            credentials: 'include'
           })
         )
         expect(result).toEqual(mockResponse)
@@ -118,10 +145,17 @@ describe('API Service', () => {
     describe('validateQR', () => {
       it('should validate QR code successfully', async () => {
         const mockResponse = {
-          valid: true,
+          success: true, // API returns 'success' key
           message: 'QR code valid'
         }
         
+        // Mock CSRF token request
+        fetch.mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ csrf_token: 'test-csrf-token' })
+        })
+        
+        // Mock validate QR request
         fetch.mockResolvedValueOnce({
           ok: true,
           json: () => Promise.resolve(mockResponse)
@@ -130,10 +164,12 @@ describe('API Service', () => {
         const result = await gameAPI.validateQR('game-id', 'pumpkin', 'qr-code')
         
         expect(fetch).toHaveBeenCalledWith(
-          'http://127.0.0.1:8000/api/game/game-id/team/pumpkin/validate/',
+          'https://treasurehunter-mz1x.onrender.com/api/game/game-id/team/pumpkin/validate/',
           expect.objectContaining({
             method: 'POST',
-            body: JSON.stringify({ qr_code: 'qr-code' })
+            body: JSON.stringify({ qr_code: 'qr-code' }),
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': 'test-csrf-token' },
+            credentials: 'include'
           })
         )
         expect(result).toEqual(mockResponse)
@@ -143,9 +179,17 @@ describe('API Service', () => {
     describe('getHelp', () => {
       it('should get help successfully', async () => {
         const mockResponse = {
+          success: true,
           help_text: 'This is help text'
         }
         
+        // Mock CSRF token request
+        fetch.mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ csrf_token: 'test-csrf-token' })
+        })
+        
+        // Mock get help request
         fetch.mockResolvedValueOnce({
           ok: true,
           json: () => Promise.resolve(mockResponse)
@@ -154,9 +198,11 @@ describe('API Service', () => {
         const result = await gameAPI.getHelp('game-id', 'pumpkin')
         
         expect(fetch).toHaveBeenCalledWith(
-          'http://127.0.0.1:8000/api/game/game-id/team/pumpkin/help/',
+          'https://treasurehunter-mz1x.onrender.com/api/game/game-id/team/pumpkin/help/',
           expect.objectContaining({
-            method: 'POST'
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': 'test-csrf-token' },
+            credentials: 'include'
           })
         )
         expect(result).toEqual(mockResponse)
@@ -165,12 +211,29 @@ describe('API Service', () => {
 
     describe('exitGame', () => {
       it('should exit game successfully', async () => {
-        localStorage.setItem('session_token', 'test-token')
+        // Mock localStorage
+        const mockLocalStorage = {
+          getItem: vi.fn(() => 'test-token'),
+          setItem: vi.fn(),
+          removeItem: vi.fn(),
+          clear: vi.fn(),
+        }
+        Object.defineProperty(window, 'localStorage', {
+          value: mockLocalStorage,
+          writable: true,
+        })
         
         const mockResponse = {
           message: 'Player exited successfully'
         }
         
+        // Mock CSRF token request
+        fetch.mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ csrf_token: 'test-csrf-token' })
+        })
+        
+        // Mock exit game request
         fetch.mockResolvedValueOnce({
           ok: true,
           json: () => Promise.resolve(mockResponse)
@@ -178,11 +241,18 @@ describe('API Service', () => {
 
         const result = await gameAPI.exitGame()
         
-        expect(fetch).toHaveBeenCalledWith(
-          'http://127.0.0.1:8000/api/player/exit/',
+        // Check the second call (first call is CSRF token request)
+        expect(fetch).toHaveBeenNthCalledWith(
+          2,
+          'https://treasurehunter-mz1x.onrender.com/api/player/exit/', 
           expect.objectContaining({
             method: 'POST',
-            body: JSON.stringify({ session_token: 'test-token' })
+            body: JSON.stringify({ session_token: 'test-token' }),
+            headers: expect.objectContaining({
+              'Content-Type': 'application/json',
+              'X-CSRFToken': 'test-csrf-token'
+            }),
+            credentials: 'include'
           })
         )
         expect(result).toEqual(mockResponse)
@@ -193,10 +263,17 @@ describe('API Service', () => {
       it('should restore session successfully', async () => {
         const mockResponse = {
           player_id: 'player-id',
-          game_id: 'game-id',
-          team: 'pumpkin'
+          team: 'pumpkin',
+          game_id: 'game-id'
         }
         
+        // Mock CSRF token request
+        fetch.mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ csrf_token: 'test-csrf-token' })
+        })
+        
+        // Mock restore session request
         fetch.mockResolvedValueOnce({
           ok: true,
           json: () => Promise.resolve(mockResponse)
@@ -205,10 +282,12 @@ describe('API Service', () => {
         const result = await gameAPI.restoreSession('session-token')
         
         expect(fetch).toHaveBeenCalledWith(
-          'http://127.0.0.1:8000/api/player/restore-session/',
+          'https://treasurehunter-mz1x.onrender.com/api/player/restore-session/',
           expect.objectContaining({
             method: 'POST',
-            body: JSON.stringify({ session_token: 'session-token' })
+            body: JSON.stringify({ session_token: 'session-token' }),
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': 'test-csrf-token' },
+            credentials: 'include'
           })
         )
         expect(result).toEqual(mockResponse)
@@ -230,9 +309,10 @@ describe('API Service', () => {
         const result = await gameAPI.listGames()
         
         expect(fetch).toHaveBeenCalledWith(
-          'http://127.0.0.1:8000/api/admin/games/',
+          'https://treasurehunter-mz1x.onrender.com/api/admin/games/',
           expect.objectContaining({
-            headers: { 'Content-Type': 'application/json' }
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include'
           })
         )
         expect(result).toEqual(mockResponse)
@@ -243,6 +323,13 @@ describe('API Service', () => {
           message: 'Player removed successfully'
         }
         
+        // Mock CSRF token request
+        fetch.mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ csrf_token: 'test-csrf-token' })
+        })
+        
+        // Mock remove player request
         fetch.mockResolvedValueOnce({
           ok: true,
           json: () => Promise.resolve(mockResponse)
@@ -251,9 +338,11 @@ describe('API Service', () => {
         const result = await gameAPI.removePlayer('game-id', 'player-id')
         
         expect(fetch).toHaveBeenCalledWith(
-          'http://127.0.0.1:8000/api/game/game-id/player/player-id/remove/',
+          'https://treasurehunter-mz1x.onrender.com/api/game/game-id/player/player-id/remove/',
           expect.objectContaining({
-            method: 'DELETE'
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': 'test-csrf-token' },
+            credentials: 'include'
           })
         )
         expect(result).toEqual(mockResponse)
@@ -264,6 +353,13 @@ describe('API Service', () => {
           message: 'Player moved successfully'
         }
         
+        // Mock CSRF token request
+        fetch.mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ csrf_token: 'test-csrf-token' })
+        })
+        
+        // Mock move player request
         fetch.mockResolvedValueOnce({
           ok: true,
           json: () => Promise.resolve(mockResponse)
@@ -272,10 +368,12 @@ describe('API Service', () => {
         const result = await gameAPI.movePlayer('game-id', 'player-id', 'ghost')
         
         expect(fetch).toHaveBeenCalledWith(
-          'http://127.0.0.1:8000/api/game/game-id/player/player-id/move/',
+          'https://treasurehunter-mz1x.onrender.com/api/game/game-id/player/player-id/move/',
           expect.objectContaining({
             method: 'POST',
-            body: JSON.stringify({ new_team: 'ghost' })
+            body: JSON.stringify({ new_team: 'ghost' }),
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': 'test-csrf-token' },
+            credentials: 'include'
           })
         )
         expect(result).toEqual(mockResponse)

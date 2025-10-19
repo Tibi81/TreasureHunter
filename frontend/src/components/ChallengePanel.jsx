@@ -1,8 +1,9 @@
 // components/ChallengePanel.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import QRScanner from './QRScanner';
 import { useCurrentChallenge, useValidateQR, useGetHelp } from '../hooks/useGameAPI';
+import useTypewriter from '../hooks/useTypewriter';
 
 const ChallengePanel = ({ gameId, teamName, gameStatus }) => {
   const [qrCode, setQrCode] = useState('');
@@ -12,7 +13,7 @@ const ChallengePanel = ({ gameId, teamName, gameStatus }) => {
   const [showQRScanner, setShowQRScanner] = useState(false);
 
   // React Query hooks
-  const { data: challenge, isLoading: challengeLoading, error: challengeError } = useCurrentChallenge(
+  const { data: challenge, isLoading: challengeLoading, error: challengeError, refetch: refetchChallenge } = useCurrentChallenge(
     gameId, 
     teamName,
     { 
@@ -22,7 +23,18 @@ const ChallengePanel = ({ gameId, teamName, gameStatus }) => {
   const validateQRMutation = useValidateQR();
   const getHelpMutation = useGetHelp();
 
-  // QR kód beküldése
+  // Typewriter effect for challenge description
+  const challengeDescription = challenge?.challenge?.description || challenge?.description || '';
+  const { displayedText: typewriterText, isTyping } = useTypewriter(challengeDescription, 30, !!challenge);
+
+  // ✅ JAVÍTOTT: ScanResult törlése új challenge betöltésekor
+  useEffect(() => {
+    if (challenge) {
+      setScanResult(null); // Töröljük a korábbi eredményt új feladat betöltésekor
+    }
+  }, [challenge]);
+
+  // QR kód beküldése - EGYSZERŰSÍTETT verzió
   const handleQRSubmit = async (e) => {
     e.preventDefault();
     if (!qrCode.trim()) return;
@@ -43,9 +55,10 @@ const ChallengePanel = ({ gameId, teamName, gameStatus }) => {
         reset: result.reset
       });
       
-      // QR kód mező törlése sikeres validálás vagy reset esetén
+      // ✅ CSAK QR kód törlése - cache automatikusan frissül
       if (result.success || result.reset) {
         setQrCode('');
+        // ❌ NINCS MANUÁLIS REFETCH - cache automatikusan frissül!
       }
     } catch (err) {
       setScanResult({
@@ -55,7 +68,7 @@ const ChallengePanel = ({ gameId, teamName, gameStatus }) => {
     }
   };
 
-  // QR kód scanner kezelése
+  // QR kód scanner kezelése - EGYSZERŰSÍTETT verzió
   const handleQRScan = async (scannedCode) => {
     setShowQRScanner(false);
     setQrCode(scannedCode);
@@ -77,8 +90,10 @@ const ChallengePanel = ({ gameId, teamName, gameStatus }) => {
         reset: result.reset
       });
       
+      // ✅ CSAK QR kód törlése - cache automatikusan frissül
       if (result.success || result.reset) {
         setQrCode('');
+        // ❌ NINCS MANUÁLIS REFETCH - cache automatikusan frissül!
       }
     } catch (err) {
       setScanResult({
@@ -198,7 +213,8 @@ const ChallengePanel = ({ gameId, teamName, gameStatus }) => {
         </h3>
         <div className="bg-gradient-to-b from-gray-800 to-gray-700 rounded-xl p-mobile border border-orange-500/20">
           <p className="text-gray-200 leading-relaxed font-spooky text-sm sm:text-base">
-            {challenge.challenge?.description || challenge.description}
+            {typewriterText}
+            {isTyping && <span className="animate-pulse text-orange-400">|</span>}
           </p>
         </div>
       </div>

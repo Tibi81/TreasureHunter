@@ -3,7 +3,7 @@
 // Dinamikus API URL kezelés a frontend számára
 // ---------------------------
 
-import { getApiBaseUrl } from '../config/api';
+import { getApiBaseUrl } from '../config/api.js';
 
 // API URL lekérdezése a központosított konfigurációból
 const API_URL = getApiBaseUrl();
@@ -24,6 +24,12 @@ class APIError extends Error {
 // CSRF token cache
 let csrfToken = null;
 let csrfTokenPromise = null;
+
+// CSRF token cache törlése (teszteléshez)
+export const resetCSRFToken = () => {
+  csrfToken = null;
+  csrfTokenPromise = null;
+};
 
 // CSRF token lekérdezése
 const getCSRFToken = async () => {

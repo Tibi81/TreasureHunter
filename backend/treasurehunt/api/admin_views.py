@@ -15,11 +15,14 @@ logger = logging.getLogger(__name__)
 
 @api_view(['GET'])
 def list_games(request):
-    """Összes játék listázása (Admin) - optimalizált"""
+    """Összes játék listázása (Admin) - CACHE NÉLKÜL"""
     # Pagináció paraméterek
     page = int(request.GET.get('page', 1))
     page_size = int(request.GET.get('page_size', 20))  # Alapértelmezetten 20 játék per oldal
     offset = (page - 1) * page_size
+    
+    # ✅ CACHE NÉLKÜL - mindig friss adatbázis lekérdezés
+    logger.info(f"Admin games list requested - page {page}, size {page_size}")
     
     # Prefetch related objects to avoid N+1 queries
     games = Game.objects.prefetch_related(
@@ -28,6 +31,8 @@ def list_games(request):
     
     # Összes játék száma (paginációhoz)
     total_games = Game.objects.count()
+    
+    logger.info(f"Found {len(games)} games out of {total_games} total")
     
     games_data = []
     for game in games:
@@ -56,6 +61,8 @@ def list_games(request):
             'total_players': total_players,
             'teams': teams_data
         })
+    
+    logger.info(f"Returning {len(games_data)} games to admin")
     
     return Response({
         'games': games_data,
@@ -171,10 +178,8 @@ def add_player(request, game_id):
         # Játékos létrehozása
         player = Player.objects.create(team=team, name=player_name)
         
-        # Automatikus állapotváltás ellenőrzése
-        if GameStateService.should_auto_transition_to_setup(game):
-            game.status = 'setup'
-            game.save()
+        # Automatikus állapotváltás ellenőrzése - NEM váltunk setup állapotba
+        # A játék waiting állapotban marad, amíg az admin manuálisan el nem indítja
         
         # Játék összefoglaló lekérdezése a szolgáltatáson keresztül
         data = GameStateService.get_game_summary(game)

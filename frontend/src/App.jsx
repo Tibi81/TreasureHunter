@@ -13,18 +13,20 @@ import GameExitDialog from './components/GameExitDialog';
 import Toast from './components/Toast';
 import ErrorBoundary from './components/ErrorBoundary';
 import { gameAPI } from './services/api';
+import { useGeneralSSE } from './hooks/useSSE';
 import './App.css';
 
-// React Query client konfigurálása - OPTIMALIZÁLT azonnali frissítéshez
+// React Query client konfigurálása - OPTIMALIZÁLT konfiguráció
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000, // 1 másodperc - gyors frissítés
-      cacheTime: 2 * 60 * 1000, // 2 perc cache
-      refetchOnWindowFocus: true, // ✅ Frissítés ablak fókuszban
-      refetchOnMount: 'always', // ✅ Mindig friss adat
-      refetchInterval: 1000, // ✅ 1 másodperc polling - AZONNALI frissítés
-      refetchIntervalInBackground: true, // ✅ Háttérben is frissít
+      staleTime: 30 * 1000, // ✅ 30 másodperc - stabil cache
+      gcTime: 5 * 60 * 1000, // 5 perc cache
+      refetchOnWindowFocus: false, // ✅ Ne frissítsen fókuszban
+      refetchOnMount: false, // ✅ NE frissítsen mount-kor automatikusan
+      refetchOnReconnect: false, // ✅ NE frissítsen újracsatlakozáskor
+      refetchInterval: false, // ✅ NINCS automatikus polling
+      refetchIntervalInBackground: false, // ✅ NINCS háttér polling
       retry: 1,
     },
     mutations: {
@@ -38,6 +40,26 @@ function App() {
   const [playerName, setPlayerName] = useState('');
   const [gameCode, setGameCode] = useState('');
   const [toasts, setToasts] = useState([]);
+
+  // Debug: App indítás
+  React.useEffect(() => {
+    console.log('🔍 App - Component mounted, initial state:', {
+      appState,
+      gameCode,
+      playerName,
+      error: ''
+    });
+    
+    // Debug: URL paraméterek ellenőrzése
+    const urlParams = new URLSearchParams(window.location.search);
+    console.log('🔍 App - URL params:', Object.fromEntries(urlParams));
+    
+    // Debug: localStorage ellenőrzése
+    console.log('🔍 App - localStorage keys:', Object.keys(localStorage));
+    console.log('🔍 App - session_token:', localStorage.getItem('session_token'));
+    console.log('🔍 App - game_code:', localStorage.getItem('game_code'));
+    console.log('🔍 App - admin_mode:', localStorage.getItem('admin_mode'));
+  }, []);
   const [gameState, setGameState] = useState({
     gameId: null,
     gameName: null,
@@ -51,6 +73,37 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showExitDialog, setShowExitDialog] = useState(false);
+
+  // SSE kapcsolat játékos oldalhoz
+  const { isConnected: sseConnected } = useGeneralSSE({
+    enabled: appState === 'game' && !!gameState.gameId, // Csak játék állapotban és ha van gameId
+    onMessage: (data) => {
+      console.log('🎮 Player SSE üzenet:', data);
+      
+      // Játék indítás üzenet kezelése
+      if (data.type === 'game_started') {
+        console.log('🚀 Játék elindult! Frissítjük az állapotot...');
+        addToast('A játék elindult! 🎮', 'success');
+        
+        // Játék állapot frissítése
+        setGameState(prev => ({
+          ...prev,
+          status: data.data.status || 'separate'
+        }));
+        
+        // Cache frissítése
+        import('./services/api').then(({ gameAPI }) => {
+          gameAPI.updateGameStatus();
+        });
+      }
+      
+      // Játékos csatlakozás üzenet kezelése
+      if (data.type === 'player_joined') {
+        console.log('👥 Új játékos csatlakozott:', data.data);
+        addToast(`${data.data.player_name} csatlakozott a ${data.data.team} csapathoz!`, 'info');
+      }
+    }
+  });
 
   // Toast hozzáadása
   const addToast = (message, type = 'info') => {
@@ -175,67 +228,41 @@ function App() {
 
   // Játék kód megadása kezelése - egyszerűsített verzió
   const handleGameCodeSubmit = async (gameCode) => {
-    console.log('handleGameCodeSubmit called with:', gameCode);
+    console.log('🔍 handleGameCodeSubmit called with:', gameCode);
+    console.log('🔍 gameCode type:', typeof gameCode);
+    console.log('🔍 gameCode length:', gameCode?.length);
+    console.log('🔍 gameCode === "ADMIN":', gameCode === 'ADMIN');
+    console.log('🔍 gameCode.trim().toUpperCase() === "ADMIN":', gameCode?.trim?.()?.toUpperCase?.() === 'ADMIN');
+    
+    // Debug: Stack trace a hívás forrásának megtalálásához
+    console.log('🔍 handleGameCodeSubmit call stack:', new Error().stack);
     
     if (gameCode === 'ADMIN') {
+      console.log('🔍 Redirecting to admin panel');
       setAppState('admin');
       return;
     }
 
+    console.log('🔍 Processing game code:', gameCode);
     setError('');
 
-    // Ellenőrizzük, hogy van-e session token ehhez a játékhoz
-    const sessionToken = localStorage.getItem('session_token');
-    console.log('Session token from localStorage:', sessionToken);
-    if (sessionToken) {
-      try {
-        const restoreResponse = await gameAPI.restoreSession(sessionToken);
-        console.log('Restore response:', restoreResponse);
-        if (restoreResponse.player && restoreResponse.game) {
-          // Ha van érvényes session token, visszacsatlakozunk
-          setGameState(prev => ({
-            ...prev,
-            gameId: restoreResponse.game.id,
-            gameName: restoreResponse.game.name,
-            status: restoreResponse.game.status,
-            teams: restoreResponse.teams,
-            players: restoreResponse.players,
-            gameInfo: restoreResponse.game_info,
-            currentPlayer: restoreResponse.player
-          }));
-          setAppState('game');
-          setPlayerName(restoreResponse.player.name);
-          addToast('Üdvözöllek újra a játékban!', 'success');
-          return;
-        } else {
-          console.log('Session token nem ehhez a játékhoz tartozik');
-          localStorage.removeItem('session_token');
-        }
-      } catch (restoreError) {
-        console.log('Session token érvénytelen:', restoreError.message);
-        // Ha a token érvénytelen, töröljük a localStorage-ból
-        localStorage.removeItem('session_token');
-      }
-    }
-    
-    // Ha nincs érvényes session token, folytatjuk a regisztrációval
+    // ✅ JAVÍTOTT: Session token kezelés eltávolítva - PlayerRegistration kezeli
+    // Közvetlenül a regisztrációra irányítjuk
     setGameCode(gameCode);
     setAppState('registration');
   };
 
-  // Játékos regisztráció - teljesen optimalizált verzió
+  // Játékos regisztráció - optimalizált verzió (már csatlakozva van)
   const handlePlayerJoin = async (gameId, playerName, teamName) => {
     setLoading(true);
     setError('');
     
     try {
-      // Játékos csatlakoztatása
-      const response = await gameAPI.joinGame(gameId, playerName, teamName);
+      // A játékos már sikeresen csatlakozott a PlayerRegistration-ben
+      // Csak az állapotot frissítjük és a session token-t mentjük
       
-      // Session token mentése localStorage-ba
-      if (response.session_token) {
-        localStorage.setItem('session_token', response.session_token);
-      }
+      // Session token lekérése localStorage-ból (a PlayerRegistration már mentette)
+      const sessionToken = localStorage.getItem('session_token');
       
       // Csak a szükséges állapotot frissítjük
       setGameState(prev => ({
@@ -279,8 +306,8 @@ function App() {
       players: []
     });
     setError('');
-    // Toast-ok törlése
-    setToasts([]);
+    // ✅ JAVÍTOTT: Toast-ok NEM törlődnek állapot váltásnál
+    // setToasts([]); // ❌ Töröl minden toast-ot
   };
 
 
@@ -459,6 +486,22 @@ function App() {
                     gameState.currentPlayer.team === 'pumpkin' ? '🎃 Tök Csapat' : '👻 Szellem Csapat'
                   }
                 </p>
+              )}
+              
+              {/* SSE kapcsolat státusza - csak játék állapotban */}
+              {appState === 'game' && (
+                <div className="mt-2">
+                  <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${
+                    sseConnected 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-red-100 text-red-800'
+                  }`}>
+                    <div className={`w-1.5 h-1.5 rounded-full mr-1 ${
+                      sseConnected ? 'bg-green-500' : 'bg-red-500'
+                    }`}></div>
+                    {sseConnected ? 'SSE Aktív' : 'SSE Megszakadt'}
+                  </div>
+                </div>
               )}
             </div>
             <div className="order-1 sm:order-2 flex justify-center sm:justify-end">

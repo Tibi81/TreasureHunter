@@ -1,83 +1,148 @@
 // hooks/useGameAPI.js
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { gameAPI } from '../services/api';
+import { gameAPI } from '../services/api.js';
 
-// Query keys
+// Query keys - TELJES STRUKTÚRA
 export const gameKeys = {
   all: ['games'],
   lists: () => [...gameKeys.all, 'list'],
-  list: (filters) => [...gameKeys.lists(), { filters }],
-  details: () => [...gameKeys.all, 'detail'],
-  detail: (id) => [...gameKeys.details(), id],
+  detail: (id) => [...gameKeys.all, 'detail', id],
   status: (id) => [...gameKeys.detail(id), 'status'],
+  gameCode: (code) => [...gameKeys.all, 'code', code],
+  challenge: (gameId, teamName) => ['challenge', gameId, teamName],
+  simple: {
+    games: ['games'],
+    game: (id) => ['game', id],
+    gameCode: (code) => ['game', 'code', code],
+    challenge: (gameId, teamName) => ['challenge', gameId, teamName],
+  }
 };
 
-// Játékok listázása - AZONNALI frissítés
+// Játékok listázása - STABIL konfiguráció
 export const useGames = () => {
   return useQuery({
     queryKey: gameKeys.lists(),
     queryFn: async () => {
       try {
+        console.log('🔍 useGames - API call started');
         const response = await gameAPI.listGames();
-        return response?.games || [];
+        console.log('🔍 useGames - API response:', response);
+        const games = response?.games || [];
+        console.log('🔍 useGames - returning games:', games);
+        return games;
       } catch (error) {
-        console.error('useGames error:', error);
+        console.error('🔍 useGames - API error:', error);
         throw error;
       }
     },
-    staleTime: 500, // 0.5 másodperc - AZONNALI frissítés
-    refetchInterval: 1000, // 1 másodperc - AZONNALI frissítés
-    refetchIntervalInBackground: true, // ✅ Háttérben is frissít
-    refetchOnMount: 'always', // ✅ Mindig friss adat
-    refetchOnWindowFocus: true, // ✅ Ablak fókuszban frissít
+    staleTime: 30 * 1000,  // ✅ 30 másodperc - NE töltse újra folyamatosan!
+    gcTime: 5 * 60 * 1000,  // 5 perc cache
+    refetchOnMount: false,  // ✅ NE töltse újra mount-kor automatikusan
+    refetchOnWindowFocus: false,  // ✅ NE töltse újra fókusznál
+    refetchOnReconnect: false,  // ✅ NE töltse újra újracsatlakozáskor
   });
 };
 
-// Játék részletei - AZONNALI frissítés
+// Játék részletei - OPTIMALIZÁLT konfiguráció
 export const useGame = (gameId) => {
   return useQuery({
     queryKey: gameKeys.detail(gameId),
     queryFn: () => gameAPI.getGameStatus(gameId),
     enabled: !!gameId,
-    staleTime: 500, // 0.5 másodperc - AZONNALI frissítés
-    refetchInterval: 1000, // 1 másodperc - AZONNALI frissítés
-    refetchIntervalInBackground: true, // ✅ Háttérben is frissít
-    refetchOnMount: 'always', // ✅ Mindig friss adat
-    refetchOnWindowFocus: true, // ✅ Ablak fókuszban frissít
+    staleTime: 30 * 1000, // ✅ 30 másodperc - stabil cache
+    gcTime: 5 * 60 * 1000, // 5 perc cache
+    refetchOnMount: false, // ✅ NE töltse újra mount-kor
+    refetchOnWindowFocus: false, // ✅ NE töltse újra fókusznál
+    refetchOnReconnect: false, // ✅ NE töltse újra újracsatlakozáskor
   });
 };
 
 // Játék keresése kód alapján
 export const useFindGameByCode = (gameCode) => {
   return useQuery({
-    queryKey: ['game', 'code', gameCode],
+    queryKey: gameKeys.gameCode(gameCode),
     queryFn: () => gameAPI.findGameByCode(gameCode),
     enabled: !!gameCode && gameCode.length >= 3,
     staleTime: 60 * 1000, // 1 perc
   });
 };
 
-// Játék keresése kód alapján - optimalizált verzió
+// Játék keresése kód alapján - optimalizált verzió - EGYSZERŰSÍTETT
 export const useFindGameByCodeOptimized = (gameCode, options = {}) => {
   return useQuery({
-    queryKey: ['game', 'code', gameCode],
+    queryKey: gameKeys.gameCode(gameCode),
     queryFn: () => gameAPI.findGameByCode(gameCode),
     enabled: !!gameCode && gameCode.length >= 3 && (options.enabled !== false),
-    staleTime: 60 * 1000, // 1 perc
+    staleTime: 500, // 0.5 másodperc - csak ez marad
+    // ✅ Nincs polling - csak manuális frissítés
     ...options,
   });
 };
 
-// Játék létrehozása
+// Játék létrehozása - FORCE REFETCH MUTATION
 export const useCreateGame = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: ({ gameName, adminName, maxPlayers, teamCount }) =>
-      gameAPI.createGame(gameName, adminName, maxPlayers, teamCount),
-    onSuccess: () => {
-      // Frissítsük a játékok listáját
-      queryClient.invalidateQueries({ queryKey: gameKeys.lists() });
+    mutationFn: ({ gameName, adminName, maxPlayers, teamCount }) => {
+      console.log('🚀 CREATE GAME MUTATION STARTED:', { gameName, adminName, maxPlayers, teamCount });
+      return gameAPI.createGame(gameName, adminName, maxPlayers, teamCount);
+    },
+    onMutate: async ({ gameName, adminName, maxPlayers, teamCount }) => {
+      console.log('🔄 CREATE GAME onMutate STARTED');
+      
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: gameKeys.lists() });
+      
+      const previousGames = queryClient.getQueryData(gameKeys.lists());
+      
+      // Optimistic update - TELJES STRUKTÚRA
+      const tempGame = {
+        id: `temp-${Date.now()}`,
+        name: gameName,
+        game_code: `TEMP-${Date.now().toString(36).toUpperCase()}`, // Temp kód
+        created_by: adminName,
+        max_players: maxPlayers,
+        team_count: teamCount,
+        status: 'waiting',
+        total_players: 0, // Kezdetben 0 játékos
+        created_at: new Date().toISOString(), // Jelenlegi idő
+        players: []
+      };
+      
+      queryClient.setQueryData(gameKeys.lists(), (old) => {
+        if (!old) return [tempGame];
+        return [tempGame, ...old];
+      });
+      
+      console.log('✅ CREATE GAME onMutate COMPLETED - temp game added');
+      return { previousGames, tempId: tempGame.id };
+    },
+    onError: (error, variables, context) => {
+      console.log('❌ CREATE GAME onError:', error);
+      
+      // Rollback
+      if (context?.previousGames) {
+        queryClient.setQueryData(gameKeys.lists(), context.previousGames);
+      }
+    },
+    onSuccess: (data, variables, context) => {
+      console.log('🎉 CREATE GAME onSuccess STARTED:', data);
+      
+      // ✅ Cseréljük le a temp game-et a valósra
+      queryClient.setQueryData(gameKeys.lists(), (old) => {
+        if (!old) return [data.game]; // API válasz: { game: {...}, teams: [...], ... }
+        return old.map(game => 
+          game && game.id === context.tempId ? data.game : game
+        );
+      });
+      
+      // ✅ JAVÍTOTT: NINCS invalidate - csak optimista frissítés
+      
+      console.log('✅ CREATE GAME onSuccess COMPLETED');
+      
+      // ✅ VISSZAADJUK A DATA-T, HOGY A COMPONENT HASZNÁLHASSA
+      return data;
     },
   });
 };
@@ -89,8 +154,19 @@ export const useUpdateGame = () => {
   return useMutation({
     mutationFn: ({ gameId, gameData }) => gameAPI.updateGame(gameId, gameData),
     onSuccess: (data, { gameId }) => {
-      queryClient.invalidateQueries({ queryKey: gameKeys.detail(gameId) });
-      queryClient.invalidateQueries({ queryKey: gameKeys.lists() });
+      console.log('🔄 Game updated, invalidating caches...');
+      
+      queryClient.invalidateQueries({ 
+        queryKey: gameKeys.detail(gameId),
+        refetchType: 'none'
+      });
+      
+      queryClient.invalidateQueries({ 
+        queryKey: gameKeys.lists(),
+        refetchType: 'none'
+      });
+      
+      console.log('✅ Game update cache invalidation completed');
     },
   });
 };
@@ -102,9 +178,32 @@ export const useStartGame = () => {
   return useMutation({
     mutationFn: (gameId) => gameAPI.startGame(gameId),
     onSuccess: (data, gameId) => {
-      // Frissítsük a játék állapotát
-      queryClient.invalidateQueries({ queryKey: gameKeys.detail(gameId) });
-      queryClient.invalidateQueries({ queryKey: gameKeys.lists() });
+      console.log('🚀 Game started, updating caches optimistically...');
+      
+      // ✅ OPTIMISTA FRISSÍTÉS - azonnali UI feedback
+      queryClient.setQueryData(gameKeys.detail(gameId), (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          status: 'separate' // Játék indítása után separate állapot
+        };
+      });
+      
+      // ✅ JAVÍTOTT: useGames() hook cache frissítése (tömb struktúra)
+      queryClient.setQueryData(gameKeys.lists(), (old) => {
+        if (!old) return old;
+        return old.map(game => {
+          if (game.id === gameId) {
+            return {
+              ...game,
+              status: 'separate'
+            };
+          }
+          return game;
+        });
+      });
+      
+      console.log('✅ Game start optimistic update completed');
     },
   });
 };
@@ -115,56 +214,81 @@ export const useStopGame = () => {
   
   return useMutation({
     mutationFn: (gameId) => gameAPI.stopGame(gameId),
-    onSuccess: (data, gameId) => {
-      queryClient.invalidateQueries({ queryKey: gameKeys.detail(gameId) });
-      queryClient.invalidateQueries({ queryKey: gameKeys.lists() });
-    },
-  });
-};
-
-// Játék törlése
-export const useDeleteGame = () => {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: (gameId) => gameAPI.deleteGame(gameId),
-    onMutate: async (gameId) => {
-      // ✅ Optimista update - azonnali UI feedback
-      await queryClient.cancelQueries({ queryKey: gameKeys.lists() });
+    onError: (error, gameId) => {
+      console.error('Stop game error:', error);
       
-      const previousGames = queryClient.getQueryData(gameKeys.lists());
-      
-      // Optimista frissítés - eltávolítjuk a játékot
-      queryClient.setQueryData(gameKeys.lists(), (old) => {
-        if (!old) return old;
-        return old.filter(game => game.id !== gameId);
-      });
-      
-      return { previousGames };
-    },
-    onError: (error, gameId, context) => {
-      console.error('Delete game error:', error);
-      
-      // Ha 404 hiba, akkor a játék már nem létezik, ne csináljunk rollback-et
+      // Ha 404 hiba, akkor a játék már nem létezik
       if (error.status === 404) {
         // Eltávolítjuk az összes kapcsolódó query-t
         queryClient.removeQueries({ queryKey: gameKeys.detail(gameId) });
         queryClient.removeQueries({ queryKey: ['challenge', gameId] });
         // Azonnal frissítjük a listát
         queryClient.refetchQueries({ queryKey: gameKeys.lists() });
-      } else {
-        // ✅ Rollback csak nem-404 hibák esetén
-        if (context?.previousGames) {
-          queryClient.setQueryData(gameKeys.lists(), context.previousGames);
-        }
       }
     },
     onSuccess: (data, gameId) => {
-      // ✅ AZONNALI frissítés esemény után
-      queryClient.removeQueries({ queryKey: gameKeys.detail(gameId) });
-      queryClient.removeQueries({ queryKey: ['challenge', gameId] });
-      // AZONNALI refetch - nem csak invalidate
+      queryClient.refetchQueries({ queryKey: gameKeys.detail(gameId) });
       queryClient.refetchQueries({ queryKey: gameKeys.lists() });
+    },
+  });
+};
+
+// Játék törlése - FORCE REFETCH MUTATION
+export const useDeleteGame = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (gameId) => {
+      console.log('🗑️ DELETE GAME MUTATION STARTED:', gameId);
+      return gameAPI.deleteGame(gameId);
+    },
+    onMutate: async (gameId) => {
+      console.log('🔄 DELETE GAME onMutate STARTED');
+      
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: gameKeys.lists() });
+      
+      const previousGames = queryClient.getQueryData(gameKeys.lists());
+      
+      // Optimistic update
+      queryClient.setQueryData(gameKeys.lists(), (old) => {
+        if (!old) return old;
+        console.log('🗑️ Removing game from cache:', gameId);
+        return old.filter(game => game && game.id !== gameId);
+      });
+      
+      console.log('✅ DELETE GAME onMutate COMPLETED - game removed from cache');
+      return { previousGames, deletedGameId: gameId };
+    },
+    onError: (error, gameId, context) => {
+      console.log('❌ DELETE GAME onError:', error);
+      
+      // Rollback
+      if (context?.previousGames) {
+        queryClient.setQueryData(gameKeys.lists(), context.previousGames);
+      }
+      
+      // Ha 404 hiba, akkor a játék már nem létezik
+      if (error.status === 404) {
+        queryClient.removeQueries({ queryKey: gameKeys.detail(gameId) });
+      }
+    },
+    onSuccess: (data, gameId) => {
+      console.log('🎉 DELETE GAME onSuccess STARTED:', data);
+      
+      // ✅ OPTIMISTA FRISSÍTÉS - azonnali UI feedback
+      // Cache tisztítás
+      queryClient.removeQueries({ queryKey: gameKeys.detail(gameId) });
+      queryClient.removeQueries({ queryKey: gameKeys.challenge(gameId, '*') });
+      
+      // ✅ JAVÍTOTT: useGames() hook cache frissítése (tömb struktúra)
+      queryClient.setQueryData(gameKeys.lists(), (old) => {
+        if (!old) return old;
+        console.log('🗑️ Removing game from games list cache:', gameId);
+        return old.filter(game => game && game.id !== gameId);
+      });
+      
+      console.log('✅ DELETE GAME onSuccess COMPLETED');
     },
   });
 };
@@ -176,8 +300,8 @@ export const useResetGame = () => {
   return useMutation({
     mutationFn: (gameId) => gameAPI.resetGame(gameId),
     onSuccess: (data, gameId) => {
-      queryClient.invalidateQueries({ queryKey: gameKeys.detail(gameId) });
-      queryClient.invalidateQueries({ queryKey: gameKeys.lists() });
+      queryClient.refetchQueries({ queryKey: gameKeys.detail(gameId) });
+      queryClient.refetchQueries({ queryKey: gameKeys.lists() });
     },
   });
 };
@@ -289,8 +413,8 @@ export const useMovePlayer = () => {
     mutationFn: ({ gameId, playerId, newTeam }) =>
       gameAPI.movePlayer(gameId, playerId, newTeam),
     onSuccess: (data, { gameId }) => {
-      queryClient.invalidateQueries({ queryKey: gameKeys.detail(gameId) });
-      queryClient.invalidateQueries({ queryKey: gameKeys.lists() });
+      queryClient.refetchQueries({ queryKey: gameKeys.detail(gameId) });
+      queryClient.refetchQueries({ queryKey: gameKeys.lists() });
     },
   });
 };
@@ -349,25 +473,133 @@ export const useJoinGame = () => {
         queryClient.setQueryData(gameKeys.lists(), context.previousGames);
       }
     },
-    onSuccess: (data, { gameId }) => {
-      // ✅ Azonnali frissítés esemény után
-      queryClient.invalidateQueries({ queryKey: gameKeys.detail(gameId) });
-      queryClient.invalidateQueries({ queryKey: gameKeys.lists() });
+    onSuccess: (data, { gameId, playerName, teamName }) => {
+      console.log('🎮 Player joined successfully, updating caches optimistically...');
+      console.log('🎮 onSuccess data:', data);
+      console.log('🎮 onSuccess gameId:', gameId);
+      console.log('🎮 onSuccess playerName:', playerName);
+      console.log('🎮 onSuccess teamName:', teamName);
+      
+      // ✅ OPTIMISTA FRISSÍTÉS - azonnali UI feedback
+      queryClient.setQueryData(gameKeys.detail(gameId), (old) => {
+        console.log('🎮 Updating gameKeys.detail cache, old data:', old);
+        if (!old) return old;
+        const newPlayer = {
+          id: data.player_id || `player-${Date.now()}`,
+          name: playerName,
+          team: teamName,
+          is_active: true
+        };
+        console.log('🎮 Adding new player to detail cache:', newPlayer);
+        return {
+          ...old,
+          players: [...(old.players || []), newPlayer]
+        };
+      });
+      
+      // ✅ JAVÍTOTT: useGames() hook cache frissítése (tömb struktúra)
+      queryClient.setQueryData(gameKeys.lists(), (old) => {
+        console.log('🎮 Updating gameKeys.lists cache, old data:', old);
+        if (!old) return old;
+        const updatedGames = old.map(game => {
+          if (game.id === gameId) {
+            // ✅ JAVÍTOTT: Teljes játékos lista frissítése
+            const newPlayer = {
+              id: data.player_id || `player-${Date.now()}`,
+              name: playerName,
+              team: teamName,
+              is_active: true
+            };
+            console.log('🎮 Adding new player to lists cache:', newPlayer);
+            
+            const updatedGame = {
+              ...game,
+              total_players: (game.total_players || 0) + 1,
+              // ✅ JAVÍTOTT: Játékosok listája frissítése
+              players: [...(game.players || []), newPlayer],
+              // ✅ JAVÍTOTT: Csapatok frissítése is
+              teams: game.teams?.map(team => {
+                if (team.name === teamName) {
+                  return {
+                    ...team,
+                    players: [...(team.players || []), newPlayer],
+                    player_count: (team.player_count || 0) + 1
+                  };
+                }
+                return team;
+              })
+            };
+            console.log('🎮 Updated game in lists cache:', updatedGame);
+            return updatedGame;
+          }
+          return game;
+        });
+        console.log('🎮 Final updated games list:', updatedGames);
+        return updatedGames;
+      });
+      
+      console.log('✅ Player join optimistic update completed');
     },
   });
 };
 
-// QR kód validálása
+// QR kód validálása - OPTIMALIZÁLT cache invalidation
 export const useValidateQR = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
     mutationFn: ({ gameId, teamName, qrCode }) =>
       gameAPI.validateQR(gameId, teamName, qrCode),
-    onSuccess: (data, { gameId }) => {
-      // ✅ Azonnali frissítés QR validálás után
-      queryClient.invalidateQueries({ queryKey: gameKeys.detail(gameId) });
-      queryClient.invalidateQueries({ queryKey: ['challenge', gameId] });
+    onSuccess: (data, { gameId, teamName }) => {
+      console.log('🎯 QR validation successful, updating caches optimistically...');
+      
+      // ✅ OPTIMISTA FRISSÍTÉS - azonnali UI feedback
+      // Challenge cache törlése - új feladat betöltődik
+      queryClient.removeQueries({ queryKey: gameKeys.challenge(gameId, teamName) });
+      
+      // ✅ JAVÍTOTT: Játék állapot frissítése - csapat továbbléptetése
+      queryClient.setQueryData(gameKeys.detail(gameId), (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          teams: old.teams?.map(team => {
+            if (team.name === teamName) {
+              return {
+                ...team,
+                current_station: (team.current_station || 0) + 1,
+                // Ha az utolsó állomás, akkor completed_at beállítása
+                completed_at: (team.current_station || 0) >= 5 ? new Date().toISOString() : team.completed_at
+              };
+            }
+            return team;
+          })
+        };
+      });
+      
+      // ✅ JAVÍTOTT: useGames() hook cache frissítése (tömb struktúra)
+      queryClient.setQueryData(gameKeys.lists(), (old) => {
+        if (!old) return old;
+        return old.map(game => {
+          if (game.id === gameId) {
+            return {
+              ...game,
+              teams: game.teams?.map(team => {
+                if (team.name === teamName) {
+                  return {
+                    ...team,
+                    current_station: (team.current_station || 0) + 1,
+                    completed_at: (team.current_station || 0) >= 5 ? new Date().toISOString() : team.completed_at
+                  };
+                }
+                return team;
+              })
+            };
+          }
+          return game;
+        });
+      });
+      
+      console.log('✅ QR validation optimistic update completed');
     },
   });
 };
@@ -403,10 +635,10 @@ export const useRestoreSession = () => {
   });
 };
 
-// Aktuális feladat lekérése - AZONNALI frissítés
+// Aktuális feladat lekérése - OPTIMALIZÁLT konfiguráció
 export const useCurrentChallenge = (gameId, teamName, options = {}) => {
   return useQuery({
-    queryKey: ['challenge', gameId, teamName],
+    queryKey: gameKeys.challenge(gameId, teamName),
     queryFn: async () => {
       try {
         return await gameAPI.getCurrentChallenge(gameId, teamName);
@@ -419,11 +651,11 @@ export const useCurrentChallenge = (gameId, teamName, options = {}) => {
       }
     },
     enabled: !!gameId && !!teamName && (options.enabled !== false),
-    staleTime: 500, // 0.5 másodperc - AZONNALI frissítés
-    refetchInterval: 1000, // 1 másodperc - AZONNALI frissítés
-    refetchIntervalInBackground: true, // ✅ Háttérben is frissít
-    refetchOnMount: 'always', // ✅ Mindig friss adat
-    refetchOnWindowFocus: true, // ✅ Ablak fókuszban frissít
+    staleTime: 30 * 1000, // ✅ 30 másodperc - stabil cache
+    gcTime: 5 * 60 * 1000, // 5 perc cache
+    refetchOnMount: false, // ✅ NE töltse újra mount-kor
+    refetchOnWindowFocus: false, // ✅ NE töltse újra fókusznál
+    refetchOnReconnect: false, // ✅ NE töltse újra újracsatlakozáskor
     retry: (failureCount, error) => {
       // Ha 400-as hiba, ne próbálkozzunk újra
       if (error?.status === 400) {

@@ -20,18 +20,7 @@ const GameManage = ({
         (currentGame.status || currentGame.game?.status) === 'together' || 
         (currentGame.status || currentGame.game?.status) === 'finished') && (
         <ProgressDisplay
-          teams={currentGame.teams || currentGame.game?.teams || []}
-          gameStatus={currentGame.status || currentGame.game?.status}
-          gameInfo={{
-            total_players: (currentGame.teams || currentGame.game?.teams || [])
-              .reduce((total, team) => total + (team.players?.length || 0), 0),
-            max_players: currentGame.game?.max_players || currentGame.max_players || 4,
-            available_slots: (currentGame.game?.max_players || currentGame.max_players || 4) - (currentGame.teams || currentGame.game?.teams || [])
-              .reduce((total, team) => total + (team.players?.length || 0), 0),
-            is_full: (currentGame.teams || currentGame.game?.teams || [])
-              .reduce((total, team) => total + (team.players?.length || 0), 0) >= (currentGame.game?.max_players || currentGame.max_players || 4)
-          }}
-          gameName={currentGame.name || currentGame.game?.name}
+          gameId={currentGame.id || currentGame.game?.id}
           showAllTeams={true}
         />
       )}
@@ -173,7 +162,9 @@ const GameManage = ({
           Admin műveletek
         </h3>
         <div className="flex flex-wrap gap-4 justify-center">
-          {(currentGame.status || currentGame.game?.status) === 'setup' && (
+          {/* Játék indítás gomb - waiting állapotban ÉS vannak játékosok */}
+          {(currentGame.status || currentGame.game?.status) === 'waiting' && 
+           (currentGame.total_players || currentGame.game?.total_players || 0) > 0 && (
             <button
               onClick={handleStartGame}
               disabled={loading}
@@ -186,6 +177,30 @@ const GameManage = ({
             >
               {loading ? 'Indítás...' : '🚀 Játék indítása'}
             </button>
+          )}
+          
+          {/* Játék indítás gomb - waiting állapotban DE nincsenek játékosok */}
+          {(currentGame.status || currentGame.game?.status) === 'waiting' && 
+           (currentGame.total_players || currentGame.game?.total_players || 0) === 0 && (
+            <button
+              disabled={true}
+              className="bg-gradient-to-r from-gray-600 to-gray-500 
+                       text-gray-300 font-bold py-3 px-6 rounded-lg 
+                       transition-all duration-200 cursor-not-allowed
+                       min-w-32 sm:min-w-56"
+            >
+              ⏳ Várj játékosokra...
+            </button>
+          )}
+          
+          {/* Játék állapot megjelenítése */}
+          {((currentGame.status || currentGame.game?.status) === 'separate' || 
+            (currentGame.status || currentGame.game?.status) === 'together') && (
+            <div className="bg-gradient-to-r from-blue-600 to-purple-600 
+                           text-white font-bold py-3 px-6 rounded-lg 
+                           min-w-32 sm:min-w-56 text-center">
+              🎮 Játék fut!
+            </div>
           )}
           
           <button
