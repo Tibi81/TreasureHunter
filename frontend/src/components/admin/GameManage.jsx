@@ -13,6 +13,10 @@ const GameManage = ({
   handleStartGame, 
   handleResetGame
 }) => {
+  // Debug: Ellenőrizzük a currentGame adatokat
+  console.log('🔍 GameManage - currentGame:', currentGame);
+  console.log('🔍 GameManage - teams:', currentGame?.teams || currentGame?.game?.teams);
+  
   return (
     <div className="space-y-6">
       {/* Csapatok haladása - csak ha a játék fut */}

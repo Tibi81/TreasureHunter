@@ -137,8 +137,8 @@ export const useCreateGame = () => {
         );
       });
       
-      // ✅ JAVÍTOTT: INVALIDATE a cache-t, hogy azonnal frissüljön
-      queryClient.invalidateQueries({ queryKey: gameKeys.lists() });
+      // ✅ JAVÍTOTT: NINCS invalidate - csak optimista frissítés
+      // A setQueryData már frissíti a cache-t, az invalidate felesleges
       
       console.log('✅ CREATE GAME onSuccess COMPLETED');
       

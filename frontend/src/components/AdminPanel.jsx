@@ -117,6 +117,7 @@ const AdminPanel = ({ onBack }) => {
         // Csak akkor frissítjük, ha ténylegesen változott
         if (JSON.stringify(updatedGame) !== JSON.stringify(currentGame)) {
           console.log('🔄 Updating currentGame with fresh data from games list');
+          console.log('🔍 Updated game teams:', updatedGame.teams);
           setCurrentGame(updatedGame);
         }
       } else {
@@ -173,6 +174,13 @@ const AdminPanel = ({ onBack }) => {
       // ✅ Azonnal beállítjuk a currentGame-et és a view-t
       setCurrentGame(response.game);
       setView('manage');
+      
+      // ✅ Debug: Ellenőrizzük a games listát
+      setTimeout(() => {
+        const currentGames = queryClient.getQueryData(gameKeys.lists());
+        console.log('🔍 Games list after creation:', currentGames);
+        console.log('🔍 New game in list:', currentGames?.find(g => g.id === response.game.id));
+      }, 100);
       
     } catch (err) {
       console.error('Játék létrehozási hiba:', err);
