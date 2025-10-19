@@ -168,9 +168,12 @@ const AdminPanel = ({ onBack }) => {
         teamCount: gameConfig?.teamCount || 2
       });
       
-      // ✅ A response.game-t használjuk currentGame-ként
+      console.log('🎉 Játék létrehozva, response:', response);
+      
+      // ✅ Azonnal beállítjuk a currentGame-et és a view-t
       setCurrentGame(response.game);
       setView('manage');
+      
     } catch (err) {
       console.error('Játék létrehozási hiba:', err);
       setError(err.message || 'Hiba a játék létrehozásakor');

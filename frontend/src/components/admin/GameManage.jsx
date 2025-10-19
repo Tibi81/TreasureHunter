@@ -189,7 +189,7 @@ const GameManage = ({
                        transition-all duration-200 cursor-not-allowed
                        min-w-32 sm:min-w-56"
             >
-              ⏳ Várj játékosokra...
+              ⏳ Várj játékosokra... ({(currentGame.total_players || currentGame.game?.total_players || 0)}/2)
             </button>
           )}
           

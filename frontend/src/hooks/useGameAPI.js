@@ -137,7 +137,8 @@ export const useCreateGame = () => {
         );
       });
       
-      // ✅ JAVÍTOTT: NINCS invalidate - csak optimista frissítés
+      // ✅ JAVÍTOTT: INVALIDATE a cache-t, hogy azonnal frissüljön
+      queryClient.invalidateQueries({ queryKey: gameKeys.lists() });
       
       console.log('✅ CREATE GAME onSuccess COMPLETED');
       
