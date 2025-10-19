@@ -17,6 +17,14 @@ const GameManage = ({
   console.log('🔍 GameManage - currentGame:', currentGame);
   console.log('🔍 GameManage - teams:', currentGame?.teams || currentGame?.game?.teams);
   
+  // Debug: Ellenőrizzük a játékosokat
+  const pumpkinTeam = (currentGame?.teams || currentGame?.game?.teams || []).find(t => t.name === 'pumpkin');
+  const ghostTeam = (currentGame?.teams || currentGame?.game?.teams || []).find(t => t.name === 'ghost');
+  console.log('🔍 GameManage - pumpkinTeam:', pumpkinTeam);
+  console.log('🔍 GameManage - ghostTeam:', ghostTeam);
+  console.log('🔍 GameManage - pumpkinPlayers:', pumpkinTeam?.players);
+  console.log('🔍 GameManage - ghostPlayers:', ghostTeam?.players);
+  
   return (
     <div className="space-y-6">
       {/* Csapatok haladása - csak ha a játék fut */}

@@ -171,16 +171,10 @@ const AdminPanel = ({ onBack }) => {
       
       console.log('🎉 Játék létrehozva, response:', response);
       
-      // ✅ Azonnal beállítjuk a currentGame-et és a view-t
+      // ✅ EGYSZERŰSÍTETT: Azonnal beállítjuk a currentGame-et
+      // A useCreateGame hook már frissíti a cache-t, nem kell várni
       setCurrentGame(response.game);
       setView('manage');
-      
-      // ✅ Debug: Ellenőrizzük a games listát
-      setTimeout(() => {
-        const currentGames = queryClient.getQueryData(gameKeys.lists());
-        console.log('🔍 Games list after creation:', currentGames);
-        console.log('🔍 New game in list:', currentGames?.find(g => g.id === response.game.id));
-      }, 100);
       
     } catch (err) {
       console.error('Játék létrehozási hiba:', err);

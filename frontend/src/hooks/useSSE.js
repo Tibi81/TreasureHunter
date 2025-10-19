@@ -283,15 +283,17 @@ export const useGeneralSSE = (options = {}) => {
             case 'player_left':
             case 'player_updated':
               if (data.event.data?.game_id) {
-                queryClient.invalidateQueries({ queryKey: ['game', data.event.data.game_id] });
+                // ✅ JAVÍTOTT: Invalidate helyett refetch a teljes adatokért
+                queryClient.refetchQueries({ queryKey: ['game', data.event.data.game_id] });
               }
-              queryClient.invalidateQueries({ queryKey: ['games'] });
+              queryClient.refetchQueries({ queryKey: ['games'] });
               break;
               
             case 'game_created':
             case 'game_updated':
             case 'game_deleted':
-              queryClient.invalidateQueries({ queryKey: ['games'] });
+              // ✅ JAVÍTOTT: Invalidate helyett refetch a teljes adatokért
+              queryClient.refetchQueries({ queryKey: ['games'] });
               break;
           }
         }
@@ -300,25 +302,31 @@ export const useGeneralSSE = (options = {}) => {
       case 'game_started':
         console.log('🚀 Játék elindult!', data);
         if (data.data?.game_id) {
-          queryClient.invalidateQueries({ queryKey: ['game', data.data.game_id] });
+          // ✅ JAVÍTOTT: Invalidate helyett refetch a teljes adatokért
+          queryClient.refetchQueries({ queryKey: ['game', data.data.game_id] });
         }
-        queryClient.invalidateQueries({ queryKey: ['games'] });
+        queryClient.refetchQueries({ queryKey: ['games'] });
         break;
         
       case 'player_joined':
         console.log('👥 Játékos csatlakozott!', data);
+        console.log('🔍 Player joined - game_id:', data.data?.game_id);
         if (data.data?.game_id) {
-          queryClient.invalidateQueries({ queryKey: ['game', data.data.game_id] });
+          // ✅ JAVÍTOTT: Invalidate helyett refetch a teljes adatokért
+          console.log('🔄 Refetching game and games queries...');
+          queryClient.refetchQueries({ queryKey: ['game', data.data.game_id] });
         }
-        queryClient.invalidateQueries({ queryKey: ['games'] });
+        queryClient.refetchQueries({ queryKey: ['games'] });
+        console.log('✅ Player joined - queries refetched');
         break;
         
       case 'player_updated':
         console.log('👤 Játékos frissítve!', data);
         if (data.data?.game_id) {
-          queryClient.invalidateQueries({ queryKey: ['game', data.data.game_id] });
+          // ✅ JAVÍTOTT: Invalidate helyett refetch a teljes adatokért
+          queryClient.refetchQueries({ queryKey: ['game', data.data.game_id] });
         }
-        queryClient.invalidateQueries({ queryKey: ['games'] });
+        queryClient.refetchQueries({ queryKey: ['games'] });
         break;
         
       case 'game_updated':
@@ -331,7 +339,10 @@ export const useGeneralSSE = (options = {}) => {
         
       case 'game_created':
         console.log('🎉 Új játék létrehozva!', data);
-        queryClient.invalidateQueries({ queryKey: ['games'] });
+        console.log('🔄 Refetching games list after game creation...');
+        // ✅ JAVÍTOTT: Invalidate helyett refetch a teljes adatokért
+        queryClient.refetchQueries({ queryKey: ['games'] });
+        console.log('✅ Games list refetched after game creation');
         break;
         
       case 'error':
