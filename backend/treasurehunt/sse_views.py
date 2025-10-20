@@ -99,11 +99,11 @@ class GeneralSSEView(View):
             yield "data: {\"type\": \"connected\", \"message\": \"Általános SSE kapcsolat létrejött\"}\n\n"
             
             try:
-                # Egyszerű teszt üzenet
-                yield "data: {\"type\": \"test\", \"message\": \"Általános teszt üzenet\", \"timestamp\": " + str(time.time()) + "}\n\n"
-                
                 # Korlátozott ciklus valós idejű frissítésekhez (Render.com kompatibilis)
                 import time
+                
+                # Egyszerű teszt üzenet
+                yield "data: {\"type\": \"test\", \"message\": \"Általános teszt üzenet\", \"timestamp\": " + str(time.time()) + "}\n\n"
                 count = 0
                 max_iterations = 60  # Maximum 60 iteráció (300 másodperc = 5 perc) - Render.com optimalizálás
                 
