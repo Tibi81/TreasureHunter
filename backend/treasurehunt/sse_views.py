@@ -76,7 +76,7 @@ class GeneralSSEView(View):
     """
     Általános SSE endpoint minden játékhoz
     """
-    
+
     @method_decorator(csrf_exempt)
     @method_decorator(require_http_methods(["GET", "OPTIONS"]))
     def dispatch(self, request, *args, **kwargs):
@@ -84,45 +84,42 @@ class GeneralSSEView(View):
             response = HttpResponse()
             origin = request.headers.get('Origin', '*')
             response['Access-Control-Allow-Origin'] = origin
-            response['Access-Control-Allow-Headers'] = 'Cache-Control, Accept, Accept-Encoding, Accept-Language, Connection, Host, Origin, Referer, User-Agent, X-CSRFToken'
+            response['Access-Control-Allow-Headers'] = (
+                'Cache-Control, Accept, Accept-Encoding, Accept-Language, Connection, Host, '
+                'Origin, Referer, User-Agent, X-CSRFToken'
+            )
             response['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
             response['Access-Control-Allow-Credentials'] = 'true'
             response['Access-Control-Max-Age'] = '86400'  # 24 óra cache
             return response
         return super().dispatch(request, *args, **kwargs)
-    
+
     def get(self, request):
         """SSE stream minden játékhoz"""
-        
+
         def event_stream():
-            # SSE header beállítása
+            # SSE kapcsolat létrejött
             yield "data: {\"type\": \"connected\", \"message\": \"Általános SSE kapcsolat létrejött\"}\n\n"
-            
+
             try:
-                # Korlátozott ciklus valós idejű frissítésekhez (Render.com kompatibilis)
                 import time
-                
-                # Egyszerű teszt üzenet
-                yield "data: {\"type\": \"test\", \"message\": \"Általános teszt üzenet\", \"timestamp\": " + str(time.time()) + "}\n\n"
                 count = 0
-                max_iterations = 30  # Maximum 30 iteráció (150 másodperc = 2.5 perc) - Render.com optimalizálás
-                
-                # Események figyelése
+                max_iterations = 30  # Render.com kompatibilis: max 2.5 perc
+
                 last_event_id = 0
-                
+
                 while count < max_iterations:
-                    # Események lekérése és küldése
                     try:
-                        # Általános események lekérése
+                        # Általános események a cache-ből
                         general_events_key = "general_sse_events"
                         all_events = cache.get(general_events_key, [])
-                        
-                        # Összes játék eseményeinek lekérése is
+
+                        # Minden játék eseményeinek lekérése
                         for game_id in Game.objects.values_list('id', flat=True):
-                            events_key = f"game_events_{str(game_id)}"  # UUID -> string konvertálás
+                            events_key = f"game_events_{str(game_id)}"
                             events = cache.get(events_key, [])
                             all_events.extend(events)
-                        
+
                         # Új események küldése
                         for event in all_events[last_event_id:]:
                             sse_data = {
@@ -132,39 +129,47 @@ class GeneralSSEView(View):
                             }
                             yield f"data: {json.dumps(sse_data)}\n\n"
                             logger.info(f"SSE event sent: {event.get('type', 'unknown')}")
-                        
+
                         last_event_id = len(all_events)
+
+                        # 3 másodperc várakozás
+                        time.sleep(3)
+                        count += 1
+
+                        # Ping minden 5. ciklusban (15 másodpercenként)
+                        if count % 5 == 0:
+                            yield f"data: {{\"type\": \"ping\", \"message\": \"Kapcsolat aktív\", \"timestamp\": {time.time()}}}\n\n"
+
                     except Exception as e:
                         logger.error(f"Error processing events: {e}")
-                    
-                    count += 1
-                    time.sleep(3)  # 3 másodpercenként események ellenőrzése (gyorsabb újracsatlakozás)
-                    yield f"data: {{\"type\": \"heartbeat\", \"count\": {count}, \"message\": \"Általános heartbeat\", \"timestamp\": {time.time()}}}\n\n"
-                
-                # Ha elértük a maximum iterációt, küldjünk egy újracsatlakozási üzenetet
+                        yield f"data: {{\"type\": \"error\", \"message\": \"{str(e)}\"}}\n\n"
+
+                # Maximum iteráció után újracsatlakozás
                 yield "data: {\"type\": \"reconnect\", \"message\": \"SSE kapcsolat újracsatlakozásra szorul\"}\n\n"
-                
+
             except Exception as e:
                 logger.error(f"General SSE stream error: {e}")
                 yield f"data: {{\"type\": \"error\", \"message\": \"{str(e)}\"}}\n\n"
-        
-        # SSE response beállítása
+
+        # SSE response
         response = StreamingHttpResponse(
             event_stream(),
             content_type='text/event-stream'
         )
-        
-        # SSE headers
+
         response['Cache-Control'] = 'no-cache'
-        # response['Connection'] = 'keep-alive'  # WSGI nem támogatja
         origin = request.headers.get('Origin', '*')
         response['Access-Control-Allow-Origin'] = origin
-        response['Access-Control-Allow-Headers'] = 'Cache-Control, Accept, Accept-Encoding, Accept-Language, Connection, Host, Origin, Referer, User-Agent, X-CSRFToken'
+        response['Access-Control-Allow-Headers'] = (
+            'Cache-Control, Accept, Accept-Encoding, Accept-Language, Connection, Host, '
+            'Origin, Referer, User-Agent, X-CSRFToken'
+        )
         response['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
         response['Access-Control-Allow-Credentials'] = 'true'
-        response['Access-Control-Max-Age'] = '86400'  # 24 óra cache
-        
+        response['Access-Control-Max-Age'] = '86400'
+
         return response
+
 
 class GameEventsSSEView(View):
     """
