@@ -105,7 +105,7 @@ class GeneralSSEView(View):
                 # Egyszerű teszt üzenet
                 yield "data: {\"type\": \"test\", \"message\": \"Általános teszt üzenet\", \"timestamp\": " + str(time.time()) + "}\n\n"
                 count = 0
-                max_iterations = 60  # Maximum 60 iteráció (300 másodperc = 5 perc) - Render.com optimalizálás
+                max_iterations = 30  # Maximum 30 iteráció (150 másodperc = 2.5 perc) - Render.com optimalizálás
                 
                 # Események figyelése
                 last_event_id = 0
@@ -135,7 +135,7 @@ class GeneralSSEView(View):
                         logger.error(f"Error processing events: {e}")
                     
                     count += 1
-                    time.sleep(5)  # 5 másodpercenként események ellenőrzése (Render.com optimalizálás)
+                    time.sleep(3)  # 3 másodpercenként események ellenőrzése (gyorsabb újracsatlakozás)
                     yield f"data: {{\"type\": \"heartbeat\", \"count\": {count}, \"message\": \"Általános heartbeat\", \"timestamp\": {time.time()}}}\n\n"
                 
                 # Ha elértük a maximum iterációt, küldjünk egy újracsatlakozási üzenetet
@@ -178,7 +178,7 @@ class GameEventsSSEView(View):
             events_key = f"game_events_{game_id}"
             last_event_id = 0
             
-            max_iterations = 120  # Maximum 120 iteráció (60 másodperc = 1 perc)
+            max_iterations = 30  # Maximum 30 iteráció (90 másodperc = 1.5 perc) - Render.com optimalizálás
             iteration_count = 0
             
             while iteration_count < max_iterations:
@@ -198,7 +198,7 @@ class GameEventsSSEView(View):
                     last_event_id = len(events)
                     iteration_count += 1
                     
-                    time.sleep(2)  # 2 másodperc polling eseményekhez (kevesebb terhelés)
+                    time.sleep(3)  # 3 másodperc polling eseményekhez (optimalizált terhelés)
                     
                 except Exception as e:
                     logger.error(f"Events SSE stream error: {e}")

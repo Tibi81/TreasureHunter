@@ -6,10 +6,10 @@ import os
 # Alapvető beállítások - Render.com port dinamikus hozzárendelés
 port = os.environ.get('PORT', '8000')
 bind = f"0.0.0.0:{port}"
-workers = int(os.environ.get('GUNICORN_WORKERS', '4'))  # Production-ben több worker
+workers = int(os.environ.get('GUNICORN_WORKERS', '2'))  # Kevesebb worker SSE-hez
 worker_class = "sync"
 worker_connections = 1000
-timeout = 30
+timeout = 300  # 5 perc timeout SSE-hez
 keepalive = 2
 
 # Logging
@@ -39,9 +39,9 @@ reload = False  # Production-ben soha ne reload
 reload_extra_files = []
 reload_engine = "auto"
 
-# Graceful shutdown
-graceful_timeout = 30
-worker_timeout = 30
+# Graceful shutdown - SSE-hez optimalizálva
+graceful_timeout = 60
+worker_timeout = 300  # 5 perc worker timeout SSE-hez
 
 print("🚀 Gunicorn production konfiguráció betöltve")
 print(f"📍 Bind: {bind}")

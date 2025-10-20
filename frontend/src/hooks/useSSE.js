@@ -103,7 +103,7 @@ export const useSSE = (url, options = {}) => {
         const currentAttempts = reconnectAttemptsRef.current;
         
         if (currentAttempts < maxReconnectAttempts) {
-          const delay = Math.min(3000 * Math.pow(1.5, currentAttempts), 15000); // Render.com optimalizált újracsatlakozás
+          const delay = Math.min(2000 * Math.pow(1.2, currentAttempts), 8000); // Gyorsabb újracsatlakozás SSE-hez
           console.log(`🔄 SSE újracsatlakozás ${currentAttempts + 1}/${maxReconnectAttempts} (${delay}ms késéssel)...`);
           console.log(`🔄 SSE újracsatlakozás URL: ${url}`);
           
@@ -279,12 +279,12 @@ export const useGeneralSSE = (options = {}) => {
         
       case 'reconnect':
         console.log('🔄 SSE újracsatlakozás szükséges:', data.message);
-        // Automatikus újracsatlakozás
+        // Automatikus újracsatlakozás - gyorsabb
         if (connect) {
           setTimeout(() => {
             console.log('🔄 SSE automatikus újracsatlakozás...');
             connect();
-          }, 1000);
+          }, 500); // Gyorsabb újracsatlakozás
         }
         break;
         
