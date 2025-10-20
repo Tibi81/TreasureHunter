@@ -54,19 +54,22 @@ const AdminPanel = ({ onBack }) => {
     });
   }, [games]);
 
-  // ✅ DEBUG: QueryClient cache monitoring
+  // ✅ DEBUG: QueryClient cache monitoring - OPTIMALIZÁLT
   React.useEffect(() => {
     const interval = setInterval(() => {
       const cache = queryClient.getQueryData(gameKeys.lists());
-      console.log('🔍 AdminPanel - Cache check:', {
-        cacheExists: !!cache,
-        cacheLength: cache?.length || 0,
-        cacheData: cache
-      });
-    }, 2000); // Minden 2 másodpercben ellenőrizzük
+      // Csak akkor loggoljuk, ha változás történt
+      if (cache && cache.length !== games.length) {
+        console.log('🔍 AdminPanel - Cache check:', {
+          cacheExists: !!cache,
+          cacheLength: cache?.length || 0,
+          gamesLength: games.length
+        });
+      }
+    }, 5000); // Minden 5 másodpercben ellenőrizzük (optimalizálva)
 
     return () => clearInterval(interval);
-  }, [queryClient]);
+  }, [queryClient, games.length]);
 
   // ✅ POLLING kikapcsolva - IDEIGLENESEN KIKAPCSOLVA
   // React.useEffect(() => {

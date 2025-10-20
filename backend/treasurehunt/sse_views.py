@@ -113,8 +113,11 @@ class GeneralSSEView(View):
                 while count < max_iterations:
                     # Események lekérése és küldése
                     try:
-                        # Összes játék eseményeinek lekérése
-                        all_events = []
+                        # Általános események lekérése
+                        general_events_key = "general_sse_events"
+                        all_events = cache.get(general_events_key, [])
+                        
+                        # Összes játék eseményeinek lekérése is
                         for game_id in Game.objects.values_list('id', flat=True):
                             events_key = f"game_events_{str(game_id)}"  # UUID -> string konvertálás
                             events = cache.get(events_key, [])
@@ -258,7 +261,16 @@ def send_game_event(game_id, event_type, data):
         events = events[-100:]
     
     cache.set(events_key, events, timeout=3600)  # 1 óra cache
-    logger.info(f"Game event sent: {event_type} for game {game_id_str}")
+    
+    # ✅ JAVÍTOTT: Esemény küldése az általános SSE stream-nek is
+    general_events_key = "general_sse_events"
+    general_events = cache.get(general_events_key, [])
+    general_events.append(event)
+    if len(general_events) > 100:
+        general_events = general_events[-100:]
+    cache.set(general_events_key, general_events, timeout=3600)
+    
+    logger.info(f"SSE event sent: {event_type}")
 
 # Signal handlers az eseményekhez
 from django.db.models.signals import post_save, post_delete

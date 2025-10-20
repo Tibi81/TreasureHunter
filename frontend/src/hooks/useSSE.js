@@ -64,6 +64,8 @@ export const useSSE = (url, options = {}) => {
         try {
           const data = JSON.parse(event.data);
           console.log('📨 SSE üzenet érkezett:', data);
+          console.log('📨 SSE üzenet timestamp:', new Date().toISOString());
+          console.log('📨 SSE üzenet URL:', url);
           
           // React Query cache frissítése
           if (queryKeys.length > 0) {
@@ -77,6 +79,7 @@ export const useSSE = (url, options = {}) => {
           onMessage(data, event, connect); // ✅ Connect függvény átadása
         } catch (err) {
           console.error('❌ SSE üzenet feldolgozási hiba:', err);
+          console.error('❌ SSE üzenet raw data:', event.data);
         }
       };
 
