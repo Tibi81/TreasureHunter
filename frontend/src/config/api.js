@@ -30,6 +30,10 @@ export const getApiBaseUrl = () => {
       if (currentHost.includes('frontend')) {
         return 'https://' + currentHost.replace('frontend', 'backend');
       }
+      // Ha a frontend domain tartalmazza a 'treasurehunter-1' szót, cseréljük le 'treasurehunter-mz1x'-re
+      if (currentHost.includes('treasurehunter-1')) {
+        return 'https://treasurehunter-mz1x.onrender.com';
+      }
     }
   }
   

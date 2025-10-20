@@ -82,10 +82,12 @@ class GeneralSSEView(View):
     def dispatch(self, request, *args, **kwargs):
         if request.method == 'OPTIONS':
             response = HttpResponse()
-            response['Access-Control-Allow-Origin'] = '*'
-            response['Access-Control-Allow-Headers'] = 'Cache-Control, Accept, Accept-Encoding, Accept-Language, Connection, Host, Origin, Referer, User-Agent'
+            origin = request.headers.get('Origin', '*')
+            response['Access-Control-Allow-Origin'] = origin
+            response['Access-Control-Allow-Headers'] = 'Cache-Control, Accept, Accept-Encoding, Accept-Language, Connection, Host, Origin, Referer, User-Agent, X-CSRFToken'
             response['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
-            response['Access-Control-Allow-Credentials'] = 'false'
+            response['Access-Control-Allow-Credentials'] = 'true'
+            response['Access-Control-Max-Age'] = '86400'  # 24 óra cache
             return response
         return super().dispatch(request, *args, **kwargs)
     
@@ -98,12 +100,12 @@ class GeneralSSEView(View):
             
             try:
                 # Egyszerű teszt üzenet
-                yield "data: {\"type\": \"test\", \"message\": \"Általános teszt üzenet\"}\n\n"
+                yield "data: {\"type\": \"test\", \"message\": \"Általános teszt üzenet\", \"timestamp\": " + str(time.time()) + "}\n\n"
                 
                 # Korlátozott ciklus valós idejű frissítésekhez (Render.com kompatibilis)
                 import time
                 count = 0
-                max_iterations = 120  # Maximum 120 iteráció (600 másodperc = 10 perc)
+                max_iterations = 60  # Maximum 60 iteráció (300 másodperc = 5 perc) - Render.com optimalizálás
                 
                 # Események figyelése
                 last_event_id = 0
@@ -133,7 +135,7 @@ class GeneralSSEView(View):
                         logger.error(f"Error processing events: {e}")
                     
                     count += 1
-                    time.sleep(2)  # 2 másodpercenként események ellenőrzése (gyorsabb)
+                    time.sleep(5)  # 5 másodpercenként események ellenőrzése (Render.com optimalizálás)
                     yield f"data: {{\"type\": \"heartbeat\", \"count\": {count}, \"message\": \"Általános heartbeat\", \"timestamp\": {time.time()}}}\n\n"
                 
                 # Ha elértük a maximum iterációt, küldjünk egy újracsatlakozási üzenetet
@@ -211,8 +213,13 @@ class GameEventsSSEView(View):
         )
         
         response['Cache-Control'] = 'no-cache'
-        response['Connection'] = 'keep-alive'
-        response['Access-Control-Allow-Origin'] = '*'
+        # response['Connection'] = 'keep-alive'  # WSGI nem támogatja
+        origin = request.headers.get('Origin', '*')
+        response['Access-Control-Allow-Origin'] = origin
+        response['Access-Control-Allow-Headers'] = 'Cache-Control, Accept, Accept-Encoding, Accept-Language, Connection, Host, Origin, Referer, User-Agent, X-CSRFToken'
+        response['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
+        response['Access-Control-Allow-Credentials'] = 'true'
+        response['Access-Control-Max-Age'] = '86400'  # 24 óra cache
         
         return response
 

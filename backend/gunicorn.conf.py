@@ -3,8 +3,9 @@
 
 import os
 
-# Alapvető beállítások
-bind = os.environ.get('GUNICORN_BIND', '0.0.0.0:8000')
+# Alapvető beállítások - Render.com port dinamikus hozzárendelés
+port = os.environ.get('PORT', '8000')
+bind = f"0.0.0.0:{port}"
 workers = int(os.environ.get('GUNICORN_WORKERS', '4'))  # Production-ben több worker
 worker_class = "sync"
 worker_connections = 1000

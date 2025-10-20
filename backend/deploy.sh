@@ -46,8 +46,6 @@ echo "📝 Logs könyvtár létrehozása..."
 mkdir -p logs
 chmod 755 logs
 
-# 7. Gunicorn indítása
-echo "🚀 Gunicorn indítása..."
-gunicorn --config gunicorn.conf.py config.wsgi:application
-
 echo "✅ Deployment befejezve!"
+echo "🚀 A szolgáltatás elindítható a következő paranccsal:"
+echo "gunicorn --config gunicorn.conf.py config.wsgi:application"

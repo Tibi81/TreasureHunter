@@ -368,5 +368,5 @@ CSRF_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_HTTPONLY = True
 CSRF_COOKIE_SAMESITE = 'None' if not DEBUG else 'Lax'
 
-# Windows-on Gunicorn nem működik (fcntl modul hiányzik)
-# Django development szerver használata optimalizált beállításokkal
+# Production deployment beállítások
+# Render.com Linux környezetben fut, Gunicorn támogatott

@@ -42,5 +42,6 @@ urlpatterns = [
     path('sse/general/', GeneralSSEView.as_view(), name='general_sse'),
     path('sse/game/<uuid:game_id>/', GameSSEView.as_view(), name='game_sse'),
     path('sse/game/<uuid:game_id>/events/', GameEventsSSEView.as_view(), name='game_events_sse'),
+    path('sse/test/', GeneralSSEView.as_view(), name='sse_test'),  # Teszt endpoint
 
 ]

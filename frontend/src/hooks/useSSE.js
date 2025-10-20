@@ -48,6 +48,12 @@ export const useSSE = (url, options = {}) => {
       eventSource.onopen = (event) => {
         console.log('✅ SSE kapcsolat létrejött:', url);
         console.log('✅ SSE readyState:', eventSource.readyState);
+        console.log('✅ SSE event details:', {
+          type: event.type,
+          target: event.target,
+          url: url,
+          origin: window.location.origin
+        });
         setIsConnected(true);
         setError(null);
         reconnectAttemptsRef.current = 0; // ✅ Reset
@@ -97,17 +103,20 @@ export const useSSE = (url, options = {}) => {
         const currentAttempts = reconnectAttemptsRef.current;
         
         if (currentAttempts < maxReconnectAttempts) {
-          const delay = Math.min(2000 * Math.pow(2, currentAttempts), 10000); // Gyorsabb újracsatlakozás
+          const delay = Math.min(3000 * Math.pow(1.5, currentAttempts), 15000); // Render.com optimalizált újracsatlakozás
           console.log(`🔄 SSE újracsatlakozás ${currentAttempts + 1}/${maxReconnectAttempts} (${delay}ms késéssel)...`);
+          console.log(`🔄 SSE újracsatlakozás URL: ${url}`);
           
           reconnectAttemptsRef.current += 1;
           setError(`Újracsatlakozás... (${currentAttempts + 1}/${maxReconnectAttempts})`);
           
           reconnectTimeoutRef.current = setTimeout(() => {
+            console.log(`🔄 SSE újracsatlakozás indítása ${delay}ms után...`);
             connect();
           }, delay);
         } else {
           console.error('❌ SSE újracsatlakozás sikertelen - maximum kísérletek száma elérve');
+          console.error('❌ SSE végleges hiba URL:', url);
           setError('SSE kapcsolat nem állítható helyre');
         }
       };
@@ -238,6 +247,14 @@ export const useGameSSE = (gameId, options = {}) => {
 export const useGeneralSSE = (options = {}) => {
   const baseUrl = getApiBaseUrl();
   const sseUrl = `${baseUrl}/api/sse/general/`;
+  
+  // Debug: SSE URL ellenőrzése
+  console.log('🌐 SSE URL generálás:', {
+    baseUrl,
+    sseUrl,
+    currentOrigin: window.location.origin,
+    currentHostname: window.location.hostname
+  });
   
   const queryClient = useQueryClient();
   // Felhasználói onMessage callback kompozícióhoz
