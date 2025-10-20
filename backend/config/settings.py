@@ -214,45 +214,50 @@ CORS_ALLOW_METHODS = [
 ]
 
 
+
 # =====================================================
-# Redis Cache és Session Storage
+# Redis Cache és Session Storage (kapcsolható módon)
 # =====================================================
 
-# Cache konfiguráció - Redis vagy fallback
 import os
 
-# Redis elérhetőség ellenőrzése
+USE_REDIS = os.environ.get('REDIS_OFF', '0') != '1'  # Ha REDIS_OFF=1 → Redis kikapcsolva
 REDIS_URL = os.environ.get('REDIS_URL', 'redis://127.0.0.1:6379/1')
 
-try:
-    # Redis kapcsolat tesztelése
-    import redis
-    r = redis.from_url(REDIS_URL)
-    r.ping()
-    REDIS_AVAILABLE = True
-    
-    CACHES = {
-        'default': {
-            'BACKEND': 'django_redis.cache.RedisCache',
-            'LOCATION': REDIS_URL,
-            'OPTIONS': {
-                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-                'CONNECTION_POOL_KWARGS': {
-                    'max_connections': 50,
-                    'retry_on_timeout': True,
+if USE_REDIS:
+    try:
+        import redis
+        r = redis.from_url(REDIS_URL)
+        r.ping()
+        REDIS_AVAILABLE = True
+
+        CACHES = {
+            'default': {
+                'BACKEND': 'django_redis.cache.RedisCache',
+                'LOCATION': REDIS_URL,
+                'OPTIONS': {
+                    'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+                    'CONNECTION_POOL_KWARGS': {
+                        'max_connections': 50,
+                        'retry_on_timeout': True,
+                    },
+                    'COMPRESSOR': 'django_redis.compressors.zlib.ZlibCompressor',
+                    'SERIALIZER': 'django_redis.serializers.json.JSONSerializer',
                 },
-                'COMPRESSOR': 'django_redis.compressors.zlib.ZlibCompressor',
-                'SERIALIZER': 'django_redis.serializers.json.JSONSerializer',
-            },
-            'KEY_PREFIX': 'treasurehunt',
-            'TIMEOUT': 300,
+                'KEY_PREFIX': 'treasurehunt',
+                'TIMEOUT': 300,
+            }
         }
-    }
-    
-except Exception as e:
-    # Fallback: memóriában tárolt cache
-    REDIS_AVAILABLE = False
-    
+
+        SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+        SESSION_CACHE_ALIAS = 'default'
+
+    except Exception as e:
+        REDIS_AVAILABLE = False
+        USE_REDIS = False
+
+# Ha Redis ki van kapcsolva vagy nem elérhető
+if not USE_REDIS:
     CACHES = {
         'default': {
             'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
@@ -264,33 +269,12 @@ except Exception as e:
             'TIMEOUT': 300,
         }
     }
+    SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 
-# Session storage Redis-re átállítása
-SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
-SESSION_CACHE_ALIAS = 'default'
-SESSION_COOKIE_AGE = 3600 * 24 * 7  # 7 nap (session token alapján)
+SESSION_COOKIE_AGE = 3600 * 24 * 7  # 7 nap
 
-# =====================================================
-# Rate Limiting konfiguráció
-# =====================================================
 
-# Django REST Framework throttling
-REST_FRAMEWORK = {
-    'DEFAULT_THROTTLE_CLASSES': [
-        'rest_framework.throttling.AnonRateThrottle',
-        'rest_framework.throttling.UserRateThrottle',
-        'treasurehunt.middleware.CustomRateThrottle',  # Saját rate limiter
-    ],
-    'DEFAULT_THROTTLE_RATES': {
-        'anon': '1000/hour',     # Névtelen felhasználók
-        'user': '5000/hour',     # Bejelentkezett felhasználók
-        'api': '2000/hour',      # API végpontok
-        'game': '1000/hour',     # Játék műveletek (növelve)
-        'qr': '500/hour',        # QR kód validálás (növelve)
-        'sse': '1000/hour',      # SSE endpoint-ok (fejlesztéshez növelve)
-        'admin': '2000/hour',    # Admin műveletek (új)
-    }
-}
+
 
 # =====================================================
 # Windows kompatibilis fejlesztési beállítások
