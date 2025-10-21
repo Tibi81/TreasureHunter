@@ -8,7 +8,7 @@ html, body {
   /* Megtartjuk a meglévő gyönyörű Halloween képet, de halvány lilás filterrel */
   background-image: 
     linear-gradient(rgba(91, 33, 182, 0.3), rgba(91, 33, 182, 0.3)),
-    url('/Halloween.png');
+    url('/static/Halloween.png');
   background-repeat: no-repeat;
   background-size: cover;
   background-position: center center;

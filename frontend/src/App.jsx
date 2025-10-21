@@ -103,7 +103,12 @@ function App() {
     if (!gameState.gameId) return;
     
     try {
+      console.log('🔄 updateGameStatus hívva:', { gameId: gameState.gameId });
       const response = await gameAPI.getGameStatus(gameState.gameId);
+      console.log('🔄 updateGameStatus válasz:', response);
+      
+      const oldStatus = gameState.status;
+      const newStatus = response.game.status;
       
       // A backend már feldolgozta az adatokat, csak beállítjuk
       setGameState(prev => ({
@@ -114,56 +119,129 @@ function App() {
         players: response.players,
         gameInfo: response.game_info
       }));
+      
+      if (oldStatus !== newStatus) {
+        console.log('🔄 Játék állapot változott:', { 
+          oldStatus, 
+          newStatus, 
+          gameId: gameState.gameId 
+        });
+      }
     } catch (err) {
-      setError('Hiba a játék állapot frissítésében');
+      console.error('🔄 updateGameStatus hiba:', err);
+      // Edge kompatibilitás: biztosítsuk, hogy az err objektum rendelkezik a szükséges property-kkel
+      const errorMessage = err && typeof err === 'object' ? err.message : 'Ismeretlen hiba';
+      setError('Hiba a játék állapot frissítésében: ' + errorMessage);
     }
-  }, [gameState.gameId]);
+  }, [gameState.gameId, gameState.status]);
 
   // Aktuális feladat betöltése - javított verzió
   const loadCurrentChallenge = useCallback(async () => {
+    console.log('🎯 loadCurrentChallenge hívva:', {
+      gameId: gameState.gameId,
+      currentPlayer: gameState.currentPlayer,
+      status: gameState.status
+    });
+    
     // Csak akkor próbáljunk feladatot betölteni, ha a játék aktív
     if (!gameState.gameId || !gameState.currentPlayer || 
         gameState.status !== 'separate' && gameState.status !== 'together') {
+      console.log('🎯 loadCurrentChallenge: Nem megfelelő feltételek, challenge null-ra állítása');
       setCurrentChallenge(null);
       return;
     }
     
     try {
+      console.log('🎯 loadCurrentChallenge: API hívás...');
       const response = await gameAPI.getCurrentChallenge(
         gameState.gameId, 
         gameState.currentPlayer.team_name || gameState.currentPlayer.team
       );
       
+      console.log('🎯 loadCurrentChallenge: API válasz:', response);
+      
       // Ha reset szükséges, frissítsük a játék állapotát
       if (response.reset_required) {
-        await updateGameStatus();
+        console.log('🎯 loadCurrentChallenge: Reset szükséges');
+        // Ne hívjuk meg az updateGameStatus-t, mert az végtelen loop-ot okozhat
+        // await updateGameStatus();
         // Próbáljuk újra betölteni a feladatot
         const newResponse = await gameAPI.getCurrentChallenge(
           gameState.gameId, 
           gameState.currentPlayer.team_name || gameState.currentPlayer.team
         );
+        console.log('🎯 loadCurrentChallenge: Új API válasz reset után:', newResponse);
         setCurrentChallenge(newResponse);
       } else {
+        console.log('🎯 loadCurrentChallenge: Challenge beállítása:', response);
         setCurrentChallenge(response);
       }
     } catch (err) {
+      console.log('🎯 loadCurrentChallenge: Hiba:', err);
+      // Edge kompatibilitás: biztosítsuk, hogy az err objektum rendelkezik a szükséges property-kkel
+      const errorStatus = err && typeof err === 'object' ? err.status : null;
+      const errorMessage = err && typeof err === 'object' ? err.message : 'Ismeretlen hiba';
+      
       // Ha a játék még nem indult el, ne jelezzük hibaként
-      if (err.status === 400) {
+      if (errorStatus === 400) {
+        console.log('🎯 loadCurrentChallenge: 400 hiba, challenge null-ra állítása');
         setCurrentChallenge(null);
       } else {
-        console.error('Hiba a feladat betöltésében:', err.message);
+        console.error('Hiba a feladat betöltésében:', errorMessage);
         setCurrentChallenge(null);
       }
     }
-  }, [gameState.gameId, gameState.currentPlayer, gameState.status, updateGameStatus]);
+  }, [gameState.gameId, gameState.currentPlayer, gameState.status]);
 
   // Feladat betöltés próbálása amikor a játék állapot változik
   useEffect(() => {
+    console.log('🎯 useEffect trigger - állapot változás:', {
+      gameId: gameState.gameId,
+      currentPlayer: gameState.currentPlayer,
+      status: gameState.status,
+      currentChallenge: currentChallenge
+    });
+    
     if (gameState.gameId && gameState.currentPlayer && 
         (gameState.status === 'separate' || gameState.status === 'together')) {
-      loadCurrentChallenge();
+      console.log('🎯 Játék állapot változott, feladat betöltése...', {
+        gameId: gameState.gameId,
+        status: gameState.status,
+        player: gameState.currentPlayer
+      });
+      // Edge kompatibilitás: explicit Promise kezelés
+      loadCurrentChallenge().catch(err => {
+        console.error('Edge kompatibilitás: loadCurrentChallenge hiba:', err);
+      });
+    } else {
+      console.log('🎯 useEffect: Nem megfelelő feltételek a feladat betöltéshez');
     }
-  }, [gameState.status, gameState.gameId, gameState.currentPlayer, loadCurrentChallenge]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameState.status, gameState.gameId, gameState.currentPlayer]);
+
+  // ✅ ÚJ: Külön useEffect a játék indításakor történő feladat betöltéshez
+  useEffect(() => {
+    console.log('🚀 useEffect trigger - játék indítás ellenőrzés:', {
+      gameId: gameState.gameId,
+      currentPlayer: gameState.currentPlayer,
+      status: gameState.status,
+      currentChallenge: currentChallenge
+    });
+    
+    if (gameState.gameId && gameState.currentPlayer && 
+        gameState.status === 'separate' && !currentChallenge) {
+      console.log('🚀 Játék elindult, első feladat betöltése...', {
+        gameId: gameState.gameId,
+        status: gameState.status,
+        player: gameState.currentPlayer,
+        currentChallenge: currentChallenge
+      });
+      loadCurrentChallenge();
+    } else {
+      console.log('🚀 useEffect: Nem megfelelő feltételek az első feladat betöltéshez');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameState.status, gameState.gameId, gameState.currentPlayer, currentChallenge]);
 
   // Automatikus frissítés - csak játék indítás után - optimalizált verzió
   useEffect(() => {
@@ -174,14 +252,17 @@ function App() {
           await updateGameStatus();
           await loadCurrentChallenge();
         } catch (error) {
-          console.error('Hiba a játék frissítésében:', error.message);
+          // Edge kompatibilitás: biztosítsuk, hogy az error objektum rendelkezik a szükséges property-kkel
+          const errorMessage = error && typeof error === 'object' ? error.message : 'Ismeretlen hiba';
+          console.error('Hiba a játék frissítésében:', errorMessage);
           // Ne dobj tovább a hibát, hanem logold csak
         }
       }, 10000); // 10 másodperc - optimalizált gyakoriság
 
       return () => clearInterval(interval);
     }
-  }, [gameState.gameId, gameState.status, gameState.currentPlayer, updateGameStatus, loadCurrentChallenge]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameState.gameId, gameState.status, gameState.currentPlayer]);
 
   // Setup állapot kezelése - csak játék állapot frissítés - optimalizált verzió
   useEffect(() => {
@@ -190,10 +271,29 @@ function App() {
         try {
           await updateGameStatus();
         } catch (error) {
-          console.error('Hiba a setup frissítésében:', error.message);
+          // Edge kompatibilitás: biztosítsuk, hogy az error objektum rendelkezik a szükséges property-kkel
+          const errorMessage = error && typeof error === 'object' ? error.message : 'Ismeretlen hiba';
+          console.error('Hiba a setup frissítésében:', errorMessage);
           // Ne dobj tovább a hibát, hanem logold csak
         }
-      }, 5000); // 5 másodperc - optimalizált gyakoriság
+      }, 2000); // 2 másodperc - gyorsabb frissítés játék indításakor
+
+      return () => clearInterval(interval);
+    }
+  }, [gameState.gameId, gameState.status, updateGameStatus]);
+
+  // ✅ ÚJ: Waiting állapot kezelése - gyakoribb frissítés játék indítás előtt
+  useEffect(() => {
+    if (gameState.gameId && gameState.status === 'waiting') {
+      const interval = setInterval(async () => {
+        try {
+          await updateGameStatus();
+        } catch (error) {
+          // Edge kompatibilitás: biztosítsuk, hogy az error objektum rendelkezik a szükséges property-kkel
+          const errorMessage = error && typeof error === 'object' ? error.message : 'Ismeretlen hiba';
+          console.error('Hiba a waiting frissítésében:', errorMessage);
+        }
+      }, 3000); // 3 másodperc - gyakoribb frissítés waiting állapotban
 
       return () => clearInterval(interval);
     }
@@ -335,12 +435,8 @@ function App() {
       );
 
       if (response.success) {
-        // Siker esetén frissítsük az állapotot
-        await updateGameStatus();
-        // Csak akkor töltjük be a challenge-et, ha a játék már elindult
-        if (gameState.status === 'separate' || gameState.status === 'together') {
-          await loadCurrentChallenge();
-        }
+        // Siker esetén NEM hívjuk meg az updateGameStatus-t, mert az végtelen loop-ot okoz
+        // A polling majd frissíti az állapotot
         
         return {
           success: true,
@@ -349,11 +445,8 @@ function App() {
           gameFinished: response.game_finished || false
         };
       } else {
-        // Ha újrakezdés szükséges, frissítsük a játék állapotát
-        if (response.reset) {
-          await updateGameStatus();
-          await loadCurrentChallenge();
-        }
+        // Ha újrakezdés szükséges, NEM hívjuk meg az updateGameStatus-t
+        // A polling majd frissíti az állapotot
         
         return {
           success: false,

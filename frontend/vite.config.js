@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   build: {
     outDir: '../backend/static',
-    emptyOutDir: true,
+    emptyOutDir: false, // Ne töröljük a teljes mappát, hogy megmaradjon a Halloween.png
     assetsDir: 'assets',
     rollupOptions: {
       output: {

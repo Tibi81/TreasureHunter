@@ -1,5 +1,5 @@
 // components/ChallengePanel.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import QRScanner from './QRScanner';
 
 const ChallengePanel = ({ challenge, onQRScan, onGetHelp, loading, gameStatus }) => {
@@ -8,11 +8,42 @@ const ChallengePanel = ({ challenge, onQRScan, onGetHelp, loading, gameStatus })
   const [helpText, setHelpText] = useState('');
   const [scanResult, setScanResult] = useState(null);
   const [showQRScanner, setShowQRScanner] = useState(false);
+  const timeoutRef = useRef(null);
+  const previousChallengeRef = useRef(null);
+
+  // ✅ JAVÍTOTT: ScanResult törlése csak új challenge betöltésekor
+  useEffect(() => {
+    if (challenge && challenge !== previousChallengeRef.current) {
+      console.log('🔄 Új challenge betöltve, QR eredmények törlése');
+      setScanResult(null); // Töröljük a korábbi eredményt új feladat betöltésekor
+      // Töröljük a pending timeout-ot is
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+      previousChallengeRef.current = challenge;
+    }
+  }, [challenge]);
+
+  // Cleanup timeout komponens unmount-kor
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   // QR kód beküldése
   const handleQRSubmit = async (e) => {
     e.preventDefault();
     if (!qrCode.trim()) return;
+
+    // Töröljük a korábbi timeout-ot
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
 
     setScanResult(null);
     const result = await onQRScan(qrCode.trim());
@@ -22,12 +53,28 @@ const ChallengePanel = ({ challenge, onQRScan, onGetHelp, loading, gameStatus })
     if (result.success || result.reset) {
       setQrCode('');
     }
+
+    // Automatikusan töröljük az eredményt 3 másodperc után
+    if (result) {
+      console.log('🕒 QR eredmény timeout beállítva 3 másodpercre');
+      timeoutRef.current = setTimeout(() => {
+        console.log('🕒 QR eredmény timeout lejárt, törlés...');
+        setScanResult(null);
+        timeoutRef.current = null;
+      }, 3000);
+    }
   };
 
   // QR kód scanner kezelése
   const handleQRScan = async (scannedCode) => {
     setShowQRScanner(false);
     setQrCode(scannedCode);
+    
+    // Töröljük a korábbi timeout-ot
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
     
     // Automatikusan beküldjük a beolvasott kódot
     setScanResult(null);
@@ -36,6 +83,16 @@ const ChallengePanel = ({ challenge, onQRScan, onGetHelp, loading, gameStatus })
     
     if (result.success || result.reset) {
       setQrCode('');
+    }
+
+    // Automatikusan töröljük az eredményt 3 másodperc után
+    if (result) {
+      console.log('🕒 QR eredmény timeout beállítva 3 másodpercre (scanner)');
+      timeoutRef.current = setTimeout(() => {
+        console.log('🕒 QR eredmény timeout lejárt, törlés... (scanner)');
+        setScanResult(null);
+        timeoutRef.current = null;
+      }, 3000);
     }
   };
 
