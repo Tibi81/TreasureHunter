@@ -2,6 +2,25 @@
 
 Egy interaktív QR kód alapú kincskereső játék Halloween témában, Django backend-del és React frontend-del.
 
+## ⚠️ Fontos közlemény
+
+**A `main` ág jelenleg nem stabil** - ismert hibák vannak benne (lassú kommunikáció, CORS problémák).  
+**Használd a `refactor` ágat** - ez a stabil, működőképes verzió.
+
+## 🚀 Gyors kezdés
+
+```bash
+git clone https://github.com/your-username/TreasureHunter.git
+cd TreasureHunter
+git checkout refactor
+```
+
+## 📋 Ágak állapota
+
+- ✅ **`refactor`** - Stabil, ajánlott használatra (jelenlegi)
+- ⚠️ **`main`** - Fejlesztés alatt, hibák vannak
+- 🚀 **`production`** - Production deployment konfiguráció
+
 ## 🚀 Funkciók
 
 ### 🎮 Játék funkciók
@@ -38,7 +57,18 @@ Egy interaktív QR kód alapú kincskereső játék Halloween témában, Django 
 
 ## 🛠️ Telepítés és futtatás
 
-### Backend (Django)
+### 1. Repository klónozása és ág választása
+
+```bash
+# Repository klónozása
+git clone https://github.com/your-username/TreasureHunter.git
+cd TreasureHunter
+
+# Stabil ág használata (FONTOS!)
+git checkout refactor
+```
+
+### 2. Backend (Django) - Egyben deployment
 
 ```bash
 # Virtuális környezet létrehozása
@@ -63,24 +93,22 @@ python manage.py createsuperuser
 # Teszt adatok betöltése (opcionális)
 python manage.py setup_test_data
 
-# Szerver indítása
+# Frontend build (egyben deployment)
+cd ../frontend
+npm install
+npm run build
+
+# Szerver indítása (Django szolgálja a frontend-et)
+cd ../backend
 python manage.py runserver
 ```
 
-### Frontend (React)
+### 3. Alkalmazás elérése
 
-```bash
-cd frontend
+- **Játékosok**: `http://localhost:8000`
+- **Admin felület**: `http://localhost:8000/admin`
 
-# Függőségek telepítése
-npm install
-
-# Fejlesztői szerver indítása
-npm run dev
-
-# Vagy production build
-npm run build
-```
+> **Megjegyzés**: A `refactor` ágban a Django szerver szolgálja a React frontend-et statikus fájlként. Nincs szükség külön frontend szerverre!
 
 ## 🎮 Játék használata
 
