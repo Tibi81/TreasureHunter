@@ -65,20 +65,20 @@ const PlayerRegistration = ({ gameData, onJoinGame, onBack }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="max-w-md mx-auto p-8">
+    <div className="min-h-screen flex items-center justify-center container-mobile">
+      <div className="max-w-md mx-auto w-full">
         {/* Fehér tartalom blokk */}
-        <div className="bg-gradient-to-b from-purple-900/90 to-gray-800/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-orange-500/20">
+        <div className="bg-gradient-to-b from-purple-900/90 to-gray-800/90 backdrop-blur-sm rounded-2xl shadow-lg p-mobile border border-orange-500/20">
           {/* Cím */}
-          <div className="text-center mb-8">
-            <div className="text-6xl mb-4">
+          <div className="text-center mb-mobile-lg">
+            <div className="text-4xl sm:text-6xl mb-4">
               <span className="animate-float">🎃</span>
               <span className="animate-float" style={{ animationDelay: '1.5s' }}>👻</span>
             </div>
-            <h1 className="text-3xl md:text-4xl font-extrabold text-orange-400 drop-shadow-glow-orange mb-2 font-spooky">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-orange-400 drop-shadow-glow-orange mb-2 font-spooky">
               Csatlakozás a játékhoz
             </h1>
-            <p className="text-lg text-gray-200 font-spooky leading-relaxed">
+            <p className="text-base sm:text-lg text-gray-200 font-spooky leading-relaxed">
               Játék: <span className="text-orange-400 font-semibold">{gameData.game.name}</span>
             </p>
             <p className="text-sm text-gray-300 font-spooky">
@@ -91,34 +91,32 @@ const PlayerRegistration = ({ gameData, onJoinGame, onBack }) => {
             </p>
           </div>
 
-        <div className="flex flex-col items-center space-y-4">
+        <div className="form-container">
           {/* Regisztráció form */}
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} className="form-container">
             {/* Név megadás */}
-              <div className="mb-6">
-                <label htmlFor="playerName" className="block text-xl font-medium mb-4 text-center text-orange-300 font-spooky">
+              <div className="mb-mobile">
+                <label htmlFor="playerName" className="block text-lg sm:text-xl font-medium mb-mobile text-center text-orange-300 font-spooky">
                   Add meg a neved:
                 </label>
-                <div className="flex justify-center">
-                  <input
-                    type="text"
-                    id="playerName"
-                    value={playerName}
-                    onChange={(e) => setPlayerName(e.target.value)}
-                    className="w-48 sm:w-56 md:w-64 px-4 py-4 bg-gray-800 border-2 border-orange-400 rounded-2xl text-white text-xl text-center placeholder-gray-400 focus:ring-2 focus:ring-orange-400 focus:border-transparent transition-all duration-200 font-spooky"
-                    placeholder="Írd be a neved..."
-                    maxLength={20}
-                    autoFocus
-                  />
-                </div>
+                <input
+                  type="text"
+                  id="playerName"
+                  value={playerName}
+                  onChange={(e) => setPlayerName(e.target.value)}
+                  className="input-primary text-center"
+                  placeholder="Írd be a neved..."
+                  maxLength={20}
+                  autoFocus
+                />
               </div>
 
               {/* Csapat választás */}
-              <div className="mb-6">
-                <label className="block text-xl font-medium mb-4 text-center text-orange-300 font-spooky">
+              <div className="mb-mobile">
+                <label className="block text-lg sm:text-xl font-medium mb-mobile text-center text-orange-300 font-spooky">
                   Válassz egy csapatot:
                 </label>
-                <div className={`grid gap-4 ${getAvailableTeams().length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                <div className={`grid-mobile ${getAvailableTeams().length === 1 ? 'grid-mobile-1' : 'grid-mobile-2'}`}>
                   {getAvailableTeams().map(team => {
                     const teamStatus = getTeamStatus(team.name);
                     return (
@@ -127,7 +125,7 @@ const PlayerRegistration = ({ gameData, onJoinGame, onBack }) => {
                         type="button"
                         onClick={() => setSelectedTeam(team.name)}
                         disabled={teamStatus.isFull}
-                        className={`p-6 rounded-2xl border-2 transition-all duration-200 transform hover:scale-105 ${
+                        className={`p-mobile rounded-2xl border-2 transition-all duration-200 transform hover:scale-105 ${
                           selectedTeam === team.name
                             ? 'border-orange-400 bg-gradient-to-b from-orange-500/20 to-orange-600/20 shadow-lg shadow-orange-400/40'
                             : teamStatus.isFull
@@ -135,8 +133,8 @@ const PlayerRegistration = ({ gameData, onJoinGame, onBack }) => {
                             : 'border-orange-400/50 bg-gradient-to-b from-gray-800 to-gray-700 hover:from-orange-500/10 hover:to-orange-600/10 cursor-pointer hover:shadow-lg hover:shadow-orange-400/20'
                         }`}
                       >
-                        <div className="text-4xl mb-3 animate-float">{team.icon}</div>
-                        <div className="font-bold text-lg text-orange-300 font-spooky">{team.displayName}</div>
+                        <div className="text-3xl sm:text-4xl mb-3 animate-float">{team.icon}</div>
+                        <div className="font-bold text-base sm:text-lg text-orange-300 font-spooky">{team.displayName}</div>
                         <div className="text-sm mt-2 text-gray-300 font-spooky">
                           {teamStatus.count}/{teamStatus.maxPlayers} játékos
                         </div>
@@ -156,25 +154,23 @@ const PlayerRegistration = ({ gameData, onJoinGame, onBack }) => {
 
               {/* Hibaüzenet */}
               {error && (
-                <div className="flex justify-center mb-4">
-                  <div className="bg-red-100 border-2 border-red-400 text-red-700 px-4 py-3 rounded-xl text-lg w-48 sm:w-56 md:w-64 text-center font-spooky">
-                    {error}
-                  </div>
+                <div className="error-message text-center">
+                  {error}
                 </div>
               )}
 
               {/* Gombok */}
-              <div className="flex flex-col items-center space-y-4">
+              <div className="form-container">
                 <button
                   type="submit"
-                  className="bg-gradient-to-r from-orange-500 to-purple-600 hover:from-orange-400 hover:to-purple-500 text-white font-bold py-4 px-6 rounded-xl transition-all duration-200 text-xl w-48 sm:w-56 md:w-64 transform hover:scale-105 shadow-md hover:shadow-orange-400/40 font-spooky"
+                  className="btn-primary"
                 >
                   Csatlakozás! 🎮
                 </button>
                 <button
                   type="button"
                   onClick={onBack}
-                  className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-500 hover:to-blue-500 text-white font-bold py-4 px-6 rounded-xl transition-all duration-200 text-xl w-48 sm:w-56 md:w-64 transform hover:scale-105 shadow-md hover:shadow-green-400/40 font-spooky"
+                  className="btn-secondary"
                 >
                   Vissza
                 </button>
@@ -183,17 +179,17 @@ const PlayerRegistration = ({ gameData, onJoinGame, onBack }) => {
           </div>
 
           {/* Játék állapot */}
-          <div className="mt-8 p-6 bg-gradient-to-b from-gray-800 to-gray-700 rounded-2xl border-2 border-orange-500/20 shadow-lg">
-            <h4 className="font-bold text-orange-400 mb-4 text-center text-xl font-spooky">
+          <div className="mt-mobile-lg p-mobile bg-gradient-to-b from-gray-800 to-gray-700 rounded-2xl border-2 border-orange-500/20 shadow-lg">
+            <h4 className="font-bold text-orange-400 mb-mobile text-center text-lg sm:text-xl font-spooky">
               📊 Játék állapot:
             </h4>
-            <div className="text-gray-200 space-y-3 font-spooky leading-relaxed">
+            <div className="text-gray-200 space-y-2 sm:space-y-3 font-spooky leading-relaxed text-sm sm:text-base">
               <p className="flex items-center">
-                <span className="text-orange-400 mr-2">👥</span>
+                <span className="text-orange-400 mr-2 text-base">👥</span>
                 Játékosok: {gameData.game_info.total_players}/4
               </p>
               <p className="flex items-center">
-                <span className="text-orange-400 mr-2">⚡</span>
+                <span className="text-orange-400 mr-2 text-base">⚡</span>
                 Állapot: {gameData.game.status === 'waiting' ? 'Várakozás játékosokra' : 
                          gameData.game.status === 'setup' ? 'Készen áll az indításra' : 
                          gameData.game.status}

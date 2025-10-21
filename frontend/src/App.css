@@ -1,16 +1,18 @@
 /* App.css - Frissített verzió Halloween támogatással */
 
 /* ALAPVETŐ LAYOUT */
-body {
+html, body {
   height: 100%;
   min-height: 100vh;
+  overflow-x: hidden; /* Horizontális overflow eltávolítása */
   /* Megtartjuk a meglévő gyönyörű Halloween képet, de halvány lilás filterrel */
   background-image: 
     linear-gradient(rgba(91, 33, 182, 0.3), rgba(91, 33, 182, 0.3)),
-    url('/static/Halloween.png');
+    url('/Halloween.png');
   background-repeat: no-repeat;
   background-size: cover;
-  background-position: center;
+  background-position: center center;
+  background-attachment: fixed;
   margin: 0;
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
 }
@@ -20,6 +22,8 @@ body {
   max-width: 1280px;
   margin: 0 auto;
   padding: 3rem;
+  min-height: 100vh;
+  overflow-x: hidden; /* Horizontális overflow eltávolítása */
   /* Eltávolítjuk a text-align: center-t, mert komponens-specifikusan kezeljük */
 }
 
@@ -78,56 +82,297 @@ body {
   color: #9ca3af !important; /* gray-400 */
 }
 
-/* GOMBOK */
+/* EGYSÉGES GOMB STÍLUSOK - MOBILBARÁT MEGKÖZELÍTÉSSEL */
+
+/* Elsődleges gombok (CTA) - Halloween téma */
 .btn-primary {
-  background: linear-gradient(to right, #ea580c, #9333ea) !important;
+  background: linear-gradient(to right, #ea580c, #7c3aed) !important;
   color: white !important;
   font-weight: bold !important;
-  padding: 1rem 1.5rem !important;
-  border-radius: 0.5rem !important;
+  padding: 0.875rem 1.5rem !important; /* Mobilbarát padding */
+  border-radius: 0.75rem !important;
   border: none !important;
   cursor: pointer !important;
   transition: all 0.2s ease !important;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
-  width: 100%;
   font-size: 1rem !important;
-}
-
-/* Specific width override for Welcome component buttons */
-.welcome-container .btn-primary {
-  width: auto !important;
-}
-
-/* Welcome component spacing fix */
-.welcome-spacing {
-  gap: 3rem !important;
-}
-
-.welcome-button-spacing {
-  margin-top: 2rem !important;
+  min-height: 44px !important; /* Mobilbarát minimum magasság */
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  max-width: 100% !important;
 }
 
 .btn-primary:hover {
-  background: linear-gradient(to right, #dc2626, #7c3aed) !important;
-  transform: translateY(-2px) !important;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2) !important;
+  background: linear-gradient(to right, #dc2626, #6b21b8) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 8px 25px rgba(234, 88, 12, 0.3) !important;
 }
 
+.btn-primary:active {
+  transform: translateY(0) !important;
+}
+
+/* Másodlagos gombok */
 .btn-secondary {
+  background: linear-gradient(to right, #6b7280, #4b5563) !important;
+  color: white !important;
+  font-weight: bold !important;
+  padding: 0.875rem 1.5rem !important;
+  border-radius: 0.75rem !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  font-size: 1rem !important;
+  min-height: 44px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+}
+
+.btn-secondary:hover {
+  background: linear-gradient(to right, #4b5563, #374151) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Admin gombok */
+.btn-admin {
   background: linear-gradient(to right, #059669, #2563eb) !important;
   color: white !important;
   font-weight: bold !important;
-  padding: 0.75rem 1.5rem !important;
+  padding: 0.875rem 1.5rem !important;
+  border-radius: 0.75rem !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  font-size: 1rem !important;
+  min-height: 44px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+}
+
+.btn-admin:hover {
+  background: linear-gradient(to right, #047857, #1d4ed8) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Kis gombok (ikonok, műveletek) */
+.btn-small {
+  background: linear-gradient(to right, #6b7280, #4b5563) !important;
+  color: white !important;
+  font-weight: bold !important;
+  padding: 0.5rem 0.75rem !important;
   border-radius: 0.5rem !important;
   border: none !important;
   cursor: pointer !important;
   transition: all 0.2s ease !important;
-  width: 100%;
+  font-size: 0.875rem !important;
+  min-height: 36px !important;
+  min-width: 36px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
-.btn-secondary:hover {
-  background: linear-gradient(to right, #047857, #1d4ed8) !important;
+.btn-small:hover {
+  background: linear-gradient(to right, #4b5563, #374151) !important;
   transform: translateY(-1px) !important;
+}
+
+/* Veszélyes műveletek (törlés, leállítás) */
+.btn-danger {
+  background: linear-gradient(to right, #dc2626, #b91c1c) !important;
+  color: white !important;
+  font-weight: bold !important;
+  padding: 0.875rem 1.5rem !important;
+  border-radius: 0.75rem !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  font-size: 1rem !important;
+  min-height: 44px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+}
+
+.btn-danger:hover {
+  background: linear-gradient(to right, #b91c1c, #991b1b) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Siker műveletek (indítás, létrehozás) */
+.btn-success {
+  background: linear-gradient(to right, #059669, #047857) !important;
+  color: white !important;
+  font-weight: bold !important;
+  padding: 0.875rem 1.5rem !important;
+  border-radius: 0.75rem !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  font-size: 1rem !important;
+  min-height: 44px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+}
+
+.btn-success:hover {
+  background: linear-gradient(to right, #047857, #065f46) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Disabled állapot */
+.btn-primary:disabled,
+.btn-secondary:disabled,
+.btn-admin:disabled,
+.btn-small:disabled,
+.btn-danger:disabled,
+.btn-success:disabled {
+  background: linear-gradient(to right, #6b7280, #4b5563) !important;
+  color: #9ca3af !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+  opacity: 0.6 !important;
+}
+
+/* MOBILBARÁT INPUT MEZŐK */
+
+/* Alapértelmezett input stílus */
+.input-primary {
+  background-color: #1f2937 !important; /* gray-800 */
+  color: white !important;
+  border: 2px solid #ea580c !important; /* orange-600 */
+  border-radius: 0.75rem !important;
+  padding: 0.875rem 1rem !important; /* Mobilbarát padding */
+  font-family: inherit !important;
+  font-size: 1rem !important;
+  min-height: 44px !important; /* Mobilbarát minimum magasság */
+  width: 100% !important;
+  outline: none !important;
+  transition: all 0.2s ease !important;
+  box-sizing: border-box !important;
+}
+
+.input-primary:focus {
+  border-color: #fb923c !important; /* orange-400 */
+  box-shadow: 0 0 0 3px rgba(251, 146, 60, 0.3) !important;
+}
+
+.input-primary::placeholder {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+.input-primary:disabled {
+  background-color: #374151 !important; /* gray-700 */
+  color: #6b7280 !important; /* gray-500 */
+  cursor: not-allowed !important;
+}
+
+/* Select mezők */
+.select-primary {
+  background-color: #1f2937 !important;
+  color: white !important;
+  border: 2px solid #ea580c !important;
+  border-radius: 0.75rem !important;
+  padding: 0.875rem 1rem !important;
+  font-family: inherit !important;
+  font-size: 1rem !important;
+  min-height: 44px !important;
+  width: 100% !important;
+  outline: none !important;
+  transition: all 0.2s ease !important;
+  cursor: pointer !important;
+}
+
+.select-primary:focus {
+  border-color: #fb923c !important;
+  box-shadow: 0 0 0 3px rgba(251, 146, 60, 0.3) !important;
+}
+
+/* MOBILBARÁT CONTAINER STÍLUSOK */
+
+/* Alapértelmezett container */
+.container-mobile {
+  padding: 1rem !important; /* Mobilbarát padding */
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+  box-sizing: border-box !important;
+}
+
+/* Nagyobb container */
+.container-mobile-lg {
+  padding: 1.5rem !important;
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+  box-sizing: border-box !important;
+}
+
+/* Form container */
+.form-container {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1rem !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* Grid container mobilbarát */
+.grid-mobile {
+  display: grid !important;
+  gap: 1rem !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.grid-mobile-1 {
+  grid-template-columns: 1fr !important;
+}
+
+.grid-mobile-2 {
+  grid-template-columns: repeat(2, 1fr) !important;
+}
+
+/* Flex container mobilbarát */
+.flex-mobile {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1rem !important;
+  width: 100% !important;
+}
+
+.flex-mobile-row {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 0.5rem !important;
+  width: 100% !important;
+  flex-wrap: wrap !important;
+}
+
+/* MOBILBARÁT SPACING */
+
+/* Margin bottom mobilbarát */
+.mb-mobile {
+  margin-bottom: 1rem !important;
+}
+
+.mb-mobile-lg {
+  margin-bottom: 1.5rem !important;
+}
+
+/* Padding mobilbarát */
+.p-mobile {
+  padding: 1rem !important;
+}
+
+.p-mobile-lg {
+  padding: 1.5rem !important;
 }
 
 /* ERROR/SUCCESS ÜZENETEK */
@@ -177,19 +422,142 @@ body {
   border: 2px solid #c4b5fd !important;
 }
 
-/* RESPONSIVE DESIGN */
-@media (max-width: 768px) {
+/* RESPONSIVE DESIGN - MOBILBARÁT MEGKÖZELÍTÉSSEL */
+
+/* Mobil első megközelítés - alapértelmezett mobilbarát stílusok */
+#root {
+  padding: 1rem;
+  overflow-x: hidden;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+.white-content-block {
+  padding: 1rem !important;
+  overflow-x: hidden;
+  margin: 0.5rem;
+  box-sizing: border-box;
+}
+
+/* Tablet és nagyobb képernyők */
+@media (min-width: 768px) {
+  #root {
+    padding: 2rem;
+  }
+  
+  .white-content-block {
+    padding: 1.5rem !important;
+    margin: 1rem;
+  }
+  
+  /* Grid layout tablet-en */
+  .grid-mobile-2 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  
+  /* Flex layout tablet-en */
+  .flex-mobile {
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+  }
+}
+
+/* Desktop és nagyobb képernyők */
+@media (min-width: 1024px) {
+  #root {
+    padding: 3rem;
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+  
+  .white-content-block {
+    padding: 2rem !important;
+    margin: 1.5rem;
+  }
+  
+  /* Grid layout desktop-on */
+  .grid-mobile-2 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* Extra kis képernyők (320px-480px) */
+@media (max-width: 480px) {
+  html, body {
+    background-size: cover;
+    background-position: center center;
+    background-attachment: scroll; /* Mobil eszközökön scroll */
+  }
+  
   #root {
     padding: 0.5rem;
   }
   
   .white-content-block {
-    padding: 1.5rem !important;
+    padding: 0.75rem !important;
+    margin: 0.25rem;
   }
   
-  .dark-input {
-    font-size: 1.125rem !important; /* text-lg mobile-on */
+  /* Gombok extra kis képernyőn */
+  .btn-primary,
+  .btn-secondary,
+  .btn-admin,
+  .btn-danger,
+  .btn-success {
+    padding: 0.75rem 1rem !important;
+    font-size: 0.9rem !important;
   }
+  
+  /* Input mezők extra kis képernyőn */
+  .input-primary,
+  .select-primary {
+    padding: 0.75rem 0.875rem !important;
+    font-size: 0.9rem !important;
+  }
+}
+
+/* OVERFLOW VÉDELEM */
+.container {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+/* Modal overflow javítás */
+.modal-overlay {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Grid és flexbox overflow javítás */
+.grid, .flex {
+  overflow-x: hidden;
+}
+
+/* Text overflow kezelés */
+.text-overflow-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Biztonságos hover effektek - scale nélkül */
+.btn-safe-hover {
+  transition: all 0.2s ease;
+}
+
+.btn-safe-hover:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  filter: brightness(1.1);
+}
+
+/* Biztonságos scale hover (ha mégis kell) */
+.btn-scale-safe {
+  transition: all 0.2s ease;
+  transform-origin: center;
+}
+
+.btn-scale-safe:hover {
+  transform: scale(1.02); /* Kisebb scale érték */
 }
 
 /* MEGLÉVŐ STÍLUSOK MEGTARTÁSA (ha kellenek) */

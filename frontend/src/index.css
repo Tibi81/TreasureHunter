@@ -36,6 +36,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  overflow-x: hidden; /* Horizontális overflow eltávolítása */
   /* A hátteret az App.css-ben kezeljük */
 }
 
@@ -73,9 +74,7 @@ button {
   transition: all 0.25s ease;
 }
 
-button:hover {
-  border-color: #fb923c; /* Halloween orange */
-}
+/* Globális gomb hover eltávolítva - Tailwind CSS osztályok kezelik */
 
 button:focus,
 button:focus-visible {
@@ -129,9 +128,7 @@ input:focus, textarea:focus, select:focus {
     color: #213547;
   }
   
-  button:hover {
-    border-color: #ea580c;
-  }
+  /* Globális gomb hover eltávolítva - Tailwind CSS osztályok kezelik */
 }
 
 /* UTILITY CLASSES - Tailwind kiegészítés */
@@ -163,3 +160,37 @@ input:focus, textarea:focus, select:focus {
   border: 1px solid red;
 }
 */
+
+/* GLOBÁLIS OVERFLOW JAVÍTÁSOK */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  overflow-x: hidden;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+/* Container overflow védelem */
+.container {
+  overflow-x: hidden !important;
+  max-width: 100% !important;
+}
+
+/* Grid overflow védelem */
+.grid {
+  overflow-x: hidden !important;
+}
+
+/* Flexbox overflow védelem */
+.flex {
+  overflow-x: hidden !important;
+}
+
+/* Modal overflow javítás */
+.fixed {
+  overflow-x: hidden !important;
+}

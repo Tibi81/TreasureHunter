@@ -57,25 +57,25 @@ const ChallengePanel = ({ challenge, onQRScan, onGetHelp, loading, gameStatus })
   // Ha nincs aktív feladat
   if (!challenge) {
     return (
-      <div className="bg-gradient-to-b from-purple-900/90 to-gray-800/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 text-center border border-orange-500/20">
-        <div className="text-4xl mb-4 animate-float">⏳</div>
-        <h3 className="text-2xl font-bold text-orange-400 mb-2 font-spooky drop-shadow-glow-orange">
+      <div className="bg-gradient-to-b from-purple-900/90 to-gray-800/90 backdrop-blur-sm rounded-2xl shadow-lg p-mobile text-center border border-orange-500/20">
+        <div className="text-3xl sm:text-4xl mb-4 animate-float">⏳</div>
+        <h3 className="text-xl sm:text-2xl font-bold text-orange-400 mb-2 font-spooky drop-shadow-glow-orange">
           Várakozás...
         </h3>
-        <p className="text-gray-200 font-spooky leading-relaxed">
+        <p className="text-gray-200 font-spooky leading-relaxed text-sm sm:text-base">
           {gameStatus === 'setup' ? 'Várakozás a játék indítására... (Admin indítja el)' : 
            gameStatus === 'waiting' ? 'Várakozás játékosokra... (Legalább 1 játékos szükséges)' :
            'Várakozás a feladatra...'}
         </p>
         {gameStatus === 'setup' && (
-          <div className="mt-4 p-4 bg-gradient-to-b from-orange-900/30 to-orange-800/30 rounded-xl border border-orange-500/20">
+          <div className="mt-mobile p-mobile bg-gradient-to-b from-orange-900/30 to-orange-800/30 rounded-xl border border-orange-500/20">
             <p className="text-sm text-orange-200 font-spooky">
               💡 Tipp: Oszd meg a játék azonosítóját a többi játékossal!
             </p>
           </div>
         )}
         {gameStatus === 'waiting' && (
-          <div className="mt-4 p-4 bg-gradient-to-b from-blue-900/30 to-blue-800/30 rounded-xl border border-blue-500/20">
+          <div className="mt-mobile p-mobile bg-gradient-to-b from-blue-900/30 to-blue-800/30 rounded-xl border border-blue-500/20">
             <p className="text-sm text-blue-200 font-spooky">
               🎮 Várjuk a többi játékos csatlakozását...
             </p>
@@ -89,17 +89,17 @@ const ChallengePanel = ({ challenge, onQRScan, onGetHelp, loading, gameStatus })
   }
 
   return (
-    <div className="bg-gradient-to-b from-purple-900/90 to-gray-800/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-orange-500/20">
+    <div className="bg-gradient-to-b from-purple-900/90 to-gray-800/90 backdrop-blur-sm rounded-2xl shadow-lg p-mobile border border-orange-500/20 overflow-hidden">
       {/* Feladat fejléc */}
-      <div className="text-center mb-6">
-        <div className="text-6xl mb-4 animate-float">{challenge.station?.icon || '🎯'}</div>
-        <h2 className="text-3xl md:text-4xl font-extrabold text-orange-400 mb-3 font-spooky drop-shadow-glow-orange">
+      <div className="text-center mb-mobile">
+        <div className="text-4xl sm:text-6xl mb-4 animate-float">{challenge.station?.icon || '🎯'}</div>
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-orange-400 mb-3 font-spooky drop-shadow-glow-orange">
           {challenge.challenge?.title || challenge.title}
         </h2>
-        <div className="text-lg text-gray-200 mb-2 font-spooky">
+        <div className="text-base sm:text-lg text-gray-200 mb-2 font-spooky">
           {challenge.station?.name}
         </div>
-        <div className="text-sm text-purple-300 bg-gradient-to-b from-purple-900/30 to-purple-800/30 rounded-full px-4 py-2 inline-block border border-purple-500/20 font-spooky">
+        <div className="text-xs sm:text-sm text-purple-300 bg-gradient-to-b from-purple-900/30 to-purple-800/30 rounded-full px-3 sm:px-4 py-2 inline-block border border-purple-500/20 font-spooky">
           {challenge.is_save ? '🆘 Mentesítő feladat' :
            challenge.team_type ? 
             (challenge.team_type === 'pumpkin' ? '🎃 Tök Csapat feladata' : '👻 Szellem Csapat feladata') : 
@@ -109,47 +109,38 @@ const ChallengePanel = ({ challenge, onQRScan, onGetHelp, loading, gameStatus })
       </div>
 
       {/* Feladat leírása */}
-      <div className="mb-6">
-        <h3 className="text-xl font-bold text-orange-300 mb-3 font-spooky">
+      <div className="mb-mobile">
+        <h3 className="text-lg sm:text-xl font-bold text-orange-300 mb-mobile font-spooky">
           📋 Feladat:
         </h3>
-        <div className="bg-gradient-to-b from-gray-800 to-gray-700 rounded-xl p-4 border border-orange-500/20">
-          <p className="text-gray-200 leading-relaxed font-spooky">
+        <div className="bg-gradient-to-b from-gray-800 to-gray-700 rounded-xl p-mobile border border-orange-500/20">
+          <p className="text-gray-200 leading-relaxed font-spooky text-sm sm:text-base">
             {challenge.challenge?.description || challenge.description}
           </p>
         </div>
       </div>
 
       {/* QR kód beolvasás */}
-      <div className="mb-6">
-        <h3 className="text-xl font-bold text-orange-300 mb-3 font-spooky">
+      <div className="mb-mobile">
+        <h3 className="text-lg sm:text-xl font-bold text-orange-300 mb-mobile font-spooky">
           📱 QR kód beolvasása:
         </h3>
-        <form onSubmit={handleQRSubmit} className="space-y-4">
+        <form onSubmit={handleQRSubmit} className="form-container">
           <div>
             <input
               type="text"
               value={qrCode}
               onChange={(e) => setQrCode(e.target.value)}
               placeholder="Írd be vagy olvasd be a QR kódot..."
-              className="w-full px-4 py-4 bg-gray-800 border-2 border-orange-400 rounded-xl 
-                       focus:ring-2 focus:ring-orange-400 focus:border-transparent
-                       text-white placeholder-gray-400 text-center text-lg font-spooky
-                       transition-all duration-200"
+              className="input-primary text-center"
               disabled={loading}
             />
           </div>
-          <div className="flex space-x-2">
+          <div className="flex-mobile-row">
             <button
               type="submit"
               disabled={loading || !qrCode.trim()}
-              className="flex-1 bg-gradient-to-r from-orange-500 to-purple-600 
-                       hover:from-orange-400 hover:to-purple-500 
-                       disabled:from-gray-600 disabled:to-gray-600
-                       text-white font-bold py-4 px-4 rounded-xl 
-                       transition-all duration-200 transform hover:scale-105
-                       disabled:cursor-not-allowed font-spooky
-                       shadow-md hover:shadow-orange-400/40"
+              className="btn-primary flex-1"
             >
               {loading ? (
                 <span className="flex items-center justify-center">
@@ -167,10 +158,7 @@ const ChallengePanel = ({ challenge, onQRScan, onGetHelp, loading, gameStatus })
               type="button"
               onClick={() => setShowQRScanner(true)}
               disabled={loading}
-              className="bg-blue-600 hover:bg-blue-500 disabled:bg-gray-600
-                       text-white px-4 py-4 rounded-xl font-bold
-                       transition-all duration-200 disabled:cursor-not-allowed
-                       transform hover:scale-105 shadow-md hover:shadow-blue-400/40"
+              className="btn-small"
               title="QR kód beolvasása kamerával"
             >
               📷
@@ -181,15 +169,15 @@ const ChallengePanel = ({ challenge, onQRScan, onGetHelp, loading, gameStatus })
 
       {/* Eredmény megjelenítése */}
       {scanResult && (
-        <div className={`mb-6 p-4 rounded-xl text-center font-spooky ${
+        <div className={`mb-mobile p-mobile rounded-xl text-center font-spooky ${
           scanResult.success ? 'bg-gradient-to-b from-green-600/80 to-green-700/80' : 'bg-gradient-to-b from-red-600/80 to-red-700/80'
         } text-white border-2 ${
           scanResult.success ? 'border-green-400' : 'border-red-400'
         }`}>
-          <div className="text-2xl mb-2">
+          <div className="text-xl sm:text-2xl mb-2">
             {scanResult.success ? '✅' : '❌'}
           </div>
-          <div className="font-bold text-lg">
+          <div className="font-bold text-base sm:text-lg">
             {scanResult.message}
           </div>
           {scanResult.bonus && (
@@ -211,26 +199,23 @@ const ChallengePanel = ({ challenge, onQRScan, onGetHelp, loading, gameStatus })
       )}
 
       {/* Segítség */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-xl font-bold text-orange-300 font-spooky">
+      <div className="mb-mobile">
+        <div className="flex items-center justify-between mb-mobile">
+          <h3 className="text-lg sm:text-xl font-bold text-orange-300 font-spooky">
             💡 Segítség:
           </h3>
           <button
             onClick={handleGetHelpClick}
             disabled={loading}
-            className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 disabled:from-gray-600 disabled:to-gray-700
-                     text-white px-4 py-3 rounded-xl font-bold
-                     transition-all duration-200 disabled:cursor-not-allowed
-                     transform hover:scale-105 shadow-md hover:shadow-purple-400/40 font-spooky"
+            className="btn-small"
           >
-            Segítség kérése
+            {loading ? 'Kérés...' : 'Segítség kérése'}
           </button>
         </div>
         
         {showHelp && helpText && (
-          <div className="bg-gradient-to-b from-purple-900/50 to-purple-800/50 rounded-xl p-4 border border-purple-500/20">
-            <p className="text-purple-200 leading-relaxed font-spooky">
+          <div className="bg-gradient-to-b from-purple-900/50 to-purple-800/50 rounded-xl p-mobile border border-purple-500/20">
+            <p className="text-purple-200 leading-relaxed font-spooky text-sm sm:text-base">
               {helpText}
             </p>
           </div>
@@ -238,23 +223,23 @@ const ChallengePanel = ({ challenge, onQRScan, onGetHelp, loading, gameStatus })
       </div>
 
       {/* Játékszabályok */}
-      <div className="bg-gradient-to-b from-gray-800 to-gray-700 rounded-xl p-4 border border-orange-500/20">
-        <h4 className="font-bold text-orange-300 mb-3 text-lg font-spooky">📋 Emlékeztető:</h4>
-        <ul className="text-sm text-gray-200 space-y-2 font-spooky leading-relaxed">
+      <div className="bg-gradient-to-b from-gray-800 to-gray-700 rounded-xl p-mobile border border-orange-500/20">
+        <h4 className="font-bold text-orange-300 mb-mobile text-base sm:text-lg font-spooky">📋 Emlékeztető:</h4>
+        <ul className="text-xs sm:text-sm text-gray-200 space-y-1 sm:space-y-2 font-spooky leading-relaxed">
           <li className="flex items-center">
-            <span className="text-orange-400 mr-2">⚠️</span>
+            <span className="text-orange-400 mr-2 text-sm">⚠️</span>
             3 hibás próbálkozás után újrakezdés
           </li>
           <li className="flex items-center">
-            <span className="text-orange-400 mr-2">🪄</span>
+            <span className="text-orange-400 mr-2 text-sm">🪄</span>
             1 segítség állomásonként
           </li>
           <li className="flex items-center">
-            <span className="text-orange-400 mr-2">📱</span>
+            <span className="text-orange-400 mr-2 text-sm">📱</span>
             QR kódot pontosan add meg
           </li>
           <li className="flex items-center">
-            <span className="text-orange-400 mr-2">💡</span>
+            <span className="text-orange-400 mr-2 text-sm">💡</span>
             Ha elakadsz, kérj segítséget!
           </li>
         </ul>

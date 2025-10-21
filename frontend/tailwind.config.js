@@ -33,6 +33,9 @@ export default defineConfig({
       dropShadow: {
         'glow-orange': '0 0 6px rgba(255, 140, 0, 0.6)',
         'glow-purple': '0 0 6px rgba(139, 92, 246, 0.6)',
+      },
+      maxWidth: {
+        'screen': '100vw',
       }
     },
   },
