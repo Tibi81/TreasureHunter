@@ -2,6 +2,25 @@
 
 Egy interaktív QR kód alapú kincskereső játék Halloween témában, Django backend-del és React frontend-del.
 
+## ⚠️ Fontos közlemény
+
+**A `main` ág jelenleg nem stabil** - ismert hibák vannak benne (lassú kommunikáció, CORS problémák).  
+**Használd a `refactor` ágat** - ez a stabil, működőképes verzió.
+
+## 🚀 Gyors kezdés
+
+```bash
+git clone https://github.com/your-username/TreasureHunter.git
+cd TreasureHunter
+git checkout refactor
+```
+
+## 📋 Ágak állapota
+
+- ✅ **`refactor`** - Stabil, ajánlott használatra
+- ⚠️ **`main`** - Fejlesztés alatt, hibák vannak (jelenlegi)
+- 🚀 **`production`** - Production deployment konfiguráció
+
 ## 🚀 Funkciók
 
 ### 🎮 Játék funkciók
