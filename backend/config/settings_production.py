@@ -1,112 +1,104 @@
 """
-Django production settings for config project.
+Django production settings for config project - Railway.app optimized.
 """
 
 from pathlib import Path
 import os
+import dj_database_url
 from .settings import *
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # =====================================================
-# Production beállítások
+# Railway.app Production beállítások
 # =====================================================
 
 DEBUG = False
 
-# Production hostok - itt add meg a domain nevedet
+# Railway.app hostok
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
-    # Add meg a production domain nevedet:
+    '.railway.app',  # Railway.app domain
+    # Add meg a custom domain nevedet:
     # 'your-domain.com',
     # 'www.your-domain.com',
 ]
 
-# Production CORS beállítások
+# Railway.app CORS beállítások
 CORS_ALLOWED_ORIGINS = [
-    # Add meg a production domain nevedet:
+    # Railway.app domain automatikusan hozzáadódik
+    # Add meg a custom domain nevedet:
     # "https://your-domain.com",
     # "https://www.your-domain.com",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    # Add meg a production domain nevedet:
+    # Railway.app domain automatikusan hozzáadódik
+    # Add meg a custom domain nevedet:
     # "https://your-domain.com",
     # "https://www.your-domain.com",
 ]
 
 # =====================================================
-# Production statikus fájlok
+# Railway.app statikus fájlok
 # =====================================================
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# Production-ben a staticfiles mappát használjuk
+# Railway.app-ben a staticfiles mappát használjuk
 STATICFILES_DIRS = [
     BASE_DIR / 'static',
 ]
 
+# WhiteNoise middleware hozzáadása statikus fájlokhoz
+MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
+
 # =====================================================
-# Production adatbázis (PostgreSQL ajánlott)
+# Railway.app adatbázis (PostgreSQL)
 # =====================================================
 
-# SQLite (egyszerű deployment)
+# Railway.app PostgreSQL automatikus konfiguráció
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default='sqlite:///db.sqlite3',
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
 }
 
-# PostgreSQL (professzionális deployment) - kommentezd ki a SQLite-et és add meg a PostgreSQL adatokat
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': 'treasurehunt_db',
-#         'USER': 'your_db_user',
-#         'PASSWORD': 'your_db_password',
-#         'HOST': 'localhost',
-#         'PORT': '5432',
-#     }
-# }
-
 # =====================================================
-# Production biztonság
+# Railway.app biztonság
 # =====================================================
 
-# Titkos kulcs - production-ben változtasd meg!
+# Titkos kulcs - Railway.app environment változóból
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-change-this-in-production')
 
-# HTTPS beállítások
-SECURE_SSL_REDIRECT = False  # Ha HTTPS-t használsz, állítsd True-ra
-SECURE_HSTS_SECONDS = 0  # Ha HTTPS-t használsz, állítsd 31536000-re
-SECURE_HSTS_INCLUDE_SUBDOMAINS = False
-SECURE_HSTS_PRELOAD = False
+# HTTPS beállítások Railway.app-hez
+SECURE_SSL_REDIRECT = True  # Railway.app HTTPS-t használ
+SECURE_HSTS_SECONDS = 31536000
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
 
 # =====================================================
-# Production logging
+# Railway.app logging
 # =====================================================
 
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'handlers': {
-        'file': {
-            'level': 'ERROR',
-            'class': 'logging.FileHandler',
-            'filename': BASE_DIR / 'logs' / 'django.log',
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
         },
     },
     'loggers': {
         'django': {
-            'handlers': ['file'],
-            'level': 'ERROR',
+            'handlers': ['console'],
+            'level': 'INFO',
             'propagate': True,
         },
     },
 }
-
-# Logs mappa létrehozása
-os.makedirs(BASE_DIR / 'logs', exist_ok=True)
