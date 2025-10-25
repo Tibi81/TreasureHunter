@@ -9,7 +9,7 @@ echo "🏗️ Building TreasureHunter for Railway..."
 
 # Install Python dependencies
 echo "📦 Installing Python dependencies..."
-pip install -r backend/requirements.txt
+pip3 install -r backend/requirements.txt
 
 # Install Node.js dependencies and build frontend
 echo "📦 Installing Node.js dependencies..."

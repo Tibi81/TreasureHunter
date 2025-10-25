@@ -11,7 +11,7 @@ echo "🚀 Starting TreasureHunter deployment on Railway..."
 cd backend
 
 echo "📦 Installing Python dependencies..."
-pip install -r requirements.txt
+pip3 install -r requirements.txt
 
 echo "🏗️ Building frontend..."
 cd ../frontend
@@ -25,10 +25,10 @@ echo "🔧 Setting up Django..."
 cd ../backend
 
 echo "📊 Collecting static files..."
-python manage.py collectstatic --noinput
+python3 manage.py collectstatic --noinput
 
 echo "🗄️ Running database migrations..."
-python manage.py migrate
+python3 manage.py migrate
 
 echo "🎯 Starting Gunicorn server..."
 exec gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120
