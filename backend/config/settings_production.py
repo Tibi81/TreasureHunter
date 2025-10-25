@@ -20,24 +20,17 @@ ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
     '.railway.app',  # Railway.app domain
-    # Add meg a custom domain nevedet:
-    # 'your-domain.com',
-    # 'www.your-domain.com',
+    'treasurehunter-production.up.railway.app',  # Konkrét domain
 ]
 
 # Railway.app CORS beállítások
 CORS_ALLOWED_ORIGINS = [
-    # Railway.app domain automatikusan hozzáadódik
-    # Add meg a custom domain nevedet:
-    # "https://your-domain.com",
-    # "https://www.your-domain.com",
+    'https://treasurehunter-production.up.railway.app',
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    # Railway.app domain automatikusan hozzáadódik
-    # Add meg a custom domain nevedet:
-    # "https://your-domain.com",
-    # "https://www.your-domain.com",
+    'https://treasurehunter-production.up.railway.app',
+    'https://*.railway.app',
 ]
 
 # =====================================================
@@ -76,10 +69,22 @@ DATABASES = {
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-change-this-in-production')
 
 # HTTPS beállítások Railway.app-hez
-SECURE_SSL_REDIRECT = True  # Railway.app HTTPS-t használ
-SECURE_HSTS_SECONDS = 31536000
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-SECURE_HSTS_PRELOAD = True
+# FONTOS: Railway már kezeli az HTTPS-t proxy szinten!
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')  # ← HOZZÁADVA
+SECURE_SSL_REDIRECT = False  # ← MEGVÁLTOZTATVA False-ra!
+
+# Cookie biztonsági beállítások
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+
+# További biztonsági beállítások
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+
+# HSTS csak akkor ha biztos vagy benne
+# SECURE_HSTS_SECONDS = 31536000
+# SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+# SECURE_HSTS_PRELOAD = True
 
 # =====================================================
 # Railway.app logging
