@@ -7,6 +7,12 @@ const getApiBaseUrl = () => {
     return ngrokUrl;
   }
   
+  // Ha a frontend és backend ugyanazon a porton fut (production build),
+  // használj relatív URL-eket
+  if (window.location.hostname === '127.0.0.1' && window.location.port === '8000') {
+    return ''; // Relatív URL-ek használata
+  }
+  
   // Egyébként használd a jelenlegi domain-t (build módban)
   if (window.location.hostname !== 'localhost') {
     return window.location.origin;
