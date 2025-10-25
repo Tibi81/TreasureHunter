@@ -22,10 +22,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY backend/ ./
 
 # Collectstatic
-RUN python manage.py collectstatic --noinput
+RUN python manage.py collectstatic --noinput --settings=config.settings_production
 
 # Port
 EXPOSE 8000
 
 # Start command
-CMD ["sh", "-c", "python manage.py migrate && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120"]
+CMD ["sh", "-c", "python manage.py migrate --settings=config.settings_production && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120"]
