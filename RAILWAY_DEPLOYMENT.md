@@ -29,6 +29,7 @@ Railway automatikusan felismeri:
 - ✅ **Python projekt** (requirements.txt alapján)
 - ✅ **Django alkalmazás** (manage.py alapján)
 - ✅ **Frontend build** (package.json alapján)
+- ✅ **Build script** (build.sh alapján)
 
 ### 4. Environment változók beállítása
 
@@ -127,23 +128,50 @@ railway login
 railway logs
 ```
 
+## 📁 Deployment fájlok
+
+A projekt most tartalmazza a szükséges Railway deployment fájlokat:
+
+### `railway.toml`
+- Railway konfigurációs fájl
+- Build és start parancsok definiálása
+- Environment változók beállítása
+
+### `build.sh`
+- Frontend build script
+- Python és Node.js függőségek telepítése
+- Frontend build másolása backend static mappába
+
+### `start.sh`
+- Teljes deployment script (alternatív)
+- Build + start egyben
+
+### `Procfile`
+- Railway Procfile (alternatív megközelítés)
+- Web process definiálása
+
 ## 🐛 Hibaelhárítás
 
 ### Gyakori problémák
 
-1. **Build hiba**
+1. **"start.sh szkript nem található" hiba**
+   - ✅ **Megoldva**: `build.sh` és `start.sh` scriptek létrehozva
+   - ✅ **Megoldva**: `railway.toml` konfigurálva
+
+2. **Build hiba**
    - Ellenőrizd a `requirements.txt` fájlt
    - Frontend build hibák ellenőrzése
+   - Node.js verzió kompatibilitás ellenőrzése
 
-2. **Database hiba**
+3. **Database hiba**
    - PostgreSQL service hozzáadása
    - `DATABASE_URL` environment változó ellenőrzése
 
-3. **Static files hiba**
+4. **Static files hiba**
    - `collectstatic` futtatása
    - WhiteNoise middleware ellenőrzése
 
-4. **CORS hiba**
+5. **CORS hiba**
    - `ALLOWED_HOSTS` ellenőrzése
    - Railway domain hozzáadása
 
@@ -152,6 +180,15 @@ railway logs
 ```bash
 # Railway dashboard-ban
 DEBUG = "True"  # Csak fejlesztéshez!
+```
+
+### Lokális tesztelés
+
+```bash
+# Tesztelés a deployment scriptekkel
+chmod +x build.sh start.sh
+./build.sh
+./start.sh
 ```
 
 ## 💰 Költségek
