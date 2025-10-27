@@ -213,8 +213,15 @@ function App() {
       loadCurrentChallenge().catch(err => {
         console.error('Edge kompatibilitás: loadCurrentChallenge hiba:', err);
       });
-    } else {
-      console.log('🎯 useEffect: Nem megfelelő feltételek a feladat betöltéshez');
+    } else if (gameState.gameId && gameState.currentPlayer && 
+               gameState.status !== 'waiting' && gameState.status !== 'setup' && 
+               gameState.status !== 'finished') {
+      // Csak akkor jelezzünk hibát, ha nem 'waiting', 'setup' vagy 'finished' állapotban vagyunk
+      console.warn('🎯 useEffect: Váratlan játékállapot a feladat betöltéshez:', {
+        status: gameState.status,
+        gameId: gameState.gameId,
+        currentPlayer: gameState.currentPlayer
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameState.status, gameState.gameId, gameState.currentPlayer]);
@@ -237,8 +244,6 @@ function App() {
         currentChallenge: currentChallenge
       });
       loadCurrentChallenge();
-    } else {
-      console.log('🚀 useEffect: Nem megfelelő feltételek az első feladat betöltéshez');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameState.status, gameState.gameId, gameState.currentPlayer, currentChallenge]);

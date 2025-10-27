@@ -119,7 +119,7 @@ const GameResults = ({ teams, players, onRestart }) => {
               {/* Csapat részletek */}
               <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
                 <div className="flex items-center">
-                  <span className="text-gray-300 font-spooky">Próbálkozások:</span>
+                  <span className="text-gray-300 font-spooky">Próba:</span>
                   <span className="ml-2 font-bold text-orange-400 font-spooky">{team.attempts}</span>
                 </div>
                 <div className="flex items-center">
