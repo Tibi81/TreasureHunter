@@ -28,4 +28,4 @@ RUN python manage.py collectstatic --noinput --settings=config.settings_producti
 EXPOSE 8000
 
 # Start command
-CMD ["sh", "-c", "python manage.py migrate --settings=config.settings_production && python manage.py create_superuser --settings=config.settings_production --username=admin --email=admin@treasurehunter.com --password=${DJANGO_SUPERUSER_PASSWORD:-admin123} && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120"]
+CMD ["sh", "-c", "python manage.py migrate --settings=config.settings_production && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120"]

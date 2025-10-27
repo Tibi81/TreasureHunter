@@ -28,7 +28,7 @@ echo "📊 Collecting static files..."
 python3 manage.py collectstatic --noinput
 
 echo "🗄️ Running database migrations..."
-python3 manage.py migrate
+python3 manage.py migrate --settings=config.settings_production
 
 echo "🎯 Starting Gunicorn server..."
 exec gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120
