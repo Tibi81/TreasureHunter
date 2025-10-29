@@ -14,8 +14,10 @@ const ChallengePanel = ({ challenge, onQRScan, onGetHelp, loading, gameStatus })
   // ✅ JAVÍTOTT: ScanResult törlése csak új challenge betöltésekor
   useEffect(() => {
     if (challenge && challenge !== previousChallengeRef.current) {
-      console.log('🔄 Új challenge betöltve, QR eredmények törlése');
+      console.log('🔄 Új challenge betöltve, QR eredmények és segítség törlése');
       setScanResult(null); // Töröljük a korábbi eredményt új feladat betöltésekor
+      setShowHelp(false); // Töröljük a segítség megjelenítését új feladat betöltésekor
+      setHelpText(''); // Töröljük a segítség szövegét új feladat betöltésekor
       // Töröljük a pending timeout-ot is
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
