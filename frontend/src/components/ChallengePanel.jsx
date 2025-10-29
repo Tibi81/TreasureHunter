@@ -9,12 +9,18 @@ const ChallengePanel = ({ challenge, onQRScan, onGetHelp, loading, gameStatus })
   const [scanResult, setScanResult] = useState(null);
   const [showQRScanner, setShowQRScanner] = useState(false);
   const timeoutRef = useRef(null);
-  const previousChallengeRef = useRef(null);
+  const previousStationNumberRef = useRef(null);
 
-  // ✅ JAVÍTOTT: ScanResult törlése csak új challenge betöltésekor
+  // ✅ JAVÍTOTT: ScanResult és segítség törlése új challenge/állomás betöltésekor
   useEffect(() => {
-    if (challenge && challenge !== previousChallengeRef.current) {
-      console.log('🔄 Új challenge betöltve, QR eredmények és segítség törlése');
+    // Állomás szám alapján ellenőrizzük, hogy új challenge-e
+    const currentStationNumber = challenge?.station?.number || challenge?.team_status?.current_station;
+    
+    if (challenge && currentStationNumber !== previousStationNumberRef.current) {
+      console.log('🔄 Új challenge betöltve, QR eredmények és segítség törlése', {
+        previous: previousStationNumberRef.current,
+        current: currentStationNumber
+      });
       setScanResult(null); // Töröljük a korábbi eredményt új feladat betöltésekor
       setShowHelp(false); // Töröljük a segítség megjelenítését új feladat betöltésekor
       setHelpText(''); // Töröljük a segítség szövegét új feladat betöltésekor
@@ -23,7 +29,7 @@ const ChallengePanel = ({ challenge, onQRScan, onGetHelp, loading, gameStatus })
         clearTimeout(timeoutRef.current);
         timeoutRef.current = null;
       }
-      previousChallengeRef.current = challenge;
+      previousStationNumberRef.current = currentStationNumber;
     }
   }, [challenge]);
 
@@ -54,6 +60,11 @@ const ChallengePanel = ({ challenge, onQRScan, onGetHelp, loading, gameStatus })
     // QR kód mező törlése sikeres validálás vagy reset esetén
     if (result.success || result.reset) {
       setQrCode('');
+      // Sikeres validálás után töröljük a segítséget is
+      if (result.success) {
+        setShowHelp(false);
+        setHelpText('');
+      }
     }
 
     // Automatikusan töröljük az eredményt 3 másodperc után
@@ -85,6 +96,11 @@ const ChallengePanel = ({ challenge, onQRScan, onGetHelp, loading, gameStatus })
     
     if (result.success || result.reset) {
       setQrCode('');
+      // Sikeres validálás után töröljük a segítséget is
+      if (result.success) {
+        setShowHelp(false);
+        setHelpText('');
+      }
     }
 
     // Automatikusan töröljük az eredményt 3 másodperc után
