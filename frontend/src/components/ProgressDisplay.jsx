@@ -242,7 +242,7 @@ const ProgressDisplay = ({ currentPlayer, teams, gameStatus, gameInfo, gameName,
                   
                   <div className="grid grid-cols-3 gap-2 text-xs">
                     <div className="bg-gradient-to-b from-orange-900/30 to-orange-800/30 rounded-xl p-3 text-center border border-orange-500/20">
-                      <div className="text-orange-300 font-bold font-spooky">Próbálkozások</div>
+                      <div className="text-orange-300 font-bold font-spooky">Próba</div>
                       <div className="text-sm font-spooky">
                         {team.attempts}/3
                         {team.attempts >= 2 && <span className="text-red-400 ml-1">⚠️</span>}
