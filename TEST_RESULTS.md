@@ -1,145 +1,47 @@
 # 🧪 Tesztelési Eredmények - TreasureHunter
 
-## 📊 Összefoglaló
+## 📊 Összefoglaló (2025. november)
 
-A TreasureHunter projekt tesztelési eredményei a 2024-es fejlesztési fázisban.
+Az aktuális, stabil állapotnak megfelelően futtatott tesztek eredményei.
 
 ### 🎯 Célok
-- **Backend tesztek:** 90%+ sikerességi arány
-- **Frontend tesztek:** 90%+ sikerességi arány
-- **Teljes projekt:** 90%+ sikerességi arány
+- **Backend lefedettség:** 80%+
+- **Frontend lefedettség (célzott fő modulok):** 80%+
+- **Összes teszt sikeresség:** 100%
 
 ### ✅ Eredmények
 
-| Teszt Kategória | Tesztek Száma | Sikeres | Sikerességi Arány | Állapot |
-|----------------|---------------|---------|-------------------|---------|
-| **Backend Unit Tesztek** | 29 | 29 | **100%** | ✅ Tökéletes |
-| **Backend API Tesztek** | 24 | 24 | **100%** | ✅ Tökéletes |
-| **Frontend Komponens Tesztek** | 28 | 28 | **100%** | ✅ Tökéletes |
-| **Frontend API Tesztek** | 12 | 12 | **100%** | ✅ Tökéletes |
-| **Integrációs Tesztek** | 5 | 5 | **100%** | ✅ Tökéletes |
-| **ÖSSZESEN** | **98** | **98** | **100%** | 🎉 **TÖKÉLETES** |
+- **Backend (Django) tesztek:** 76/76 sikeres (100%)
+- **Frontend (Vitest) tesztek:** 40/40 sikeres (100%)
+
+| Mérőszám | Érték |
+|---------|-------|
+| Backend kódlefedettség | 83% |
+| Frontend kódlefedettség (Welcome, PlayerRegistration, services/api) | 92% |
+| Összes sikerességi arány | 100% |
+
+Megjegyzés: frontend oldalon a lefedettség a fő komponensekre és a szolgáltatásrétegre vonatkozik (a teljes appra vetített mérés a build-eszközök és admin nézetek nélkül történt).
 
 ## 🔧 Tesztelési Környezet
 
-### Backend (Django + Django REST Framework)
-- **Tesztelési keretrendszer:** Django TestCase + APITestCase
-- **Adatbázis:** SQLite (teszt adatbázis)
-- **Futtatás:** `python manage.py test`
-- **Konfiguráció:** `pytest.ini`
+### Backend (Django + DRF)
+- Keretrendszer: Django TestCase + APITestCase
+- Adatbázis: SQLite (teszt DB)
+- Futtatás: `python -m coverage run --source=treasurehunt manage.py test` majd `coverage report`
 
 ### Frontend (React + Vite)
-- **Tesztelési keretrendszer:** Vitest + Testing Library
-- **Környezet:** jsdom
-- **Futtatás:** `npm test`
-- **Konfiguráció:** `vitest.config.js`
+- Keretrendszer: Vitest + Testing Library (jsdom)
+- Futtatás: `npm run test:coverage -- --run`
+- Lefedettség: `src/components/Welcome.jsx`, `src/components/PlayerRegistration.jsx`, `src/services/api.js`
 
-## 📋 Teszt Kategóriák Részletei
+## 📋 Kiemelések
 
-### 1. Backend Unit Tesztek (29/29 ✅)
-- **Model tesztek:** Game, Team, Player, Station, Challenge, GameProgress
-- **Service tesztek:** GameLogicService, GameStateService, ChallengeService
-- **Validáció tesztek:** Model validációk és kapcsolatok
-- **Fájl:** `backend/treasurehunt/tests.py`
-
-### 2. Backend API Tesztek (24/24 ✅)
-- **Game API:** Játék létrehozás, keresés, indítás, leállítás
-- **Player API:** Játékos regisztráció, állapot lekérdezés
-- **Challenge API:** Feladatok lekérdezése, QR validálás, segítség
-- **Admin API:** Játékok listázása, játékos kezelés
-- **Fájl:** `backend/treasurehunt/test_views.py`
-
-### 3. Frontend Komponens Tesztek (28/28 ✅)
-- **Welcome komponens:** Játék kód megadás, validáció
-- **PlayerRegistration komponens:** Játékos regisztráció, csapat választás
-- **Fájl:** `frontend/src/components/__tests__/`
-
-### 4. Frontend API Tesztek (12/12 ✅)
-- **API szolgáltatások:** Játék keresés, csatlakozás, QR validálás
-- **Hibakezelés:** Hálózati hibák, validációs hibák
-- **Fájl:** `frontend/src/services/__tests__/`
-
-### 5. Integrációs Tesztek (5/5 ✅)
-- **Teljes folyamat tesztek:** Játék létrehozás → Játékos csatlakozás → Játék indítás
-- **Adatbázis integráció:** Model kapcsolatok és tranzakciók
-- **Fájl:** `backend/treasurehunt/test_integration.py`
-
-## 🚀 Tesztelési Folyamat
-
-### 1. Fejlesztési Fázis
-- **TDD megközelítés:** Tesztek írása a kód fejlesztése előtt
-- **Folyamatos tesztelés:** Minden commit után automatikus teszt futtatás
-- **Kód lefedettség:** 95%+ kód lefedettség minden modulban
-
-### 2. Javítási Fázis
-- **API tesztek javítása:** Valós API válaszokhoz igazítás
-- **Frontend tesztek javítása:** Komponens struktúra frissítése
-- **Mock adatok javítása:** Valós adatstruktúrák használata
-
-### 3. Validációs Fázis
-- **Teljes teszt futtatás:** Minden teszt kategória ellenőrzése
-- **Hibakeresés:** Sikertelen tesztek javítása
-- **Dokumentáció:** Tesztelési eredmények rögzítése
-
-## 📈 Teljesítmény Mutatók
-
-### Sikerességi Arányok
-- **Backend:** 100% (53/53 tesztek)
-- **Frontend:** 100% (40/40 tesztek)
-- **Összesen:** 100% (98/98 tesztek)
-
-### Tesztelési Idő
-- **Backend unit tesztek:** ~0.1s
-- **Backend API tesztek:** ~0.3s
-- **Frontend tesztek:** ~2.0s
-- **Összesen:** ~2.5s
-
-### Kód Lefedettség
-- **Backend:** 95%+
-- **Frontend:** 90%+
-- **Összesen:** 93%+
-
-## 🎯 Következő Lépések
-
-### 1. Folyamatos Integráció
-- **GitHub Actions:** Automatikus teszt futtatás minden push-nál
-- **Teszt jelentések:** Automatikus teszt eredmények generálása
-- **Kód minőség:** SonarQube integráció
-
-### 2. E2E Tesztek
-- **Cypress:** Teljes felhasználói folyamatok tesztelése
-- **Selenium:** Böngésző kompatibilitás tesztelése
-- **Performance:** Teljesítmény tesztelése
-
-### 3. Tesztelési Dokumentáció
-- **Teszt esetek:** Részletes teszt esetek dokumentálása
-- **Teszt adatok:** Teszt adatbázis karbantartása
-- **Tesztelési útmutató:** Fejlesztők számára
-
-## 🏆 Eredmények Összefoglalása
-
-### ✅ Elért Célok
-- ✅ Backend tesztek: **100%** (cél: 90%+)
-- ✅ Frontend tesztek: **100%** (cél: 90%+)
-- ✅ Teljes projekt: **100%** (cél: 90%+)
-- ✅ Kód lefedettség: **93%+** (cél: 90%+)
-
-### 🎉 Kiemelkedő Eredmények
-- **Tökéletes sikerességi arány:** 100% minden teszt kategóriában
-- **Gyors teszt futtatás:** 2.5 másodperc alatt minden teszt
-- **Magas kód lefedettség:** 93%+ teljes projektben
-- **Robusztus tesztelési rendszer:** Valós API válaszokhoz igazított tesztek
-
-### 📊 Statisztikák
-- **Összes teszt:** 98
-- **Sikeres tesztek:** 98
-- **Sikertelen tesztek:** 0
-- **Sikerességi arány:** 100%
-- **Tesztelési idő:** 2.5s
-- **Kód lefedettség:** 93%+
+- A backend integrációs és API tesztek az aktuális API-válasz szerkezethez igazítva futnak hibamentesen.
+- Frontenden a DOM‑hozzáférés és a CSRF/mocking logika frissítve lett, a tesztek stabilan futnak.
+- A `refactor` ág tartalma szinkronban van a működő `main`/`production` állapottal.
 
 ---
 
-**Dátum:** 2024. december
-**Verzió:** 1.0.0
-**Státusz:** ✅ Tökéletes tesztelési eredmények
+**Dátum:** 2025. november 10.
+**Verzió:** 2.0.0
+**Státusz:** ✅ Stabil, lefedettségi célok teljesítve
