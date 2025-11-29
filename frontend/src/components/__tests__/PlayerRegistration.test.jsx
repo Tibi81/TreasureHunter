@@ -1,10 +1,35 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { describe, it, expect, vi } from 'vitest'
+import '@testing-library/jest-dom'
+import { render, screen, fireEvent } from '@testing-library/react'
+import { describe, it, expect, vi, beforeAll } from 'vitest'
 import PlayerRegistration from '../PlayerRegistration'
 
 describe('PlayerRegistration Component', () => {
   const mockOnJoinGame = vi.fn()
   const mockOnBack = vi.fn()
+
+  beforeAll(() => {
+    if (!window.matchMedia) {
+      Object.defineProperty(window, 'matchMedia', {
+        writable: true,
+        value: vi.fn().mockImplementation(query => ({
+          matches: false,
+          media: query,
+          onchange: null,
+          addListener: vi.fn(),
+          removeListener: vi.fn(),
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          dispatchEvent: vi.fn(),
+        })),
+      })
+    }
+  })
+
+  const getTeamButton = (teamLabel) =>
+    screen.getByRole('button', { name: new RegExp(teamLabel, 'i') })
+
+  const getSubmitButton = () =>
+    screen.getByRole('button', { name: /Csatlakozás/i })
 
   const mockGameData = {
     game: {
@@ -67,8 +92,8 @@ describe('PlayerRegistration Component', () => {
       />
     )
     
-    expect(screen.getByText('🎃 Tök Csapat')).toBeInTheDocument()
-    expect(screen.getByText('👻 Szellem Csapat')).toBeInTheDocument()
+    expect(screen.getByText('Tök Csapat')).toBeInTheDocument()
+    expect(screen.getByText('Szellem Csapat')).toBeInTheDocument()
   })
 
   it('shows team player counts', () => {
@@ -108,10 +133,10 @@ describe('PlayerRegistration Component', () => {
       />
     )
     
-    const pumpkinTeam = screen.getByLabelText('🎃 Tök Csapat')
+    const pumpkinTeam = getTeamButton('Tök Csapat')
     fireEvent.click(pumpkinTeam)
     
-    expect(pumpkinTeam.checked).toBe(true)
+    expect(pumpkinTeam.className).toContain('border-orange-400')
   })
 
   it('handles form submission with valid data', () => {
@@ -124,8 +149,8 @@ describe('PlayerRegistration Component', () => {
     )
     
     const nameInput = screen.getByPlaceholderText('Írd be a neved...')
-    const pumpkinTeam = screen.getByLabelText('🎃 Tök Csapat')
-    const submitButton = screen.getByText('Csatlakozás!')
+    const pumpkinTeam = getTeamButton('Tök Csapat')
+    const submitButton = getSubmitButton()
     
     fireEvent.change(nameInput, { target: { value: 'Test Player' } })
     fireEvent.click(pumpkinTeam)
@@ -143,7 +168,7 @@ describe('PlayerRegistration Component', () => {
       />
     )
     
-    const submitButton = screen.getByText('Csatlakozás!')
+    const submitButton = getSubmitButton()
     fireEvent.click(submitButton)
     
     expect(screen.getByText('Add meg a neved!')).toBeInTheDocument()
@@ -160,7 +185,7 @@ describe('PlayerRegistration Component', () => {
     )
     
     const nameInput = screen.getByPlaceholderText('Írd be a neved...')
-    const submitButton = screen.getByText('Csatlakozás!')
+    const submitButton = getSubmitButton()
     
     fireEvent.change(nameInput, { target: { value: 'Test Player' } })
     fireEvent.click(submitButton)
@@ -179,8 +204,8 @@ describe('PlayerRegistration Component', () => {
     )
     
     const nameInput = screen.getByPlaceholderText('Írd be a neved...')
-    const pumpkinTeam = screen.getByLabelText('🎃 Tök Csapat')
-    const submitButton = screen.getByText('Csatlakozás!')
+    const pumpkinTeam = getTeamButton('Tök Csapat')
+    const submitButton = getSubmitButton()
     
     fireEvent.change(nameInput, { target: { value: '  Test Player  ' } })
     fireEvent.click(pumpkinTeam)
@@ -198,7 +223,7 @@ describe('PlayerRegistration Component', () => {
       />
     )
     
-    const backButton = screen.getByText('← Vissza')
+    const backButton = screen.getByRole('button', { name: /Vissza/i })
     fireEvent.click(backButton)
     
     expect(mockOnBack).toHaveBeenCalled()
@@ -234,7 +259,8 @@ describe('PlayerRegistration Component', () => {
       />
     )
     
-    expect(screen.getByText('2/2 játékos (TELE)')).toBeInTheDocument()
+    expect(screen.getByText('2/2 játékos')).toBeInTheDocument()
+    expect(screen.getByText('TELE')).toBeInTheDocument()
     expect(screen.getByText('0/2 játékos')).toBeInTheDocument()
   })
 
@@ -248,8 +274,8 @@ describe('PlayerRegistration Component', () => {
     )
     
     const nameInput = screen.getByPlaceholderText('Írd be a neved...')
-    const pumpkinTeam = screen.getByLabelText('🎃 Tök Csapat')
-    const submitButton = screen.getByText('Csatlakozás!')
+    const pumpkinTeam = getTeamButton('Tök Csapat')
+    const submitButton = getSubmitButton()
     
     // First submit without name to show error
     fireEvent.click(submitButton)
@@ -289,7 +315,7 @@ describe('PlayerRegistration Component', () => {
       />
     )
     
-    expect(screen.getByText('🎃 Tök Csapat')).toBeInTheDocument()
+    expect(screen.getByText('Tök Csapat')).toBeInTheDocument()
     expect(screen.getByText('0/2 játékos')).toBeInTheDocument()
   })
 })

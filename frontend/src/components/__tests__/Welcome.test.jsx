@@ -1,9 +1,28 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { describe, it, expect, vi } from 'vitest'
+import '@testing-library/jest-dom'
+import { render, screen, fireEvent } from '@testing-library/react'
+import { describe, it, expect, vi, beforeAll } from 'vitest'
 import Welcome from '../Welcome'
 
 describe('Welcome Component', () => {
   const mockOnGameCodeSubmit = vi.fn()
+
+  beforeAll(() => {
+    if (!window.matchMedia) {
+      Object.defineProperty(window, 'matchMedia', {
+        writable: true,
+        value: vi.fn().mockImplementation(query => ({
+          matches: false,
+          media: query,
+          onchange: null,
+          addListener: vi.fn(),
+          removeListener: vi.fn(),
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          dispatchEvent: vi.fn(),
+        })),
+      })
+    }
+  })
 
   beforeEach(() => {
     mockOnGameCodeSubmit.mockClear()
@@ -28,7 +47,7 @@ describe('Welcome Component', () => {
     render(<Welcome onGameCodeSubmit={mockOnGameCodeSubmit} />)
     
     expect(screen.getByText('📋 Játékszabályok:')).toBeInTheDocument()
-    expect(screen.getByText('4 játékos, 2 csapat (2-2 fő)')).toBeInTheDocument()
+    expect(screen.getByText('1 vagy 2 csapat (1-8 fő)')).toBeInTheDocument()
     expect(screen.getByText('Először külön versenyeztek')).toBeInTheDocument()
     expect(screen.getByText('Majd együtt a közös cél felé')).toBeInTheDocument()
     expect(screen.getByText('QR kódokat kell megtalálni')).toBeInTheDocument()
@@ -112,7 +131,7 @@ describe('Welcome Component', () => {
     render(<Welcome onGameCodeSubmit={mockOnGameCodeSubmit} />)
     
     const input = screen.getByPlaceholderText('ABC123')
-    expect(input).toHaveAttribute('autofocus')
+    expect(input).toHaveFocus()
   })
 
   it('clears error when submitting valid code after error', () => {

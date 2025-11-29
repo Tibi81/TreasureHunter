@@ -1,0 +1,73 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info
+dist
+build
+.pytest_cache
+.coverage
+htmlcov
+
+# Node
+node_modules
+npm-debug.log
+yarn-error.log
+.npm
+.eslintcache
+
+# Frontend build (mert a Dockerfile-ban buildeljük)
+frontend/dist
+frontend/build
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs
+
+# Database
+*.sqlite3
+*.db
+
+# Documentation
+*.md
+!README.md
+
+# Test files
+test_*.py
+*_test.py
+__tests__
+*.test.js
+*.test.jsx
+*.spec.js
+*.spec.jsx
+
+# Temporary files
+tmp
+temp
+*.tmp
+

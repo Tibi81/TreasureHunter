@@ -1,13 +1,36 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { gameAPI, utils } from '../api'
 
-// Mock fetch
+const API_BASE_URL = window.location.origin
+
+// Mock localStorage and fetch
+const storage = {}
+const localStorageMock = {
+  getItem: vi.fn(key => (key in storage ? storage[key] : null)),
+  setItem: vi.fn((key, value) => {
+    storage[key] = value
+  }),
+  removeItem: vi.fn(key => {
+    delete storage[key]
+  }),
+  clear: vi.fn(() => {
+    Object.keys(storage).forEach(key => delete storage[key])
+  }),
+}
+global.localStorage = localStorageMock
 global.fetch = vi.fn()
 
+let gameAPI
+let utils
+
 describe('API Service', () => {
-  beforeEach(() => {
-    fetch.mockClear()
+  beforeEach(async () => {
+    fetch.mockReset()
     localStorage.clear()
+    localStorageMock.getItem.mockClear()
+    localStorageMock.setItem.mockClear()
+    localStorageMock.removeItem.mockClear()
+    vi.resetModules()
+    ;({ gameAPI, utils } = await import('../api'))
   })
 
   describe('gameAPI', () => {
@@ -27,9 +50,10 @@ describe('API Service', () => {
         const result = await gameAPI.findGameByCode('abc123')
         
         expect(fetch).toHaveBeenCalledWith(
-          'http://127.0.0.1:8000/api/game/code/ABC123/',
+          `${API_BASE_URL}/api/game/code/ABC123/`,
           expect.objectContaining({
-            headers: { 'Content-Type': 'application/json' }
+            headers: expect.objectContaining({ 'Content-Type': 'application/json' }),
+            credentials: 'include',
           })
         )
         expect(result).toEqual(mockResponse)
@@ -63,21 +87,31 @@ describe('API Service', () => {
         
         fetch.mockResolvedValueOnce({
           ok: true,
+          json: () => Promise.resolve({ csrf_token: 'test-token' })
+        })
+        fetch.mockResolvedValueOnce({
+          ok: true,
           json: () => Promise.resolve(mockResponse)
         })
 
         const result = await gameAPI.createGame('New Game', 'Admin', 4, 2)
         
-        expect(fetch).toHaveBeenCalledWith(
-          'http://127.0.0.1:8000/api/game/create/',
+        expect(fetch).toHaveBeenNthCalledWith(
+          2,
+          `${API_BASE_URL}/api/game/create/`,
           expect.objectContaining({
             method: 'POST',
+            credentials: 'include',
+            headers: expect.objectContaining({
+              'Content-Type': 'application/json',
+              'X-CSRFToken': 'test-token',
+            }),
             body: JSON.stringify({
               name: 'New Game',
               admin_name: 'Admin',
               max_players: 4,
-              team_count: 2
-            })
+              team_count: 2,
+            }),
           })
         )
         expect(result).toEqual(mockResponse)
@@ -94,19 +128,29 @@ describe('API Service', () => {
         
         fetch.mockResolvedValueOnce({
           ok: true,
+          json: () => Promise.resolve({ csrf_token: 'test-token' })
+        })
+        fetch.mockResolvedValueOnce({
+          ok: true,
           json: () => Promise.resolve(mockResponse)
         })
 
         const result = await gameAPI.joinGame('game-id', 'Player Name', 'pumpkin')
         
-        expect(fetch).toHaveBeenCalledWith(
-          'http://127.0.0.1:8000/api/game/game-id/join/',
+        expect(fetch).toHaveBeenNthCalledWith(
+          2,
+          `${API_BASE_URL}/api/game/game-id/join/`,
           expect.objectContaining({
             method: 'POST',
+            credentials: 'include',
+            headers: expect.objectContaining({
+              'Content-Type': 'application/json',
+              'X-CSRFToken': 'test-token',
+            }),
             body: JSON.stringify({
               name: 'Player Name',
-              team: 'pumpkin'
-            })
+              team: 'pumpkin',
+            }),
           })
         )
         expect(result).toEqual(mockResponse)
@@ -122,16 +166,26 @@ describe('API Service', () => {
         
         fetch.mockResolvedValueOnce({
           ok: true,
+          json: () => Promise.resolve({ csrf_token: 'test-token' })
+        })
+        fetch.mockResolvedValueOnce({
+          ok: true,
           json: () => Promise.resolve(mockResponse)
         })
 
         const result = await gameAPI.validateQR('game-id', 'pumpkin', 'qr-code')
         
-        expect(fetch).toHaveBeenCalledWith(
-          'http://127.0.0.1:8000/api/game/game-id/team/pumpkin/validate/',
+        expect(fetch).toHaveBeenNthCalledWith(
+          2,
+          `${API_BASE_URL}/api/game/game-id/team/pumpkin/validate/`,
           expect.objectContaining({
             method: 'POST',
-            body: JSON.stringify({ qr_code: 'qr-code' })
+            credentials: 'include',
+            headers: expect.objectContaining({
+              'Content-Type': 'application/json',
+              'X-CSRFToken': 'test-token',
+            }),
+            body: JSON.stringify({ qr_code: 'qr-code' }),
           })
         )
         expect(result).toEqual(mockResponse)
@@ -146,15 +200,25 @@ describe('API Service', () => {
         
         fetch.mockResolvedValueOnce({
           ok: true,
+          json: () => Promise.resolve({ csrf_token: 'test-token' })
+        })
+        fetch.mockResolvedValueOnce({
+          ok: true,
           json: () => Promise.resolve(mockResponse)
         })
 
         const result = await gameAPI.getHelp('game-id', 'pumpkin')
         
-        expect(fetch).toHaveBeenCalledWith(
-          'http://127.0.0.1:8000/api/game/game-id/team/pumpkin/help/',
+        expect(fetch).toHaveBeenNthCalledWith(
+          2,
+          `${API_BASE_URL}/api/game/game-id/team/pumpkin/help/`,
           expect.objectContaining({
-            method: 'POST'
+            method: 'POST',
+            credentials: 'include',
+            headers: expect.objectContaining({
+              'Content-Type': 'application/json',
+              'X-CSRFToken': 'test-token',
+            }),
           })
         )
         expect(result).toEqual(mockResponse)
@@ -171,16 +235,26 @@ describe('API Service', () => {
         
         fetch.mockResolvedValueOnce({
           ok: true,
+          json: () => Promise.resolve({ csrf_token: 'test-token' })
+        })
+        fetch.mockResolvedValueOnce({
+          ok: true,
           json: () => Promise.resolve(mockResponse)
         })
 
         const result = await gameAPI.exitGame()
         
-        expect(fetch).toHaveBeenCalledWith(
-          'http://127.0.0.1:8000/api/player/exit/',
+        expect(fetch).toHaveBeenNthCalledWith(
+          2,
+          `${API_BASE_URL}/api/player/exit/`,
           expect.objectContaining({
             method: 'POST',
-            body: JSON.stringify({ session_token: 'test-token' })
+            credentials: 'include',
+            headers: expect.objectContaining({
+              'Content-Type': 'application/json',
+              'X-CSRFToken': 'test-token',
+            }),
+            body: JSON.stringify({ session_token: 'test-token' }),
           })
         )
         expect(result).toEqual(mockResponse)
@@ -197,16 +271,26 @@ describe('API Service', () => {
         
         fetch.mockResolvedValueOnce({
           ok: true,
+          json: () => Promise.resolve({ csrf_token: 'test-token' })
+        })
+        fetch.mockResolvedValueOnce({
+          ok: true,
           json: () => Promise.resolve(mockResponse)
         })
 
         const result = await gameAPI.restoreSession('session-token')
         
-        expect(fetch).toHaveBeenCalledWith(
-          'http://127.0.0.1:8000/api/player/restore-session/',
+        expect(fetch).toHaveBeenNthCalledWith(
+          2,
+          `${API_BASE_URL}/api/player/restore-session/`,
           expect.objectContaining({
             method: 'POST',
-            body: JSON.stringify({ session_token: 'session-token' })
+            credentials: 'include',
+            headers: expect.objectContaining({
+              'Content-Type': 'application/json',
+              'X-CSRFToken': 'test-token',
+            }),
+            body: JSON.stringify({ session_token: 'session-token' }),
           })
         )
         expect(result).toEqual(mockResponse)
@@ -228,9 +312,10 @@ describe('API Service', () => {
         const result = await gameAPI.listGames()
         
         expect(fetch).toHaveBeenCalledWith(
-          'http://127.0.0.1:8000/api/admin/games/',
+          `${API_BASE_URL}/api/admin/games/`,
           expect.objectContaining({
-            headers: { 'Content-Type': 'application/json' }
+            headers: expect.objectContaining({ 'Content-Type': 'application/json' }),
+            credentials: 'include',
           })
         )
         expect(result).toEqual(mockResponse)
@@ -243,15 +328,25 @@ describe('API Service', () => {
         
         fetch.mockResolvedValueOnce({
           ok: true,
+          json: () => Promise.resolve({ csrf_token: 'test-token' })
+        })
+        fetch.mockResolvedValueOnce({
+          ok: true,
           json: () => Promise.resolve(mockResponse)
         })
 
         const result = await gameAPI.removePlayer('game-id', 'player-id')
         
-        expect(fetch).toHaveBeenCalledWith(
-          'http://127.0.0.1:8000/api/game/game-id/player/player-id/remove/',
+        expect(fetch).toHaveBeenNthCalledWith(
+          2,
+          `${API_BASE_URL}/api/game/game-id/player/player-id/remove/`,
           expect.objectContaining({
-            method: 'DELETE'
+            method: 'DELETE',
+            credentials: 'include',
+            headers: expect.objectContaining({
+              'Content-Type': 'application/json',
+              'X-CSRFToken': 'test-token',
+            }),
           })
         )
         expect(result).toEqual(mockResponse)
@@ -264,16 +359,26 @@ describe('API Service', () => {
         
         fetch.mockResolvedValueOnce({
           ok: true,
+          json: () => Promise.resolve({ csrf_token: 'test-token' })
+        })
+        fetch.mockResolvedValueOnce({
+          ok: true,
           json: () => Promise.resolve(mockResponse)
         })
 
         const result = await gameAPI.movePlayer('game-id', 'player-id', 'ghost')
         
-        expect(fetch).toHaveBeenCalledWith(
-          'http://127.0.0.1:8000/api/game/game-id/player/player-id/move/',
+        expect(fetch).toHaveBeenNthCalledWith(
+          2,
+          `${API_BASE_URL}/api/game/game-id/player/player-id/move/`,
           expect.objectContaining({
             method: 'POST',
-            body: JSON.stringify({ new_team: 'ghost' })
+            credentials: 'include',
+            headers: expect.objectContaining({
+              'Content-Type': 'application/json',
+              'X-CSRFToken': 'test-token',
+            }),
+            body: JSON.stringify({ new_team: 'ghost' }),
           })
         )
         expect(result).toEqual(mockResponse)

@@ -296,7 +296,7 @@ class FlexibleGameAPITest(APITestCase):
         for case in edge_cases:
             with self.subTest(**case):
                 game_data = {
-                    'name': f"Edge Case: {case['description']}",
+                    'name': f"EdgeCase {case['max_players']}p{case['team_count']}t",
                     'max_players': case['max_players'],
                     'team_count': case['team_count'],
                     'admin_name': 'Test Admin'

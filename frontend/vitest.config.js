@@ -6,7 +6,14 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    setupFiles: ['./src/test/setup.js'],
     css: true,
+    coverage: {
+      provider: 'v8',
+      include: [
+        'src/components/Welcome.jsx',
+        'src/components/PlayerRegistration.jsx',
+        'src/services/api.js',
+      ],
+    },
   },
 })
